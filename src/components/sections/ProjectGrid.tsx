@@ -20,7 +20,7 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
     : projects.filter((p) => (p.status ?? 'shipped') === filter)
 
   return (
-    <div data-theme="mono" className="min-h-screen pt-14">
+    <div className="min-h-screen pt-14">
       <div className="max-w-5xl mx-auto px-6 pt-24 pb-16">
         <FadeIn>
           <p className="font-mono text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>

@@ -16,7 +16,7 @@ interface HeroProps {
 
 export default function Hero({ featuredProjects }: HeroProps) {
   return (
-    <section data-theme="swiss" className="min-h-screen pt-14 relative overflow-hidden">
+    <section className="min-h-screen pt-14 relative overflow-hidden">
       <AmbientBlobs />
 
       <div className="max-w-5xl mx-auto px-6 pt-24 pb-8 relative z-10">

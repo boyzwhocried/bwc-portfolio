@@ -33,7 +33,7 @@ export default async function BlogPostPage({
   if (!post || !post.published) notFound()
 
   return (
-    <div data-theme="minimal" className="min-h-screen pt-14">
+    <div className="min-h-screen pt-14">
       <div className="max-w-xl mx-auto px-6 pt-20 pb-24">
 
         <FadeIn>

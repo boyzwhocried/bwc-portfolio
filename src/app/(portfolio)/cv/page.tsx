@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function CVPage() {
   return (
-    <div data-theme="minimal" className="min-h-screen pt-14">
+    <div className="min-h-screen pt-14">
       <style>{`
         @media print {
           nav, footer, .cv-nav-actions { display: none !important; }

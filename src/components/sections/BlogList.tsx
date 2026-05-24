@@ -8,7 +8,7 @@ interface BlogListProps {
 
 export default function BlogList({ posts }: BlogListProps) {
   return (
-    <div data-theme="minimal" className="min-h-screen pt-14">
+    <div className="min-h-screen pt-14">
       <div className="max-w-2xl mx-auto px-6 pt-24 pb-16">
         <FadeIn>
           <p className="font-mono text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>

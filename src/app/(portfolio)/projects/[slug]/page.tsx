@@ -59,7 +59,7 @@ export default async function ProjectDetailPage({
     'var(--fg)'
 
   return (
-    <div data-theme="mono" className="min-h-screen pt-14">
+    <div className="min-h-screen pt-14">
       <div className="max-w-2xl mx-auto px-6 pt-24 pb-16">
 
         <FadeIn>
