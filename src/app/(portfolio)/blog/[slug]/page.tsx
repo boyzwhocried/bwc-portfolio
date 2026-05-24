@@ -17,7 +17,7 @@ export async function generateMetadata({
   const post = getBlogPostWithContent(slug)
   if (!post) return { title: 'Not Found' }
   return {
-    title: `${post.title} — Verrel Alsyoumi`,
+    title: `${post.title} | boyzwhocried`,
     description: post.summary,
   }
 }

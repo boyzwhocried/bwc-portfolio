@@ -5,7 +5,7 @@ import ProjectGrid from '@/components/sections/ProjectGrid'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Projects — Verrel Alsyoumi',
+  title: 'Projects | boyzwhocried',
   description: "Things I've built.",
 }
 

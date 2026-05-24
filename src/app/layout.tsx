@@ -4,21 +4,21 @@ import './globals.css'
 export const metadata: Metadata = {
   metadataBase: new URL('https://boyzwhocried.xyz'),
   title: {
-    default: 'Verrel Alsyoumi',
-    template: '%s — Verrel Alsyoumi',
+    default: 'boyzwhocried',
+    template: '%s | boyzwhocried',
   },
   description: 'Data engineer. Frontend builder. Based in Indonesia.',
   openGraph: {
-    title: 'Verrel Alsyoumi',
+    title: 'boyzwhocried',
     description: 'Data engineer. Frontend builder. Based in Indonesia.',
     url: 'https://boyzwhocried.xyz',
-    siteName: 'Verrel Alsyoumi',
+    siteName: 'boyzwhocried',
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Verrel Alsyoumi',
+    title: 'boyzwhocried',
     description: 'Data engineer. Frontend builder. Based in Indonesia.',
   },
   robots: {
