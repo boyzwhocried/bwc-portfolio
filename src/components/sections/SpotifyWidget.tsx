@@ -63,10 +63,10 @@ export default function SpotifyWidget() {
         href={track.track_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-mono transition-opacity hover:opacity-70 inline-flex flex-col gap-0.5"
+        className="font-mono transition-opacity hover:opacity-70 flex flex-col gap-0.5 min-w-0 w-full"
         style={{ color: 'var(--muted)' }}
       >
-        <span className="flex items-center gap-2 text-xs">
+        <span className="flex items-center gap-2 text-xs min-w-0">
           {track.is_playing ? (
             <span className="flex items-end h-3 flex-shrink-0" aria-hidden>
               <span className="bar bar-1" />
@@ -76,9 +76,9 @@ export default function SpotifyWidget() {
           ) : (
             <span className="flex-shrink-0 text-xs">■</span>
           )}
-          <span style={{ color: 'var(--fg)' }}>{track.title}</span>
+          <span className="truncate" style={{ color: 'var(--fg)' }}>{track.title}</span>
         </span>
-        <span className="text-xs" style={{ paddingLeft: '14px' }}>{track.artist}</span>
+        <span className="text-xs truncate" style={{ paddingLeft: '14px' }}>{track.artist}</span>
       </a>
     </>
   )
