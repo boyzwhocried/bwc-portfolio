@@ -2,6 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 
+const INTERACTIVE = 'a, button, [role="button"], input, textarea, select, label, [tabindex]:not([tabindex="-1"])'
+
+function isInteractive(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  return !!target.closest(INTERACTIVE)
+}
+
 export default function CustomCursor() {
   const cursorRef = useRef<HTMLDivElement>(null)
   const pos = useRef({ x: -100, y: -100 })
@@ -14,10 +21,13 @@ export default function CustomCursor() {
       return
     }
 
-    document.body.style.cursor = 'none'
-
     function onMove(e: MouseEvent) {
       pos.current = { x: e.clientX, y: e.clientY }
+      if (isInteractive(e.target)) {
+        cursorRef.current?.classList.add('cursor--hover')
+      } else {
+        cursorRef.current?.classList.remove('cursor--hover')
+      }
     }
 
     function render() {
@@ -27,24 +37,10 @@ export default function CustomCursor() {
       raf.current = requestAnimationFrame(render)
     }
 
-    function onEnterLink() {
-      cursorRef.current?.classList.add('cursor--hover')
-    }
-    function onLeaveLink() {
-      cursorRef.current?.classList.remove('cursor--hover')
-    }
-
     window.addEventListener('mousemove', onMove)
     raf.current = requestAnimationFrame(render)
 
-    const links = document.querySelectorAll('a, button, [role="button"]')
-    links.forEach((el) => {
-      el.addEventListener('mouseenter', onEnterLink)
-      el.addEventListener('mouseleave', onLeaveLink)
-    })
-
     return () => {
-      document.body.style.cursor = ''
       window.removeEventListener('mousemove', onMove)
       cancelAnimationFrame(raf.current)
     }
@@ -65,6 +61,7 @@ export default function CustomCursor() {
       }}
     >
       <style>{`
+        *, *::before, *::after { cursor: none !important; }
         .cursor-inner {
           width: 16px;
           height: 16px;
@@ -80,7 +77,6 @@ export default function CustomCursor() {
           background: white;
           transition: all 0.15s ease;
         }
-        /* horizontal line */
         .cursor-inner::before {
           width: 16px;
           height: 1px;
@@ -88,7 +84,6 @@ export default function CustomCursor() {
           left: 0;
           transform: translateY(-50%);
         }
-        /* vertical line */
         .cursor-inner::after {
           width: 1px;
           height: 16px;
@@ -98,10 +93,6 @@ export default function CustomCursor() {
         }
         .cursor--hover .cursor-inner {
           transform: scale(1.8);
-        }
-        .cursor--hover .cursor-inner::before,
-        .cursor--hover .cursor-inner::after {
-          background: white;
         }
       `}</style>
       <div className="cursor-inner" />
