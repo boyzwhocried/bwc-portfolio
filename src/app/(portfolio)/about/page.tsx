@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import FadeIn from '@/components/ui/FadeIn'
 
 export const metadata: Metadata = {
@@ -10,7 +11,6 @@ export default function AboutPage() {
   return (
     <div data-theme="genx" className="min-h-screen pt-14 relative overflow-hidden">
 
-      {/* subtle single blob */}
       <style>{`
         @keyframes aboutBlob {
           0%   { transform: translate(0,0) scale(1);    border-radius: 55% 45% 60% 40% / 50% 60% 40% 50%; }
@@ -42,36 +42,33 @@ export default function AboutPage() {
           </p>
         </FadeIn>
 
-        {/* profile picture placeholder + intro side by side on md+ */}
+        {/* intro + profile photo */}
         <FadeIn delay={0.08}>
-          <div className="flex flex-col md:flex-row gap-8 mb-12">
-            {/* profile picture placeholder — replace src with actual photo */}
+          <div className="flex flex-col md:flex-row gap-8 mb-10">
+            {/* profile picture placeholder — replace with actual photo (400x400px, jpg/webp) */}
             <div
-              className="flex-shrink-0 w-32 h-32 md:w-40 md:h-40 flex items-center justify-center font-mono text-xs uppercase tracking-widest self-start"
-              style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'var(--border)', aspectRatio: '1' }}
+              className="flex-shrink-0 w-32 h-32 md:w-36 md:h-36 flex items-center justify-center font-mono text-xs self-start"
+              style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'var(--border)' }}
               aria-label="profile photo placeholder"
             >
-              {/* NOTE: drop a square photo here when ready. recommended: 400x400px, jpg/webp */}
               photo
             </div>
 
-            <div className="space-y-5 text-base leading-relaxed" style={{ color: 'var(--fg)' }}>
+            <div className="space-y-4 text-base leading-relaxed" style={{ color: 'var(--fg)' }}>
               <p>
-                hey. i&apos;m Verrel Al Syoumi, data engineer by day, builder of random things by night.
-                based in Indonesia, currently on contract at BRILife working on data pipelines,
-                DWH architecture, and internal tooling.
+                hey. i&apos;m Verrel Mohammad Al Syoumi, data engineer by day, builder of random things by night.
+                based in Indonesia, currently on contract at BRILife working on data pipelines and DWH architecture.
               </p>
               <p>
                 i care a lot about systems that actually work: data that&apos;s correct, interfaces that
                 don&apos;t get in the way, code that makes sense when you come back to it six months later.
-                not the most glamorous things to care about, but they matter.
               </p>
             </div>
           </div>
         </FadeIn>
 
-        <FadeIn delay={0.15}>
-          <div className="space-y-5 text-base leading-relaxed mb-12" style={{ color: 'var(--fg)' }}>
+        <FadeIn delay={0.13}>
+          <div className="space-y-4 text-base leading-relaxed mb-12" style={{ color: 'var(--fg)' }}>
             <p>
               outside work i&apos;m building stuff: an automated YouTube channel, a wiki that knows
               everything about my life, an e-invite platform with some friends. most of it is
@@ -84,8 +81,99 @@ export default function AboutPage() {
           </div>
         </FadeIn>
 
-        <FadeIn delay={0.22}>
-          <div className="mt-12">
+        {/* experience */}
+        <FadeIn delay={0.18}>
+          <div className="mt-14" style={{ borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
+            <p className="font-mono text-xs uppercase tracking-widest mb-8" style={{ color: 'var(--muted)' }}>
+              experience
+            </p>
+
+            <div className="space-y-8">
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-1">
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Data Engineer</p>
+                    <p className="text-sm" style={{ color: 'var(--muted)' }}>PT Asuransi BRI Life (via Lawencon) · contract · hybrid</p>
+                  </div>
+                  <span className="font-mono text-xs flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }}>Sep 2024 – present</span>
+                </div>
+                <ul className="mt-3 space-y-2">
+                  {[
+                    'Optimized T-SQL stored procedures for monthly closing, cutting execution from 3+ hours to under 20 minutes',
+                    'Designed ETL pipelines (SSIS) for 3 insurance product lines handling monthly production-scale consolidation',
+                    'Built Bronze/Silver/Gold DWH layers (SSOT) across multiple SQL Server instances',
+                  ].map((item) => (
+                    <li key={item} className="flex gap-3 text-sm leading-relaxed" style={{ color: 'var(--fg)' }}>
+                      <span className="flex-shrink-0 font-mono" style={{ color: 'var(--muted)' }}>+</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <p className="font-mono text-xs mt-3" style={{ color: 'var(--muted)' }}>
+                  SQL Server · SSIS · T-SQL · Python · Tableau
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-1">
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Maintenance Engineer</p>
+                    <p className="text-sm" style={{ color: 'var(--muted)' }}>PT Federal Izumi Mfg. · internship</p>
+                  </div>
+                  <span className="font-mono text-xs flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }}>Aug – Dec 2019</span>
+                </div>
+                <ul className="mt-3 space-y-2">
+                  {[
+                    'Built automated CNC machine alert system — notified control center on fault detection, reduced manual monitoring overhead',
+                    'Maintained factory floor CNC machinery, welding, and preventive maintenance at a piston manufacturing facility',
+                  ].map((item) => (
+                    <li key={item} className="flex gap-3 text-sm leading-relaxed" style={{ color: 'var(--fg)' }}>
+                      <span className="flex-shrink-0 font-mono" style={{ color: 'var(--muted)' }}>+</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* education */}
+        <FadeIn delay={0.23}>
+          <div className="mt-14" style={{ borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
+            <p className="font-mono text-xs uppercase tracking-widest mb-8" style={{ color: 'var(--muted)' }}>
+              education
+            </p>
+
+            <div className="space-y-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>BINUS University</p>
+                  <p className="text-sm" style={{ color: 'var(--muted)' }}>Bachelor of Computer Science · GPA 3.46</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                    Thesis: micro frontend HR app with React.js and Webpack federation
+                  </p>
+                </div>
+                <span className="font-mono text-xs flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }}>2021 – 2023</span>
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--fg)' }}>Polman Bandung (PMS-ITB)</p>
+                  <p className="text-sm" style={{ color: 'var(--muted)' }}>Associate, Mechatronics Engineering · GPA 3.14</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                    Final project: 3D Interpolation Engraving CNC Machine (VB.NET)
+                  </p>
+                </div>
+                <span className="font-mono text-xs flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }}>2017 – 2020</span>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* skills */}
+        <FadeIn delay={0.27}>
+          <div className="mt-14" style={{ borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
             <p className="font-mono text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--muted)' }}>
               what i work with
             </p>
@@ -109,8 +197,9 @@ export default function AboutPage() {
           </div>
         </FadeIn>
 
-        <FadeIn delay={0.3}>
-          <div className="mt-16">
+        {/* currently */}
+        <FadeIn delay={0.31}>
+          <div className="mt-14" style={{ borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
             <p className="font-mono text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--muted)' }}>
               currently
             </p>
@@ -124,14 +213,18 @@ export default function AboutPage() {
           </div>
         </FadeIn>
 
-        <FadeIn delay={0.38}>
-          <div className="mt-16 flex gap-6 font-mono text-sm">
+        {/* links */}
+        <FadeIn delay={0.35}>
+          <div className="mt-14 flex flex-wrap gap-6 font-mono text-sm">
             <a href="https://linkedin.com/in/boyzwhocried" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }}>
               linkedin ↗
             </a>
             <a href="https://github.com/boyzwhocried" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }}>
               github ↗
             </a>
+            <Link href="/cv" className="transition-opacity hover:opacity-70" style={{ color: 'var(--accent)' }}>
+              view cv ↗
+            </Link>
           </div>
         </FadeIn>
 

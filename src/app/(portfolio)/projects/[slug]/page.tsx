@@ -25,6 +25,22 @@ export async function generateMetadata({
   }
 }
 
+// derive project type from tags for the header badge
+function getProjectType(tags: string[]): string | null {
+  if (tags.includes('work')) return 'work'
+  if (tags.includes('university') || tags.includes('uni')) return 'university'
+  if (tags.includes('personal')) return 'personal'
+  if (tags.includes('freelance') || tags.includes('client')) return 'freelance'
+  return null
+}
+
+const TYPE_STYLE: Record<string, { label: string; color: string; border: string }> = {
+  work:       { label: 'work',       color: '#c8b560', border: '#c8b56040' },
+  personal:   { label: 'personal',   color: '#8a9e8a', border: '#8a9e8a40' },
+  university: { label: 'university', color: '#8a8aaa', border: '#8a8aaa40' },
+  freelance:  { label: 'freelance',  color: '#c87840', border: '#c8784040' },
+}
+
 export default async function ProjectDetailPage({
   params,
 }: {
@@ -34,12 +50,13 @@ export default async function ProjectDetailPage({
   const project = await getProjectBySlug(slug)
   if (!project) notFound()
 
+  const projectType = getProjectType(project.tags ?? [])
+  const typeStyle = projectType ? TYPE_STYLE[projectType] : null
+
   const statusColor =
-    project.status === 'active'
-      ? 'var(--accent)'
-      : project.status === 'archived'
-      ? 'var(--muted)'
-      : 'var(--fg)'
+    project.status === 'active' ? 'var(--accent)' :
+    project.status === 'archived' ? 'var(--muted)' :
+    'var(--fg)'
 
   return (
     <div data-theme="mono" className="min-h-screen pt-14">
@@ -51,36 +68,47 @@ export default async function ProjectDetailPage({
             className="font-mono text-xs transition-opacity hover:opacity-70"
             style={{ color: 'var(--muted)' }}
           >
-          ← projects
+            ← projects
           </Link>
         </FadeIn>
 
         <FadeIn delay={0.08}>
-          <div className="mt-10 mb-2 flex items-center gap-4">
-            <h1
-              className="text-3xl font-black tracking-tight"
-              style={{ color: 'var(--fg)' }}
-            >
-              {project.title}
-            </h1>
-            {project.status && (
+          {/* type + status badges */}
+          <div className="flex items-center gap-2 mt-10 mb-4">
+            {typeStyle && (
+              <span
+                className="font-mono text-xs px-2 py-0.5"
+                style={{ border: `1px solid ${typeStyle.border}`, color: typeStyle.color }}
+              >
+                {typeStyle.label}
+              </span>
+            )}
+            {project.status && project.status !== 'shipped' && (
               <span className="font-mono text-xs" style={{ color: statusColor }}>
                 {project.status}
               </span>
             )}
+            {project.year && (
+              <span className="font-mono text-xs" style={{ color: 'var(--muted)' }}>
+                {project.year}
+              </span>
+            )}
           </div>
-          {project.year && (
-            <p className="font-mono text-xs mb-6" style={{ color: 'var(--muted)' }}>
-              {project.year}
-            </p>
-          )}
+
+          <h1
+            className="text-3xl font-black tracking-tight mb-4"
+            style={{ color: 'var(--fg)' }}
+          >
+            {project.title}
+          </h1>
+
           <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--muted)' }}>
             {project.description}
           </p>
         </FadeIn>
 
         <FadeIn delay={0.12}>
-          <div className="flex flex-wrap gap-2 mb-10">
+          <div className="flex flex-wrap gap-2 mb-8">
             {project.tech_stack.map((tech) => (
               <span
                 key={tech}
@@ -95,7 +123,10 @@ export default async function ProjectDetailPage({
 
         {(project.live_url || project.github_url) && (
           <FadeIn delay={0.14}>
-            <div className="flex gap-6 font-mono text-sm mb-12" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '2rem' }}>
+            <div
+              className="flex gap-6 font-mono text-sm mb-12 pb-8"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
               {project.live_url && (
                 <a
                   href={project.live_url}
