@@ -25,8 +25,8 @@ export default function BlogList({ posts }: BlogListProps) {
         ) : (
           <ul className="space-y-0">
             {posts.map((post, i) => (
-              <FadeIn key={post.slug} delay={0.08 * i}>
-                <li style={{ borderBottom: '1px solid var(--border)' }}>
+              <li key={post.slug} style={{ borderBottom: '1px solid var(--border)' }}>
+                <FadeIn delay={0.08 * i}>
                   <Link href={`/blog/${post.slug}`} className="group flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 py-5 transition-opacity hover:opacity-60">
                     <h2
                       className="text-base font-semibold leading-snug"
@@ -44,8 +44,8 @@ export default function BlogList({ posts }: BlogListProps) {
                   <p className="text-sm pb-5 -mt-2 leading-relaxed" style={{ color: 'var(--muted)' }}>
                     {post.summary}
                   </p>
-                </li>
-              </FadeIn>
+                </FadeIn>
+              </li>
             ))}
           </ul>
         )}
