@@ -27,23 +27,28 @@ export default function BlogList({ posts }: BlogListProps) {
             {posts.map((post, i) => (
               <li key={post.slug} style={{ borderBottom: '1px solid var(--border)' }}>
                 <FadeIn delay={0.08 * i}>
-                  <Link href={`/blog/${post.slug}`} className="group flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 py-5 transition-opacity hover:opacity-60">
-                    <h2
-                      className="text-base font-semibold leading-snug"
-                      style={{ color: 'var(--fg)' }}
-                    >
-                      {post.title}
-                    </h2>
-                    <span
-                      className="font-mono text-xs flex-shrink-0"
-                      style={{ color: 'var(--muted)' }}
-                    >
-                      {post.date}
-                    </span>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="group flex flex-col py-5 gap-2 transition-opacity hover:opacity-60"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                      <h2
+                        className="text-base font-semibold leading-snug"
+                        style={{ color: 'var(--fg)' }}
+                      >
+                        {post.title}
+                      </h2>
+                      <span
+                        className="font-mono text-xs flex-shrink-0"
+                        style={{ color: 'var(--muted)' }}
+                      >
+                        {post.date}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+                      {post.summary}
+                    </p>
                   </Link>
-                  <p className="text-sm pb-5 -mt-2 leading-relaxed" style={{ color: 'var(--muted)' }}>
-                    {post.summary}
-                  </p>
                 </FadeIn>
               </li>
             ))}
