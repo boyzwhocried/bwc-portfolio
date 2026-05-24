@@ -102,28 +102,35 @@ export default function Nav() {
           <button
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'close menu' : 'open menu'}
-            className="md:hidden flex flex-col justify-center gap-1.5 w-6 h-6 transition-opacity hover:opacity-70"
+            className="md:hidden relative w-6 h-6 transition-opacity hover:opacity-70"
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
+            {/* top bar */}
             <span
-              className="block h-px w-full transition-all duration-300 origin-center"
+              className="absolute left-0 w-full h-px transition-all duration-300"
               style={{
                 background: hamburgerColor,
-                transform: open ? 'translateY(4px) rotate(45deg)' : 'none',
+                top: '25%',
+                transform: open ? 'translateY(5px) rotate(45deg)' : 'none',
               }}
             />
+            {/* middle bar */}
             <span
-              className="block h-px w-full transition-all duration-300"
+              className="absolute left-0 w-full h-px transition-all duration-300"
               style={{
                 background: hamburgerColor,
+                top: '50%',
                 opacity: open ? 0 : 1,
+                transform: 'translateY(-50%)',
               }}
             />
+            {/* bottom bar */}
             <span
-              className="block h-px w-full transition-all duration-300 origin-center"
+              className="absolute left-0 w-full h-px transition-all duration-300"
               style={{
                 background: hamburgerColor,
-                transform: open ? 'translateY(-4px) rotate(-45deg)' : 'none',
+                bottom: '25%',
+                transform: open ? 'translateY(-5px) rotate(-45deg)' : 'none',
               }}
             />
           </button>
