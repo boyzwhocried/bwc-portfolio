@@ -27,7 +27,7 @@ export function getBlogPostMeta(slug: string): BlogPost | null {
   return {
     slug,
     title: data.title ?? '',
-    date: data.date ?? '',
+    date: String(data.date ?? ''),
     tags: data.tags ?? [],
     summary: data.summary ?? '',
     published: data.published ?? false,
@@ -41,7 +41,7 @@ export function getBlogPostWithContent(slug: string): BlogPostWithContent | null
   return {
     slug,
     title: data.title ?? '',
-    date: data.date ?? '',
+    date: String(data.date ?? ''),
     tags: data.tags ?? [],
     summary: data.summary ?? '',
     published: data.published ?? false,
