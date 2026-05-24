@@ -5,8 +5,8 @@ import ProjectGrid from '@/components/sections/ProjectGrid'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Projects',
-  description: "Things I've built.",
+  title: 'projects',
+  description: "things i've built.",
 }
 
 export default async function ProjectsPage() {

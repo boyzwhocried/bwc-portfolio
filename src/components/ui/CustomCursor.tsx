@@ -74,7 +74,7 @@ export default function CustomCursor() {
         .cursor-inner::after {
           content: '';
           position: absolute;
-          background: #f5f5f0;
+          background: white;
           transition: all 0.15s ease;
         }
         /* horizontal line */
@@ -98,7 +98,7 @@ export default function CustomCursor() {
         }
         .cursor--hover .cursor-inner::before,
         .cursor--hover .cursor-inner::after {
-          background: #ffffff;
+          background: white;
         }
       `}</style>
       <div className="cursor-inner" />

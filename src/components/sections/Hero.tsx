@@ -35,9 +35,6 @@ export default function Hero({ featuredProjects }: HeroProps) {
           <p className="text-lg max-w-lg mb-2" style={{ color: 'var(--muted)' }}>
             data engineer. builder of things. based in Indonesia.
           </p>
-          <p className="font-mono text-sm" style={{ color: 'var(--muted)' }}>
-            available Sep 2026
-          </p>
         </FadeIn>
       </div>
 

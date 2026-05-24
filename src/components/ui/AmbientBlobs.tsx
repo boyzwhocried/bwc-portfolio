@@ -20,24 +20,26 @@ export default function AmbientBlobs() {
         .blob {
           position: absolute;
           pointer-events: none;
-          filter: blur(72px);
-          opacity: 0.1;
           will-change: transform, border-radius;
         }
         .blob-1 {
-          width: 360px;
-          height: 360px;
-          background: var(--accent, #f5f5f0);
-          top: 8%;
-          right: 4%;
+          width: 420px;
+          height: 420px;
+          background: #e8e0d0;
+          top: 6%;
+          right: 2%;
+          filter: blur(80px);
+          opacity: 0.12;
           animation: blob1 16s ease-in-out infinite;
         }
         .blob-2 {
-          width: 220px;
-          height: 220px;
-          background: var(--muted, #6b6b6b);
-          bottom: 18%;
-          left: 2%;
+          width: 260px;
+          height: 260px;
+          background: #8080c0;
+          bottom: 16%;
+          left: 1%;
+          filter: blur(72px);
+          opacity: 0.08;
           animation: blob2 22s ease-in-out infinite;
         }
       `}</style>

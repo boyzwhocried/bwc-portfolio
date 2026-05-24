@@ -51,7 +51,7 @@ export default async function ProjectDetailPage({
             className="font-mono text-xs transition-opacity hover:opacity-70"
             style={{ color: 'var(--muted)' }}
           >
-            ← projects
+          ← projects
           </Link>
         </FadeIn>
 

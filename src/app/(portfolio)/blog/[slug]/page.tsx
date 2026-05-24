@@ -39,7 +39,7 @@ export default async function BlogPostPage({
           className="font-mono text-xs"
           style={{ color: 'var(--muted)' }}
         >
-          ← Blog
+          ← blog
         </Link>
         <p
           className="font-mono text-xs mt-8 mb-2"

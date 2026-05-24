@@ -13,6 +13,24 @@ const links = [
 
 const LIGHT_PAGES = ['/blog']
 
+// accent color per page section, matches each data-theme
+const PAGE_ACCENTS: { prefix: string; accent: string }[] = [
+  { prefix: '/about',      accent: '#8a9e8a' },  // genx sage
+  { prefix: '/projects',  accent: '#c8b560' },  // mono amber
+  { prefix: '/contact',   accent: '#c87840' },  // grunge orange
+  { prefix: '/blog',      accent: '#1a1a1a' },  // minimal ink
+  { prefix: '/',          accent: '#ffffff' },  // swiss white (fallback last)
+]
+
+function getPageAccent(pathname: string): string {
+  for (const { prefix, accent } of PAGE_ACCENTS) {
+    if (prefix === '/' ? pathname === '/' : pathname === prefix || pathname.startsWith(prefix + '/')) {
+      return accent
+    }
+  }
+  return '#ffffff'
+}
+
 function isLightPage(pathname: string) {
   return LIGHT_PAGES.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
@@ -20,11 +38,11 @@ function isLightPage(pathname: string) {
 export default function Nav() {
   const pathname = usePathname()
   const light = isLightPage(pathname)
+  const activeAccent = getPageAccent(pathname)
 
-  const navBg = light ? 'rgba(250,250,248,0.85)' : 'rgba(10,10,10,0.75)'
+  const navBg = light ? 'rgba(250,250,248,0.88)' : 'rgba(10,10,10,0.78)'
   const borderColor = light ? '#e0e0e0' : '#2a2a2a'
   const logoColor = light ? '#1a1a1a' : '#f5f5f0'
-  const activeColor = light ? '#1a1a1a' : '#ffffff'
   const mutedColor = light ? '#8a8a8a' : '#6b6b6b'
 
   return (
@@ -40,21 +58,21 @@ export default function Nav() {
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link
           href="/"
-          className="font-mono text-sm tracking-widest"
+          className="font-mono text-sm tracking-widest transition-opacity hover:opacity-70"
           style={{ color: logoColor }}
         >
           bwc
         </Link>
         <ul className="flex gap-6">
           {links.map(({ href, label }) => {
-            const active = pathname === href
+            const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
             return (
               <li key={href}>
                 <Link
                   href={href}
-                  className="text-sm transition-opacity hover:opacity-100"
+                  className="text-sm transition-all hover:opacity-100"
                   style={{
-                    color: active ? activeColor : mutedColor,
+                    color: active ? activeAccent : mutedColor,
                     opacity: active ? 1 : 0.7,
                   }}
                 >
