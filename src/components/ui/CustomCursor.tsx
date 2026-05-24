@@ -9,7 +9,10 @@ export default function CustomCursor() {
 
   useEffect(() => {
     const isTouchDevice = window.matchMedia('(hover: none)').matches
-    if (isTouchDevice) return
+    if (isTouchDevice) {
+      if (cursorRef.current) cursorRef.current.style.display = 'none'
+      return
+    }
 
     document.body.style.cursor = 'none'
 

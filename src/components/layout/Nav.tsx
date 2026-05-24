@@ -164,8 +164,8 @@ export default function Nav() {
                   className="block font-black tracking-tighter leading-none transition-opacity hover:opacity-60"
                   style={{
                     fontSize: 'clamp(2.5rem, 12vw, 4rem)',
-                    color: active ? activeAccent : '#f5f5f0',
-                    opacity: active ? 1 : 0.5,
+                    color: '#f5f5f0',
+                    opacity: active ? 1 : 0.35,
                   }}
                 >
                   {label}
