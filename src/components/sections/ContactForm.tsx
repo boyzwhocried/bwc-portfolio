@@ -19,7 +19,7 @@ export default function ContactForm() {
   return (
     <form action={action} className="space-y-6">
       {state.error && (
-        <p className="font-mono text-xs" style={{ color: '#c87840' }}>
+        <p className="font-mono text-xs" style={{ color: 'var(--accent)' }}>
           {state.error}
         </p>
       )}
