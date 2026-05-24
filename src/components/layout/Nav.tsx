@@ -12,9 +12,6 @@ const links = [
   { href: '/contact', label: 'contact' },
 ]
 
-// themes where --bg is light — overlay active accent needs override to stay readable on dark overlay
-const LIGHT_THEMES = new Set(['minimal'])
-
 export default function Nav({ theme }: { theme: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -25,9 +22,6 @@ export default function Nav({ theme }: { theme: string }) {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
-
-  // overlay active accent: minimal theme's accent is dark (#1a1a1a) — unreadable on dark overlay
-  const overlayActiveColor = LIGHT_THEMES.has(theme) ? '#f5f5f0' : 'var(--accent)'
 
   return (
     <>
@@ -107,12 +101,12 @@ export default function Nav({ theme }: { theme: string }) {
         </div>
       </nav>
 
-      {/* fullscreen overlay — dark bg, page theme accent for active link */}
+      {/* fullscreen overlay — follows page theme */}
       <div
         data-theme={theme}
         className="md:hidden fixed inset-0 z-40 flex flex-col justify-center px-8 transition-all duration-300"
         style={{
-          background: 'rgba(8,8,8,0.97)',
+          backgroundColor: 'var(--bg)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
         }}
@@ -136,7 +130,7 @@ export default function Nav({ theme }: { theme: string }) {
                   tabIndex={open ? 0 : -1}
                   style={{
                     fontSize: 'clamp(2.5rem, 12vw, 4rem)',
-                    color: active ? overlayActiveColor : '#f5f5f0',
+                    color: active ? 'var(--accent)' : 'var(--fg)',
                     opacity: active ? 1 : 0.35,
                   }}
                 >
@@ -149,7 +143,7 @@ export default function Nav({ theme }: { theme: string }) {
 
         <p
           className="font-mono text-xs mt-16 transition-opacity duration-500"
-          style={{ color: '#6b6b6b', opacity: open ? 1 : 0, transitionDelay: '0.35s' }}
+          style={{ color: 'var(--muted)', opacity: open ? 1 : 0, transitionDelay: '0.35s' }}
         >
           boyzwhocried
         </p>

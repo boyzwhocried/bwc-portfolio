@@ -4,7 +4,7 @@ interface MarqueeProps {
 }
 
 export default function Marquee({ items, speed = 30 }: MarqueeProps) {
-  const repeated = [...items, ...items]
+  const repeated = [...items, ...items, ...items, ...items]
   return (
     <>
       <style>{`
