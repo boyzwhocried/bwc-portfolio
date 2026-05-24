@@ -3,8 +3,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@plugin "@tailwindcss/typography";
-
 @layer base {
   :root {
     --bg: #0a0a0a;
