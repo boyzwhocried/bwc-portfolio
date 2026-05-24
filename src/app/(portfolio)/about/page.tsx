@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen pt-14 relative overflow-x-hidden">
+    <div className="min-h-screen pt-14 relative">
 
       <style>{`
         @keyframes aboutBlob {
