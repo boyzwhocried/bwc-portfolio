@@ -63,7 +63,7 @@ export default function SpotifyWidget() {
         href={track.track_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-mono transition-opacity hover:opacity-70 flex flex-col gap-0.5 min-w-0 w-full"
+        className="font-mono transition-opacity hover:opacity-70 inline-flex flex-col gap-0.5 min-w-0 max-w-full"
         style={{ color: 'var(--muted)' }}
       >
         <span className="flex items-center gap-2 text-xs min-w-0">
