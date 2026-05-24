@@ -19,7 +19,7 @@ const SOCIALS = [
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen pt-14 relative">
+    <div className="min-h-screen pt-14 relative overflow-x-hidden">
 
       <style>{`
         @keyframes contactBlob {
