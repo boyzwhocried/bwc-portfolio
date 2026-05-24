@@ -6,7 +6,8 @@ import { SpotifyTrack } from '@/types'
 function SpotifyScrollText({ text }: { text: string }) {
   const containerRef = useRef<HTMLSpanElement>(null)
   const textRef = useRef<HTMLSpanElement>(null)
-  const [style, setStyle] = useState<React.CSSProperties>({})
+  const [scrolling, setScrolling] = useState(false)
+  const [dur, setDur] = useState(0)
 
   useEffect(() => {
     const container = containerRef.current
@@ -15,23 +16,30 @@ function SpotifyScrollText({ text }: { text: string }) {
 
     const overflow = textEl.scrollWidth - container.clientWidth
     if (overflow > 4) {
-      const dur = Math.max(6, overflow / 40)
-      setStyle({
-        '--scroll-dist': `-${overflow}px`,
-        '--scroll-dur': `${dur}s`,
-      } as React.CSSProperties)
+      setDur(Math.max(6, textEl.scrollWidth / 60))
+      setScrolling(true)
     } else {
-      setStyle({})
+      setScrolling(false)
     }
   }, [text])
 
-  const scrolling = !!(style as Record<string, unknown>)['--scroll-dist']
-
   return (
     <span ref={containerRef} style={{ overflow: 'hidden', minWidth: 0, display: 'block' }}>
-      <span ref={textRef} className={`spotify-text-track${scrolling ? '' : ' no-scroll'}`} style={style}>
-        {text}
-      </span>
+      {scrolling ? (
+        <span
+          style={{
+            display: 'flex',
+            whiteSpace: 'nowrap',
+            animation: `spotifyLoop ${dur}s linear infinite`,
+          }}
+        >
+          {/* duplicate text so loop is seamless */}
+          <span ref={textRef} style={{ paddingRight: '3rem' }}>{text}</span>
+          <span aria-hidden style={{ paddingRight: '3rem' }}>{text}</span>
+        </span>
+      ) : (
+        <span ref={textRef} style={{ whiteSpace: 'nowrap' }}>{text}</span>
+      )}
     </span>
   )
 }
@@ -91,17 +99,9 @@ export default function SpotifyWidget() {
         .bar-1 { height: 10px; animation: barPulse 0.8s ease-in-out infinite; }
         .bar-2 { height: 10px; animation: barPulse 0.8s ease-in-out 0.2s infinite; }
         .bar-3 { height: 10px; animation: barPulse 0.8s ease-in-out 0.4s infinite; }
-        @keyframes spotifyScroll {
-          0%, 15% { transform: translateX(0); }
-          85%, 100% { transform: translateX(var(--scroll-dist)); }
-        }
-        .spotify-text-track {
-          display: flex;
-          white-space: nowrap;
-          animation: spotifyScroll var(--scroll-dur, 0s) linear infinite;
-        }
-        .spotify-text-track.no-scroll {
-          animation: none;
+        @keyframes spotifyLoop {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
       `}</style>
       <a

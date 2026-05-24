@@ -1,9 +1,10 @@
 import SpotifyWidget from '@/components/sections/SpotifyWidget'
 
-export default function Footer() {
+export default function Footer({ theme }: { theme: string }) {
   return (
     <footer
-      style={{ borderTop: '1px solid var(--border)', color: 'var(--muted)' }}
+      data-theme={theme}
+      style={{ borderTop: '1px solid var(--border)', color: 'var(--muted)', backgroundColor: 'var(--bg)' }}
       className="mt-32 py-8"
     >
       <div className="max-w-5xl mx-auto px-6 flex items-center justify-between gap-6 text-xs font-mono">

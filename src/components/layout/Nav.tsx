@@ -12,31 +12,10 @@ const links = [
   { href: '/contact', label: 'contact' },
 ]
 
-const PATH_THEME: { prefix: string; theme: string }[] = [
-  { prefix: '/about',       theme: 'genx'    },
-  { prefix: '/projects',    theme: 'mono'    },
-  { prefix: '/blog',        theme: 'minimal' },
-  { prefix: '/contact',     theme: 'grunge'  },
-  { prefix: '/cv',          theme: 'minimal' },
-  { prefix: '/music',       theme: 'genx'    },
-  { prefix: '/photography', theme: 'mono'    },
-  { prefix: '/sandbox',     theme: 'swiss'   },
-  { prefix: '/',            theme: 'swiss'   },
-]
-
-function getTheme(pathname: string): string {
-  for (const { prefix, theme } of PATH_THEME) {
-    if (prefix === '/' ? pathname === '/' : pathname === prefix || pathname.startsWith(prefix + '/')) {
-      return theme
-    }
-  }
-  return 'swiss'
-}
-
-// minimal theme has a light bg — nav/overlay needs inverted treatment
+// themes where --bg is light — overlay active accent needs override to stay readable on dark overlay
 const LIGHT_THEMES = new Set(['minimal'])
 
-export default function Nav() {
+export default function Nav({ theme }: { theme: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -47,12 +26,8 @@ export default function Nav() {
     return () => { document.body.style.overflow = '' }
   }, [open])
 
-  const theme = getTheme(pathname)
-  const light = LIGHT_THEMES.has(theme)
-
-  // nav bar uses theme CSS vars via data-theme attribute
-  // overlay always dark bg regardless of page theme
-  const navBg = light ? 'rgba(250,250,248,0.88)' : 'rgba(10,10,10,0.78)'
+  // overlay active accent: minimal theme's accent is dark (#1a1a1a) — unreadable on dark overlay
+  const overlayActiveColor = LIGHT_THEMES.has(theme) ? '#f5f5f0' : 'var(--accent)'
 
   return (
     <>
@@ -60,7 +35,7 @@ export default function Nav() {
         data-theme={theme}
         style={{
           borderBottom: '1px solid var(--border)',
-          backgroundColor: navBg,
+          backgroundColor: 'color-mix(in srgb, var(--bg) 88%, transparent)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
         }}
@@ -132,9 +107,9 @@ export default function Nav() {
         </div>
       </nav>
 
-      {/* fullscreen overlay — always dark, uses swiss theme vars */}
+      {/* fullscreen overlay — dark bg, page theme accent for active link */}
       <div
-        data-theme="swiss"
+        data-theme={theme}
         className="md:hidden fixed inset-0 z-40 flex flex-col justify-center px-8 transition-all duration-300"
         style={{
           background: 'rgba(8,8,8,0.97)',
@@ -161,7 +136,7 @@ export default function Nav() {
                   tabIndex={open ? 0 : -1}
                   style={{
                     fontSize: 'clamp(2.5rem, 12vw, 4rem)',
-                    color: active ? 'var(--accent)' : 'var(--fg)',
+                    color: active ? overlayActiveColor : '#f5f5f0',
                     opacity: active ? 1 : 0.35,
                   }}
                 >
@@ -174,7 +149,7 @@ export default function Nav() {
 
         <p
           className="font-mono text-xs mt-16 transition-opacity duration-500"
-          style={{ color: 'var(--muted)', opacity: open ? 1 : 0, transitionDelay: '0.35s' }}
+          style={{ color: '#6b6b6b', opacity: open ? 1 : 0, transitionDelay: '0.35s' }}
         >
           boyzwhocried
         </p>

@@ -34,10 +34,10 @@ export default function PortfolioLayout({
   const theme = getTheme(pathname)
 
   return (
-    <>
-      <Nav />
-      <main data-theme={theme}>{children}</main>
-      <Footer />
-    </>
+    <div data-theme={theme}>
+      <Nav theme={theme} />
+      <main>{children}</main>
+      <Footer theme={theme} />
+    </div>
   )
 }
