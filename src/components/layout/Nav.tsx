@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 const links = [
   { href: '/', label: 'home' },
@@ -13,13 +14,12 @@ const links = [
 
 const LIGHT_PAGES = ['/blog']
 
-// accent color per page section, matches each data-theme
 const PAGE_ACCENTS: { prefix: string; accent: string }[] = [
-  { prefix: '/about',      accent: '#8a9e8a' },  // genx sage
-  { prefix: '/projects',  accent: '#c8b560' },  // mono amber
-  { prefix: '/contact',   accent: '#c87840' },  // grunge orange
-  { prefix: '/blog',      accent: '#1a1a1a' },  // minimal ink
-  { prefix: '/',          accent: '#ffffff' },  // swiss white (fallback last)
+  { prefix: '/about',    accent: '#8a9e8a' },
+  { prefix: '/projects', accent: '#c8b560' },
+  { prefix: '/contact',  accent: '#c87840' },
+  { prefix: '/blog',     accent: '#1a1a1a' },
+  { prefix: '/',         accent: '#ffffff' },
 ]
 
 function getPageAccent(pathname: string): string {
@@ -37,6 +37,17 @@ function isLightPage(pathname: string) {
 
 export default function Nav() {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+
+  // close overlay on route change
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  // lock body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
   const light = isLightPage(pathname)
   const activeAccent = getPageAccent(pathname)
 
@@ -44,36 +55,110 @@ export default function Nav() {
   const borderColor = light ? '#e0e0e0' : '#2a2a2a'
   const logoColor = light ? '#1a1a1a' : '#f5f5f0'
   const mutedColor = light ? '#8a8a8a' : '#6b6b6b'
+  const hamburgerColor = light ? '#1a1a1a' : '#f5f5f0'
 
   return (
-    <nav
-      style={{
-        borderBottom: `1px solid ${borderColor}`,
-        backgroundColor: navBg,
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}
-      className="fixed top-0 left-0 right-0 z-50 transition-colors duration-300"
-    >
-      <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link
-          href="/"
-          className="font-mono text-sm tracking-widest transition-opacity hover:opacity-70"
-          style={{ color: logoColor }}
-        >
-          bwc
-        </Link>
-        <ul className="flex gap-6">
-          {links.map(({ href, label }) => {
+    <>
+      <nav
+        style={{
+          borderBottom: `1px solid ${borderColor}`,
+          backgroundColor: navBg,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+        className="fixed top-0 left-0 right-0 z-50 transition-colors duration-300"
+      >
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link
+            href="/"
+            className="font-mono text-sm tracking-widest transition-opacity hover:opacity-70"
+            style={{ color: logoColor }}
+          >
+            bwc
+          </Link>
+
+          {/* desktop links */}
+          <ul className="hidden md:flex gap-6">
+            {links.map(({ href, label }) => {
+              const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="text-sm transition-all hover:opacity-100"
+                    style={{
+                      color: active ? activeAccent : mutedColor,
+                      opacity: active ? 1 : 0.7,
+                    }}
+                  >
+                    {label}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* hamburger — mobile only */}
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? 'close menu' : 'open menu'}
+            className="md:hidden flex flex-col justify-center gap-1.5 w-6 h-6 transition-opacity hover:opacity-70"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            <span
+              className="block h-px w-full transition-all duration-300 origin-center"
+              style={{
+                background: hamburgerColor,
+                transform: open ? 'translateY(4px) rotate(45deg)' : 'none',
+              }}
+            />
+            <span
+              className="block h-px w-full transition-all duration-300"
+              style={{
+                background: hamburgerColor,
+                opacity: open ? 0 : 1,
+              }}
+            />
+            <span
+              className="block h-px w-full transition-all duration-300 origin-center"
+              style={{
+                background: hamburgerColor,
+                transform: open ? 'translateY(-4px) rotate(-45deg)' : 'none',
+              }}
+            />
+          </button>
+        </div>
+      </nav>
+
+      {/* fullscreen overlay — mobile only */}
+      <div
+        className="md:hidden fixed inset-0 z-40 flex flex-col justify-center px-8 transition-all duration-300"
+        style={{
+          background: 'rgba(8,8,8,0.97)',
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none',
+        }}
+        aria-hidden={!open}
+      >
+        <ul className="space-y-2">
+          {links.map(({ href, label }, i) => {
             const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
             return (
-              <li key={href}>
+              <li
+                key={href}
+                style={{
+                  transform: open ? 'translateY(0)' : 'translateY(16px)',
+                  opacity: open ? 1 : 0,
+                  transition: `transform 0.3s ease ${i * 0.06}s, opacity 0.3s ease ${i * 0.06}s`,
+                }}
+              >
                 <Link
                   href={href}
-                  className="text-sm transition-all hover:opacity-100"
+                  className="block font-black tracking-tighter leading-none transition-opacity hover:opacity-60"
                   style={{
-                    color: active ? activeAccent : mutedColor,
-                    opacity: active ? 1 : 0.7,
+                    fontSize: 'clamp(2.5rem, 12vw, 4rem)',
+                    color: active ? activeAccent : '#f5f5f0',
+                    opacity: active ? 1 : 0.5,
                   }}
                 >
                   {label}
@@ -82,7 +167,14 @@ export default function Nav() {
             )
           })}
         </ul>
+
+        <p
+          className="font-mono text-xs mt-16 transition-opacity duration-500"
+          style={{ color: '#6b6b6b', opacity: open ? 1 : 0, transitionDelay: '0.35s' }}
+        >
+          boyzwhocried
+        </p>
       </div>
-    </nav>
+    </>
   )
 }
