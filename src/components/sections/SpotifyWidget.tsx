@@ -75,7 +75,7 @@ export default function SpotifyWidget() {
         ) : (
           <span>■</span>
         )}
-        {track.title} — {track.artist}
+        {track.title} / {track.artist}
       </a>
     </>
   )

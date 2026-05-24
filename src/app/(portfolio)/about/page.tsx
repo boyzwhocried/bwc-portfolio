@@ -20,12 +20,12 @@ export default function AboutPage() {
         <FadeIn delay={0.1}>
           <div className="space-y-6 text-base leading-relaxed" style={{ color: 'var(--fg)' }}>
             <p>
-              hey. i&apos;m Verrel Al Syoumi — data engineer by day, builder of random things by night.
+              hey. i&apos;m Verrel Al Syoumi, data engineer by day, builder of random things by night.
               based in Indonesia, currently on contract at BRILife working on data pipelines,
               DWH architecture, and internal tooling until September 2026.
             </p>
             <p>
-              i care a lot about systems that actually work — data that&apos;s correct, interfaces that
+              i care a lot about systems that actually work: data that&apos;s correct, interfaces that
               don&apos;t get in the way, code that makes sense when you come back to it six months later.
               not the most glamorous things to care about, but they matter.
             </p>
@@ -72,11 +72,11 @@ export default function AboutPage() {
               Currently
             </p>
             <ul className="space-y-3 text-sm" style={{ color: 'var(--fg)' }}>
-              <li>— data engineering at BRILife (contract, until Sep 2026)</li>
-              <li>— building Undangin, a B2B e-invite platform</li>
-              <li>— running an automated YouTube horror channel</li>
-              <li>— working on a personal wiki that knows too much about me</li>
-              <li>— studying for Azure DP-900 (Q3 2026)</li>
+              <li>data engineering at BRILife (contract, until Sep 2026)</li>
+              <li>building Undangin, a B2B e-invite platform</li>
+              <li>running an automated YouTube horror channel</li>
+              <li>working on a personal wiki that knows too much about me</li>
+              <li>studying for Azure DP-900 (Q3 2026)</li>
             </ul>
           </div>
         </FadeIn>

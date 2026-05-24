@@ -6,11 +6,11 @@ summary: "nine months into building a medallion architecture DWH at BRILife. her
 published: true
 ---
 
-i've been building a data warehouse at BRILife for about nine months now. bronze, silver, gold — the full medallion setup across five microinsurance products. here's what i actually learned, past the architecture diagrams.
+i've been building a data warehouse at BRILife for about nine months now. bronze, silver, gold. full medallion setup across five microinsurance products. here's what i actually learned, past the architecture diagrams.
 
 ## the watermark pattern is underrated
 
-everyone talks about CDC or event streaming. most production systems i've seen just need a reliable watermark — a column you trust, a control table that tracks the last loaded value, and a MERGE that handles duplicates without crying.
+everyone talks about CDC or event streaming. most production systems i've seen just need a reliable watermark: a column you trust, a control table that tracks the last loaded value, and a MERGE that handles duplicates without crying.
 
 it's not glamorous. it works.
 

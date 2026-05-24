@@ -12,7 +12,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
       className="group block transition-opacity hover:opacity-80"
       style={{ border: '1px solid var(--border)' }}
     >
-      {/* placeholder thumbnail — replace with actual image when assets ready */}
+      {/* placeholder thumbnail */}
       <div
         className="w-full h-36 flex items-center justify-center font-mono text-xs uppercase tracking-widest"
         style={{
