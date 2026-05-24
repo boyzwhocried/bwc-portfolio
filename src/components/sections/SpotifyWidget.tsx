@@ -78,7 +78,7 @@ export default function SpotifyWidget() {
           )}
           <span className="truncate" style={{ color: 'var(--fg)' }}>{track.title}</span>
         </span>
-        <span className="text-xs truncate" style={{ paddingLeft: '14px' }}>{track.artist}</span>
+        <span className="text-xs truncate" style={{ paddingLeft: '14px' }}>by {track.artist}</span>
       </a>
     </>
   )
