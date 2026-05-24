@@ -3,7 +3,7 @@ import { getAllBlogPosts } from '@/lib/mdx'
 import BlogList from '@/components/sections/BlogList'
 
 export const metadata: Metadata = {
-  title: 'Blog | boyzwhocried',
+  title: 'Blog',
   description: 'Writing on data engineering, building things, and more.',
 }
 

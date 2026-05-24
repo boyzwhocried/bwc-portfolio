@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import FadeIn from '@/components/ui/FadeIn'
 
 export const metadata: Metadata = {
-  title: 'About | boyzwhocried',
+  title: 'About',
   description: 'Data engineer, frontend builder, based in Indonesia.',
 }
 

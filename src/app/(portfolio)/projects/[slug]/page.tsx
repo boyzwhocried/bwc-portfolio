@@ -19,7 +19,7 @@ export async function generateMetadata({
   const project = await getProjectBySlug(slug)
   if (!project) return { title: 'Not Found' }
   return {
-    title: `${project.title} | boyzwhocried`,
+    title: project.title,
     description: project.description,
   }
 }

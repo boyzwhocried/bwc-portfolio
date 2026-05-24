@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Project } from '@/types'
 import ProjectCard from './ProjectCard'
 import FadeIn from '@/components/ui/FadeIn'
@@ -56,12 +57,34 @@ export default function Hero({ featuredProjects }: HeroProps) {
               >
                 Featured Projects
               </p>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {featuredProjects.map((project, i) => (
                   <FadeIn key={project.id} delay={0.08 * i} direction="up">
                     <ProjectCard project={project} />
                   </FadeIn>
                 ))}
+
+                {/* view all card */}
+                <FadeIn delay={0.08 * featuredProjects.length} direction="up">
+                  <Link
+                    href="/projects"
+                    className="group flex flex-col items-center justify-center h-full min-h-48 transition-opacity hover:opacity-80"
+                    style={{ border: '1px solid var(--border)' }}
+                  >
+                    <span
+                      className="font-mono text-xs uppercase tracking-widest mb-2"
+                      style={{ color: 'var(--muted)' }}
+                    >
+                      all projects
+                    </span>
+                    <span
+                      className="text-2xl transition-transform group-hover:translate-x-1"
+                      style={{ color: 'var(--fg)' }}
+                    >
+                      →
+                    </span>
+                  </Link>
+                </FadeIn>
               </div>
             </div>
           </FadeIn>
