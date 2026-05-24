@@ -32,13 +32,19 @@ export default function Marquee({ items, speed = 30 }: MarqueeProps) {
       >
         <div className="marquee-track">
           {repeated.map((item, i) => (
-            <span
-              key={i}
-              className="font-mono text-xs uppercase tracking-widest whitespace-nowrap"
-              style={{ color: 'var(--muted)', padding: '0 2rem' }}
-            >
-              {item}
-              <span style={{ color: 'var(--border)', marginLeft: '2rem' }}>×</span>
+            <span key={i} className="flex items-center whitespace-nowrap">
+              <span
+                className="font-mono text-xs uppercase tracking-widest"
+                style={{ color: 'var(--muted)', padding: '0 1.5rem' }}
+              >
+                {item}
+              </span>
+              <span
+                className="font-mono text-xs"
+                style={{ color: 'var(--border)' }}
+              >
+                ×
+              </span>
             </span>
           ))}
         </div>
