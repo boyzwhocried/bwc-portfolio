@@ -13,7 +13,7 @@ const SOCIALS = [
   { label: 'linkedin', value: 'boyzwhocried', href: 'https://linkedin.com/in/boyzwhocried' },
   { label: 'instagram', value: '@boyzwhocried', href: 'https://instagram.com/boyzwhocried' },
   { label: 'spotify', value: 'boyzwhocried', href: 'https://open.spotify.com/user/boyzwhocried' },
-  { label: 'discord', value: 'boyzwhocried', href: null },
+  { label: 'discord', value: 'boyzwhocried', href: 'https://discord.com/users/boyzwhocried' },
   { label: 'whatsapp', value: '+62 811 1340 923', href: 'https://wa.me/628111340923' },
 ]
 

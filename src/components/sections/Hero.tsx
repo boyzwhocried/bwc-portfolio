@@ -57,15 +57,15 @@ export default function Hero({ featuredProjects }: HeroProps) {
               >
                 Featured Projects
               </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
                 {featuredProjects.map((project, i) => (
-                  <FadeIn key={project.id} delay={0.08 * i} direction="up">
+                  <FadeIn key={project.id} delay={0.08 * i} direction="up" className="h-full">
                     <ProjectCard project={project} />
                   </FadeIn>
                 ))}
 
                 {/* view all card */}
-                <FadeIn delay={0.08 * featuredProjects.length} direction="up">
+                <FadeIn delay={0.08 * featuredProjects.length} direction="up" className="h-full">
                   <Link
                     href="/projects"
                     className="group flex flex-col items-center justify-center h-full min-h-48 transition-opacity hover:opacity-80"

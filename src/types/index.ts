@@ -11,6 +11,11 @@ export interface Project {
   featured: boolean
   order: number
   created_at: string
+  long_description: string | null
+  highlights: string[]
+  challenges: string | null
+  status: string | null
+  year: number | null
 }
 
 export interface BlogPost {

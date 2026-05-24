@@ -23,9 +23,9 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
             No projects yet.
           </p>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
             {projects.map((project, i) => (
-              <FadeIn key={project.id} delay={0.05 * i}>
+              <FadeIn key={project.id} delay={0.05 * i} className="h-full">
                 <ProjectCard project={project} />
               </FadeIn>
             ))}
