@@ -105,32 +105,32 @@ export default function Nav() {
             className="md:hidden relative w-6 h-6 transition-opacity hover:opacity-70"
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            {/* top bar */}
-            <span
-              className="absolute left-0 w-full h-px transition-all duration-300"
-              style={{
-                background: hamburgerColor,
-                top: '25%',
-                transform: open ? 'translateY(5px) rotate(45deg)' : 'none',
-              }}
-            />
-            {/* middle bar */}
+            {/* top bar — moves to center, rotates 45deg */}
             <span
               className="absolute left-0 w-full h-px transition-all duration-300"
               style={{
                 background: hamburgerColor,
                 top: '50%',
-                opacity: open ? 0 : 1,
-                transform: 'translateY(-50%)',
+                transform: open ? 'translateY(-0.5px) rotate(45deg)' : 'translateY(-6px)',
               }}
             />
-            {/* bottom bar */}
+            {/* middle bar — fades out */}
             <span
               className="absolute left-0 w-full h-px transition-all duration-300"
               style={{
                 background: hamburgerColor,
-                bottom: '25%',
-                transform: open ? 'translateY(-5px) rotate(-45deg)' : 'none',
+                top: '50%',
+                transform: 'translateY(-0.5px)',
+                opacity: open ? 0 : 1,
+              }}
+            />
+            {/* bottom bar — moves to center, rotates -45deg */}
+            <span
+              className="absolute left-0 w-full h-px transition-all duration-300"
+              style={{
+                background: hamburgerColor,
+                top: '50%',
+                transform: open ? 'translateY(-0.5px) rotate(-45deg)' : 'translateY(6px)',
               }}
             />
           </button>
