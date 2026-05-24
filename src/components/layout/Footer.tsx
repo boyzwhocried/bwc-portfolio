@@ -1,3 +1,5 @@
+import SpotifyWidget from '@/components/sections/SpotifyWidget'
+
 export default function Footer() {
   return (
     <footer
@@ -5,7 +7,7 @@ export default function Footer() {
       className="mt-32 py-8"
     >
       <div className="max-w-5xl mx-auto px-6 flex items-center justify-between text-xs font-mono">
-        <span>boyzwhocried.xyz</span>
+        <SpotifyWidget />
         <span>{new Date().getFullYear()}</span>
       </div>
     </footer>
