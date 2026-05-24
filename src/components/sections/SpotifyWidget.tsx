@@ -5,27 +5,33 @@ import { SpotifyTrack } from '@/types'
 
 function SpotifyScrollText({ text }: { text: string }) {
   const containerRef = useRef<HTMLSpanElement>(null)
-  const textRef = useRef<HTMLSpanElement>(null)
-  const [scrolling, setScrolling] = useState(false)
-  const [dur, setDur] = useState(0)
+  const measureRef = useRef<HTMLSpanElement>(null)
+  const [dur, setDur] = useState<number | null>(null)
 
   useEffect(() => {
     const container = containerRef.current
-    const textEl = textRef.current
-    if (!container || !textEl) return
+    const measure = measureRef.current
+    if (!container || !measure) return
 
-    const overflow = textEl.scrollWidth - container.clientWidth
+    const overflow = measure.scrollWidth - container.clientWidth
     if (overflow > 4) {
-      setDur(Math.max(6, textEl.scrollWidth / 60))
-      setScrolling(true)
+      setDur(Math.max(6, measure.scrollWidth / 60))
     } else {
-      setScrolling(false)
+      setDur(null)
     }
   }, [text])
 
   return (
-    <span ref={containerRef} style={{ overflow: 'hidden', minWidth: 0, display: 'block' }}>
-      {scrolling ? (
+    <span ref={containerRef} style={{ overflow: 'hidden', minWidth: 0, display: 'block', position: 'relative' }}>
+      {/* invisible measure span — always rendered so ref is stable */}
+      <span
+        ref={measureRef}
+        aria-hidden
+        style={{ position: 'absolute', whiteSpace: 'nowrap', visibility: 'hidden', pointerEvents: 'none' }}
+      >
+        {text}
+      </span>
+      {dur !== null ? (
         <span
           style={{
             display: 'flex',
@@ -33,12 +39,11 @@ function SpotifyScrollText({ text }: { text: string }) {
             animation: `spotifyLoop ${dur}s linear infinite`,
           }}
         >
-          {/* duplicate text so loop is seamless */}
-          <span ref={textRef} style={{ paddingRight: '3rem' }}>{text}</span>
+          <span style={{ paddingRight: '3rem' }}>{text}</span>
           <span aria-hidden style={{ paddingRight: '3rem' }}>{text}</span>
         </span>
       ) : (
-        <span ref={textRef} style={{ whiteSpace: 'nowrap' }}>{text}</span>
+        <span style={{ whiteSpace: 'nowrap' }}>{text}</span>
       )}
     </span>
   )
