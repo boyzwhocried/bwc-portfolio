@@ -3,6 +3,39 @@
 import { useEffect, useRef, useState } from 'react'
 import { SpotifyTrack } from '@/types'
 
+function SpotifyScrollText({ text }: { text: string }) {
+  const containerRef = useRef<HTMLSpanElement>(null)
+  const textRef = useRef<HTMLSpanElement>(null)
+  const [style, setStyle] = useState<React.CSSProperties>({})
+
+  useEffect(() => {
+    const container = containerRef.current
+    const textEl = textRef.current
+    if (!container || !textEl) return
+
+    const overflow = textEl.scrollWidth - container.clientWidth
+    if (overflow > 4) {
+      const dur = Math.max(6, overflow / 40)
+      setStyle({
+        '--scroll-dist': `-${overflow}px`,
+        '--scroll-dur': `${dur}s`,
+      } as React.CSSProperties)
+    } else {
+      setStyle({})
+    }
+  }, [text])
+
+  const scrolling = !!(style as Record<string, unknown>)['--scroll-dist']
+
+  return (
+    <span ref={containerRef} style={{ overflow: 'hidden', minWidth: 0, display: 'block' }}>
+      <span ref={textRef} className={`spotify-text-track${scrolling ? '' : ' no-scroll'}`} style={style}>
+        {text}
+      </span>
+    </span>
+  )
+}
+
 const POLL_PLAYING = 30_000
 const POLL_IDLE = 120_000
 
@@ -58,24 +91,38 @@ export default function SpotifyWidget() {
         .bar-1 { height: 10px; animation: barPulse 0.8s ease-in-out infinite; }
         .bar-2 { height: 10px; animation: barPulse 0.8s ease-in-out 0.2s infinite; }
         .bar-3 { height: 10px; animation: barPulse 0.8s ease-in-out 0.4s infinite; }
+        @keyframes spotifyScroll {
+          0%, 15% { transform: translateX(0); }
+          85%, 100% { transform: translateX(var(--scroll-dist)); }
+        }
+        .spotify-text-track {
+          display: flex;
+          white-space: nowrap;
+          animation: spotifyScroll var(--scroll-dur, 0s) linear infinite;
+        }
+        .spotify-text-track.no-scroll {
+          animation: none;
+        }
       `}</style>
       <a
         href={track.track_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-mono text-xs transition-opacity hover:opacity-70 flex items-center gap-2"
-        style={{ color: 'var(--muted)' }}
+        className="font-mono text-xs transition-opacity hover:opacity-70 flex items-center gap-2 min-w-0"
+        style={{ color: 'var(--muted)', maxWidth: '100%' }}
       >
-        {track.is_playing ? (
-          <span className="flex items-end h-3" aria-hidden>
-            <span className="bar bar-1" />
-            <span className="bar bar-2" />
-            <span className="bar bar-3" />
-          </span>
-        ) : (
-          <span>■</span>
-        )}
-        {track.title} / {track.artist}
+        <span className="flex-shrink-0">
+          {track.is_playing ? (
+            <span className="flex items-end h-3" aria-hidden>
+              <span className="bar bar-1" />
+              <span className="bar bar-2" />
+              <span className="bar bar-3" />
+            </span>
+          ) : (
+            <span>■</span>
+          )}
+        </span>
+        <SpotifyScrollText text={`${track.title} / ${track.artist}`} />
       </a>
     </>
   )

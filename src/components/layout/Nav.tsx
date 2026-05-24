@@ -50,6 +50,8 @@ export default function Nav() {
 
   const light = isLightPage(pathname)
   const activeAccent = getPageAccent(pathname)
+  // overlay bg is always dark — use accent unless it's too dark to read on dark bg
+  const overlayActiveColor = activeAccent === '#1a1a1a' ? '#f5f5f0' : activeAccent
 
   const navBg = light ? 'rgba(250,250,248,0.88)' : 'rgba(10,10,10,0.78)'
   const borderColor = light ? '#e0e0e0' : '#2a2a2a'
@@ -165,7 +167,7 @@ export default function Nav() {
                   tabIndex={open ? 0 : -1}
                   style={{
                     fontSize: 'clamp(2.5rem, 12vw, 4rem)',
-                    color: '#f5f5f0',
+                    color: active ? overlayActiveColor : '#f5f5f0',
                     opacity: active ? 1 : 0.35,
                   }}
                 >
