@@ -131,5 +131,10 @@
     color: var(--fg);
     font-family: var(--font-sans);
   }
+
+  [data-theme] {
+    background-color: var(--bg);
+    color: var(--fg);
+  }
 }
 

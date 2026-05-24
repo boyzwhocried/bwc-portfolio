@@ -1,0 +1,48 @@
+interface MarqueeProps {
+  items: string[]
+  speed?: number
+}
+
+export default function Marquee({ items, speed = 30 }: MarqueeProps) {
+  const repeated = [...items, ...items]
+  return (
+    <>
+      <style>{`
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .marquee-track {
+          animation: marquee ${speed}s linear infinite;
+          display: flex;
+          width: max-content;
+        }
+        .marquee-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+      <div
+        style={{
+          overflow: 'hidden',
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          padding: '10px 0',
+        }}
+        aria-hidden
+      >
+        <div className="marquee-track">
+          {repeated.map((item, i) => (
+            <span
+              key={i}
+              className="font-mono text-xs uppercase tracking-widest whitespace-nowrap"
+              style={{ color: 'var(--muted)', padding: '0 2rem' }}
+            >
+              {item}
+              <span style={{ color: 'var(--border)', marginLeft: '2rem' }}>×</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}

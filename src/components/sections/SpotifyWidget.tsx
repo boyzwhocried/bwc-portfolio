@@ -48,14 +48,35 @@ export default function SpotifyWidget() {
   }
 
   return (
-    <a
-      href={track.track_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-mono text-xs transition-opacity hover:opacity-70"
-      style={{ color: 'var(--muted)' }}
-    >
-      {track.is_playing ? '▶' : '■'} {track.title} — {track.artist}
-    </a>
+    <>
+      <style>{`
+        @keyframes barPulse {
+          0%, 100% { transform: scaleY(0.3); }
+          50% { transform: scaleY(1); }
+        }
+        .bar { transform-origin: bottom; display: inline-block; width: 2px; background: currentColor; margin: 0 1px; }
+        .bar-1 { height: 10px; animation: barPulse 0.8s ease-in-out infinite; }
+        .bar-2 { height: 10px; animation: barPulse 0.8s ease-in-out 0.2s infinite; }
+        .bar-3 { height: 10px; animation: barPulse 0.8s ease-in-out 0.4s infinite; }
+      `}</style>
+      <a
+        href={track.track_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-xs transition-opacity hover:opacity-70 flex items-center gap-2"
+        style={{ color: 'var(--muted)' }}
+      >
+        {track.is_playing ? (
+          <span className="flex items-end h-3" aria-hidden>
+            <span className="bar bar-1" />
+            <span className="bar bar-2" />
+            <span className="bar bar-3" />
+          </span>
+        ) : (
+          <span>■</span>
+        )}
+        {track.title} — {track.artist}
+      </a>
+    </>
   )
 }

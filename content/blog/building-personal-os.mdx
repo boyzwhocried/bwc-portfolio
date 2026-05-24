@@ -1,0 +1,51 @@
+---
+title: "i built a wiki that knows everything about my life"
+date: "2026-05-20"
+tags: ["personal", "automation", "ai", "personal-os"]
+summary: "what started as an obsidian vault turned into a self-learning system with a Telegram bot, autonomous agents, and way too much self-knowledge."
+published: true
+---
+
+it started because i kept forgetting things.
+
+not important things — appointments, tasks. just the texture of days. what i was thinking about three months ago. which habit i dropped and when. why i made a certain decision.
+
+so i started a wiki.
+
+## the wiki
+
+it lives in Obsidian. everything goes in: daily notes, spending, goals, projects, music, people, habits. structured as entities, concepts, and sources — each with frontmatter, each linked to others.
+
+the key insight was separating *raw* (immutable source files) from *wiki* (LLM-generated pages). i drop a file in `raw/`, Claude reads it, and writes structured wiki pages. i own the sources. Claude owns the synthesis layer.
+
+## the Telegram bot
+
+once the wiki had enough data, i wanted to query it conversationally. so i built `@Apollo26TeleBot`.
+
+it wakes up every morning, reads a window of wiki context — open loops, current goals, recent entries — and generates a daily briefing. it also responds to questions: "what did i spend last week", "what projects am i supposed to be working on", "remind me why i started this".
+
+the bot doesn't replace memory. it extends it.
+
+## autonomous agents (in progress)
+
+the next phase is a team of TypeScript agents running on Windows Task Scheduler:
+
+- **ingest agent**: watches `raw/` for new files, auto-processes them
+- **wiki sync agent**: keeps Supabase in sync with the markdown wiki
+- **weekly review agent**: generates my weekly summary automatically
+- **reminder agent**: surfaces time-sensitive items from open-loops
+
+most of these are half-built. the architecture is solid though.
+
+## what i actually use it for
+
+- remembering context from past conversations and decisions
+- tracking goals without losing momentum between sessions
+- having something that "knows me" that i can actually query
+- being honest with myself about what i'm actually doing vs. what i think i'm doing
+
+the last one is the most valuable and the most uncomfortable.
+
+---
+
+the whole system is on GitHub if you want to look: [boyzwhocried/personal-os](https://github.com/boyzwhocried/personal-os)

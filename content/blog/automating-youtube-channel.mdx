@@ -1,0 +1,71 @@
+---
+title: "i automated a youtube channel. here's the full pipeline"
+date: "2026-05-24"
+tags: ["python", "automation", "youtube", "ai"]
+summary: "Vault of Frights uploads a horror short every day with zero manual work. this is how the pipeline works."
+published: true
+---
+
+Vault of Frights is a YouTube Shorts channel that uploads a new horror video every day. i don't write the scripts. i don't record narration. i don't edit video. it all runs automatically.
+
+here's how.
+
+## the pipeline (9 modules)
+
+```
+topic seed
+  → script generation (Groq LLM)
+  → narration (edge-tts)
+  → audio processing
+  → background video selection
+  → subtitle generation
+  → video assembly (moviepy)
+  → thumbnail generation
+  → YouTube upload (Data API)
+```
+
+each module is independent. if narration fails, video assembly doesn't run. if the upload fails, the video stays in queue. everything has a fallback.
+
+## script generation
+
+i use Groq (Llama 3) for script generation. the prompt is tuned for horror shorts — tight structure, punchy ending, under 60 seconds of narration. the model is fast and cheap enough to generate 5 variations and pick the best one.
+
+```python
+def generate_script(topic: str) -> str:
+    prompt = f"""
+    Write a horror story for a YouTube Short about: {topic}
+    Requirements:
+    - Under 200 words
+    - First-person narrator
+    - Twist or unsettling ending
+    - No jump scares — psychological dread only
+    """
+    response = groq_client.chat.completions.create(...)
+    return response.choices[0].message.content
+```
+
+## narration with edge-tts
+
+edge-tts is Microsoft's TTS engine, free, surprisingly good. i use a voice with slight breathiness for horror atmosphere. the output is an MP3 that moviepy assembles with the video.
+
+## the series engine
+
+one thing i added later: a series engine. instead of standalone stories, some videos are multi-part. the engine tracks story state across episodes — character names, established lore, open threads — and feeds them to the script generator.
+
+retention on series videos is noticeably better.
+
+## what's not automated
+
+- topic seeding (i still pick themes manually, ~monthly)
+- channel art and thumbnails (placeholder for now)
+- responding to comments (not doing that)
+
+## does it work?
+
+6+ videos live as of launch (2026-05-24). targeting YouTube Partner Program approval by month 4-6. the math on YPP is 1k subscribers + 10M views — the views are the hard part, not the subs.
+
+will update when there's more data.
+
+---
+
+code is on GitHub: [boyzwhocried/vault-of-frights](https://github.com/boyzwhocried/vault-of-frights)

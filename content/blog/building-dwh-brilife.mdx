@@ -1,0 +1,52 @@
+---
+title: "what i learned building a data warehouse from scratch"
+date: "2026-05-24"
+tags: ["data-engineering", "dwh", "sql", "work"]
+summary: "nine months into building a medallion architecture DWH at BRILife. here's what actually mattered."
+published: true
+---
+
+i've been building a data warehouse at BRILife for about nine months now. bronze, silver, gold — the full medallion setup across five microinsurance products. here's what i actually learned, past the architecture diagrams.
+
+## the watermark pattern is underrated
+
+everyone talks about CDC or event streaming. most production systems i've seen just need a reliable watermark — a column you trust, a control table that tracks the last loaded value, and a MERGE that handles duplicates without crying.
+
+it's not glamorous. it works.
+
+```sql
+-- simple watermark-based incremental load
+declare @last_load datetime = (
+  select last_loaded_at from etl_control where table_name = 'premium_transactions'
+)
+
+insert into silver.premium_transactions
+select * from bronze.premium_transactions
+where created_at > @last_load
+```
+
+the tricky part isn't the SQL. it's deciding what "created_at" actually means for your source system, and trusting it.
+
+## idempotency first, performance second
+
+i broke production once by optimizing before i made things idempotent. the ETL ran twice (SSIS hiccup), doubled rows, and nobody noticed for three days.
+
+now the rule is: if you can't run it twice and get the same result, it's not done.
+
+MERGE handles most of this. the rest is control tables and careful key design.
+
+## the 97-column fact table problem
+
+we have a fact table with 97 columns. yes, i know. it started at 40 and grew because every new product needed "just a few more fields."
+
+lesson: establish a dimension table culture early. once you're adding columns to a fact table to avoid joins, you're already in trouble.
+
+## what nobody tells you about insurance data
+
+the data is... messy in ways that are hard to explain. policy numbers change. products get renamed mid-year. the same customer appears under three slightly different names.
+
+you end up writing a lot of validation logic that has nothing to do with data engineering and everything to do with understanding the business. the SQL is the easy part.
+
+---
+
+still three products to go (AMKKM, AcciCare pending). will probably write a follow-up when those are done.
