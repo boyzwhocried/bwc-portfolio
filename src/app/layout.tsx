@@ -3,7 +3,7 @@ import './globals.css'
 import CustomCursor from '@/components/ui/CustomCursor'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://boyzwhocried.xyz'),
+  metadataBase: new URL('https://boyzwhocried.vercel.app'),
   title: {
     default: 'boyzwhocried',
     template: '%s | boyzwhocried',
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'boyzwhocried',
     description: 'Data engineer. Frontend builder. Based in Indonesia.',
-    url: 'https://boyzwhocried.xyz',
+    url: 'https://boyzwhocried.vercel.app',
     siteName: 'boyzwhocried',
     locale: 'en_US',
     type: 'website',
