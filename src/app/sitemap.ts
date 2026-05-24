@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 import { getAllProjects } from '@/lib/projects'
-import { getAllBlogSlugs } from '@/lib/mdx'
+import { getAllBlogPosts } from '@/lib/mdx'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://boyzwhocried.xyz'
@@ -11,10 +11,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(p.created_at),
   }))
 
-  const blogSlugs = getAllBlogSlugs()
-  const blogUrls = blogSlugs.map((slug) => ({
-    url: `${base}/blog/${slug}`,
-    lastModified: new Date(),
+  const blogPosts = getAllBlogPosts()
+  const blogUrls = blogPosts.map((post) => ({
+    url: `${base}/blog/${post.slug}`,
+    lastModified: new Date(post.date),
   }))
 
   return [
