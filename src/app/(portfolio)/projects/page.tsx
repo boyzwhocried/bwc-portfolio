@@ -1,0 +1,15 @@
+import { Metadata } from 'next'
+import { getAllProjects } from '@/lib/projects'
+import ProjectGrid from '@/components/sections/ProjectGrid'
+
+export const revalidate = 3600
+
+export const metadata: Metadata = {
+  title: 'Projects — Verrel Alsyoumi',
+  description: "Things I've built.",
+}
+
+export default async function ProjectsPage() {
+  const projects = await getAllProjects()
+  return <ProjectGrid projects={projects} />
+}
