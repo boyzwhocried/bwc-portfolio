@@ -48,12 +48,12 @@ export default function Hero({ featuredProjects }: HeroProps) {
         {featuredProjects.length > 0 && (
           <FadeIn delay={0.25}>
             <div className="mt-8">
-              <p
+              <h2
                 className="font-mono text-xs uppercase tracking-widest mb-8"
                 style={{ color: 'var(--muted)' }}
               >
                 Featured Projects
-              </p>
+              </h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
                 {featuredProjects.map((project, i) => (
                   <FadeIn key={project.id} delay={0.08 * i} direction="up" className="h-full">

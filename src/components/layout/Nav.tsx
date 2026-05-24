@@ -162,6 +162,7 @@ export default function Nav() {
                 <Link
                   href={href}
                   className="block font-black tracking-tighter leading-none transition-opacity hover:opacity-60"
+                  tabIndex={open ? 0 : -1}
                   style={{
                     fontSize: 'clamp(2.5rem, 12vw, 4rem)',
                     color: '#f5f5f0',

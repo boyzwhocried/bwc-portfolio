@@ -33,9 +33,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
       <div className="flex flex-col flex-1 p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-mono text-sm" style={{ color: 'var(--fg)' }}>
+          <h2 className="font-mono text-sm" style={{ color: 'var(--fg)' }}>
             {project.title}
-          </h3>
+          </h2>
           {project.year && (
             <span className="font-mono text-xs flex-shrink-0" style={{ color: 'var(--muted)' }}>
               {project.year}

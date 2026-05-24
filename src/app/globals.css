@@ -8,7 +8,7 @@
     --bg: #0a0a0a;
     --fg: #f5f5f0;
     --accent: #f5f5f0;
-    --muted: #6b6b6b;
+    --muted: #9a9a9a;
     --border: #2a2a2a;
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
@@ -86,7 +86,7 @@
     --bg: #0a0a0a;
     --fg: #f5f5f0;
     --accent: #ffffff;
-    --muted: #6b6b6b;
+    --muted: #9a9a9a;
     --border: #2a2a2a;
   }
 
