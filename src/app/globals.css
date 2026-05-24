@@ -126,11 +126,14 @@
     --border: #2e2820;
   }
 
+  html, body {
+    overflow-x: hidden;
+  }
+
   body {
     background-color: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
-    overflow-x: hidden;
   }
 
   [data-theme] {
