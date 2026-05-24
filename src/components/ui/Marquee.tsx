@@ -17,9 +17,6 @@ export default function Marquee({ items, speed = 30 }: MarqueeProps) {
           display: flex;
           width: max-content;
         }
-        .marquee-track:hover {
-          animation-play-state: paused;
-        }
       `}</style>
       <div
         style={{
