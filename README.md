@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# bwc-portfolio
 
-## Getting Started
+Personal portfolio site. Dual-purpose: professional (projects, CV, data engineering blog) and personal (about, music, photography stubs). Each page has its own visual character.
 
-First, run the development server:
+**Live:** https://boyzwhocried.vercel.app  
+**Stack:** Next.js 15 App Router, TypeScript, Tailwind v4, Framer Motion, Supabase, Spotify Web API, Vercel
+
+---
+
+## Pages
+
+| Route | Theme | Character |
+|-------|-------|-----------|
+| `/` | swiss (dark editorial) | Bold, typographic |
+| `/about` | genx (warm muted green) | Casual, introspective |
+| `/projects` | mono (amber terminal) | Functional, engineering-tone |
+| `/blog` | minimal (light/white) | Readable, editorial |
+| `/contact` | grunge (warm dark orange) | Approachable |
+| `/cv` | minimal | Print-ready resume |
+
+Each page sets its own `data-theme` — nav, footer, and all overlays inherit that theme automatically. No hardcoded colors anywhere.
+
+---
+
+## Setup
 
 ```bash
+npm install
+cp .env.local.example .env.local   # fill in Supabase + Spotify keys
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Required env vars
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SPOTIFY_CLIENT_ID
+SPOTIFY_CLIENT_SECRET
+SPOTIFY_REFRESH_TOKEN
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Backend
 
-To learn more about Next.js, take a look at the following resources:
+### Supabase (`bwc-portfolio` project)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Table | Purpose |
+|-------|---------|
+| `projects` | 7 projects — title, description, highlights[], challenges, status, year, tags, tech_stack, live_url, github_url, featured |
+| `contact_messages` | Insert-only via server action |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Spotify
 
-## Deploy on Vercel
+Authorization Code flow. Refresh token stored in Vercel env vars. Smart polling: 30s when playing, 2min idle, paused when tab hidden. Widget in footer — animated bars, stacked title/artist layout, truncates at 40% width.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## UI features
+
+- Custom crosshair cursor (`mix-blend-mode: difference`) — enlarges on any interactive element sitewide via event delegation
+- Ambient CSS blobs (home, about, contact) — per-page accent color
+- Skills marquee strip (home hero) — 4x repeated, no pause-on-hover
+- Framer Motion `useInView` scroll reveal on all section entries
+- Mobile nav: hamburger → fullscreen overlay, staggered link fade-in, follows page theme
+
+---
+
+## Blog
+
+MDX via `next-mdx-remote/rsc`. Posts in `content/blog/`. Custom `.blog-prose` CSS styles.
+
+| Post | Status |
+|------|--------|
+| what i learned building a data warehouse from scratch | published |
+| i built a wiki that knows everything about my life | published |
+| i automated a youtube channel. here's the full pipeline | published |
+| being a data engineer in Indonesia: 1yr 9mo in | published |
+| hello-world | stub — expand or delete |
+
+---
+
+## Content rules
+
+- No em-dashes anywhere (looks AI-written). Use commas, colons, periods, or parens.
+- All text lowercase per page character voice.
+
+---
+
+## Deployment
+
+Deployed on Vercel. Push to `main` triggers production deploy.  
+Domain `boyzwhocried.xyz` (Hostinger) — DNS not yet wired, still on `.vercel.app`.
