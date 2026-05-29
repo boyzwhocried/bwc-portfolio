@@ -1,130 +1,158 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* ---- self-hosted fonts (Fontshare + Google) ---- */
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Variable.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/GeneralSans-Variable.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/GeneralSans-VariableItalic.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sentient';
+  src: url('/fonts/Sentient-Variable.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sentient';
+  src: url('/fonts/Sentient-VariableItalic.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/SpaceMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/SpaceMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
 
 @layer base {
   :root {
-    --bg: #0a0a0a;
-    --fg: #f5f5f0;
-    --accent: #f5f5f0;
-    --muted: #9a9a9a;
-    --border: #2a2a2a;
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-mono: 'IBM Plex Mono', 'Fira Code', monospace;
+    /* 3-color system */
+    --ink: #1a1a1a;
+    --paper: #ece7de;
+    --vermilion: #e84c28;
 
-    --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted-color: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent-color: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border-color: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* semantic defaults (paper room = the house default) */
+    --bg: var(--paper);
+    --fg: var(--ink);
+    --accent: var(--vermilion);
+    --muted: #6b665d;        /* warm grey on paper */
+    --rule: #d8d2c6;         /* hairline grid/rule color on paper */
+
+    --font-display: 'Clash Grotesk', system-ui, sans-serif;
+    --font-body: 'General Sans', system-ui, sans-serif;
+    --font-serif: 'Sentient', Georgia, serif;
+    --font-mono: 'Space Mono', ui-monospace, monospace;
   }
 
-  .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted-color: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent-color: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border-color: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+  /* ---- per-room overrides via data-room on the layout wrapper ---- */
+
+  /* /about: BG break -> dark intimate gallery */
+  [data-room="about"] {
+    --bg: var(--ink);
+    --fg: var(--paper);
+    --muted: #9a9489;
+    --rule: #34322d;
+    /* accent (vermilion) stays */
   }
 
-  /* Swiss/bold — home page */
-  [data-theme="swiss"] {
-    --bg: #0a0a0a;
-    --fg: #f5f5f0;
-    --accent: #ffffff;
-    --muted: #9a9a9a;
-    --border: #2a2a2a;
+  /* /projects: COLOR break -> monochrome (no vermilion on index) */
+  [data-room="projects"] {
+    --bg: var(--paper);
+    --fg: var(--ink);
+    --accent: var(--ink);    /* vermilion suppressed; returns on case-study page */
+    --muted: #6b665d;
+    --rule: #d8d2c6;
   }
 
-  /* Gen X Soft Club — about page */
-  [data-theme="genx"] {
-    --bg: #1a1c1a;
-    --fg: #d4d4c8;
-    --accent: #8a9e8a;
-    --muted: #9ca09c;
-    --border: #2e322e;
+  /* /blog: TYPE break handled in component (serif body); slightly lighter paper */
+  [data-room="blog"] {
+    --bg: #f3efe6;
+    --fg: var(--ink);
+    --accent: var(--vermilion);
+    --muted: #6b665d;
+    --rule: #ded8cc;
   }
 
-  /* Monospaced/functional — projects */
-  [data-theme="mono"] {
-    --bg: #0d0d0d;
-    --fg: #e8e8d8;
-    --accent: #c8b560;
-    --muted: #969688;
-    --border: #2a2a1a;
+  /* /contact: COLOR break -> vermilion flood */
+  [data-room="contact"] {
+    --bg: var(--vermilion);
+    --fg: var(--ink);
+    --accent: var(--ink);
+    --muted: #7a2e1a;
+    --rule: #c43f1f;
   }
 
-  /* Clean minimal — blog */
-  [data-theme="minimal"] {
-    --bg: #fafaf8;
-    --fg: #1a1a1a;
-    --accent: #1a1a1a;
-    --muted: #595959;
-    --border: #e0e0e0;
+  /* /cv: TYPE+layout break -> near-white print document */
+  [data-room="cv"] {
+    --bg: #fcfbf8;
+    --fg: var(--ink);
+    --accent: var(--vermilion);
+    --muted: #5c574e;
+    --rule: #e4e0d6;
   }
 
-  /* Corporate Grunge — contact */
-  [data-theme="grunge"] {
-    --bg: #141210;
-    --fg: #d8cfc0;
-    --accent: #c87840;
-    --muted: #a89888;
-    --border: #2e2820;
+  /* /music: BG break -> music-app dark */
+  [data-room="music"] {
+    --bg: #0e0e12;
+    --fg: #ece7de;
+    --accent: var(--vermilion);
+    --muted: #8a8794;
+    --rule: #26252e;
   }
+
+  /* /photography: layout break -> dark canvas */
+  [data-room="photography"] {
+    --bg: #222222;
+    --fg: #ece7de;
+    --accent: var(--vermilion);
+    --muted: #8d8d8d;
+    --rule: #383838;
+  }
+
+  /* /hub: BG break -> desk surface */
+  [data-room="hub"] {
+    --bg: #c9bda6;
+    --fg: var(--ink);
+    --accent: var(--vermilion);
+    --muted: #6b6557;
+    --rule: #b3a892;
+  }
+
+  /* /now: TYPE break -> serif body on paper (handled in component) */
+  [data-room="now"] {
+    --bg: var(--paper);
+    --fg: var(--ink);
+    --accent: var(--vermilion);
+    --muted: #6b665d;
+    --rule: #d8d2c6;
+  }
+
+  /* /sandbox: composition break only; paper bg stays (no token override) */
 
   html, body {
     overflow-x: hidden;
@@ -133,16 +161,31 @@
   body {
     background-color: var(--bg);
     color: var(--fg);
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
   }
 
-  [data-theme] {
+  [data-room] {
     background-color: var(--bg);
     color: var(--fg);
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+
+  /* reduced-motion: kill all animation globally as the a11y floor */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
-/* blog post article prose styles */
+/* blog post article prose styles (restyled in Phase 4) */
 .blog-prose {
   color: var(--fg);
   line-height: 1.8;
@@ -199,14 +242,14 @@
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   padding: 0.125rem 0.375rem;
-  background: var(--border);
+  background: var(--rule);
   color: var(--accent);
   border-radius: 2px;
 }
 .blog-prose pre {
   margin-bottom: 1.75rem;
   padding: 1.25rem 1.5rem;
-  background: var(--border);
+  background: var(--rule);
   overflow-x: auto;
   border-left: 2px solid var(--accent);
 }
@@ -230,7 +273,7 @@
   color: var(--fg);
 }
 .blog-prose blockquote {
-  border-left: 2px solid var(--border);
+  border-left: 2px solid var(--rule);
   padding-left: 1.25rem;
   margin: 1.5rem 0;
   color: var(--muted);
@@ -238,8 +281,6 @@
 }
 .blog-prose hr {
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
   margin: 2.5rem 0;
 }
-
-
