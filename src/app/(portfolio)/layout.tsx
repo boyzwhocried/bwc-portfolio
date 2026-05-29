@@ -3,41 +3,33 @@
 import { usePathname } from 'next/navigation'
 import Nav from '@/components/layout/Nav'
 import Footer from '@/components/layout/Footer'
+import CustomCursor from '@/components/ui/CustomCursor'
 
-const PATH_THEME: { prefix: string; theme: string }[] = [
-  { prefix: '/about',       theme: 'genx'    },
-  { prefix: '/projects',    theme: 'mono'    },
-  { prefix: '/blog',        theme: 'minimal' },
-  { prefix: '/contact',     theme: 'grunge'  },
-  { prefix: '/cv',          theme: 'minimal' },
-  { prefix: '/music',       theme: 'genx'    },
-  { prefix: '/photography', theme: 'mono'    },
-  { prefix: '/sandbox',     theme: 'swiss'   },
-  { prefix: '/',            theme: 'swiss'   },
-]
+const ROOM_PREFIXES = [
+  'about', 'projects', 'blog', 'contact', 'cv',
+  'music', 'photography', 'hub', 'now',
+] as const
 
-function getTheme(pathname: string): string {
-  for (const { prefix, theme } of PATH_THEME) {
-    if (prefix === '/' ? pathname === '/' : pathname === prefix || pathname.startsWith(prefix + '/')) {
-      return theme
-    }
+function getRoom(pathname: string): string {
+  for (const room of ROOM_PREFIXES) {
+    if (pathname === `/${room}` || pathname.startsWith(`/${room}/`)) return room
   }
-  return 'swiss'
+  // '/' and '/sandbox' use the paper default (no token override)
+  if (pathname.startsWith('/sandbox')) return 'sandbox'
+  return 'home'
 }
 
-export default function PortfolioLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function PortfolioLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const theme = getTheme(pathname)
+  const room = getRoom(pathname)
 
   return (
-    <div data-theme={theme}>
-      <Nav theme={theme} />
+    <div data-room={room}>
+      {/* cursor lives inside the data-room wrapper so var(--fg) recolors it per room */}
+      <CustomCursor />
+      <Nav room={room} />
       <main>{children}</main>
-      <Footer theme={theme} />
+      <Footer room={room} />
     </div>
   )
 }

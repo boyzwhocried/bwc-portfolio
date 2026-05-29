@@ -41,7 +41,7 @@ export default function SpotifyWidget() {
 
   if (loading || !track) {
     return (
-      <p className="font-mono text-xs" style={{ color: 'var(--muted)' }}>
+      <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
         not playing
       </p>
     )
@@ -63,8 +63,8 @@ export default function SpotifyWidget() {
         href={track.track_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-mono transition-opacity hover:opacity-70 inline-flex flex-col gap-0.5 min-w-0 max-w-[40%]"
-        style={{ color: 'var(--muted)' }}
+        className="transition-opacity hover:opacity-70 inline-flex flex-col gap-0.5 min-w-0 max-w-[40%]"
+        style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}
       >
         <span className="flex items-center gap-2 text-xs min-w-0">
           {track.is_playing ? (

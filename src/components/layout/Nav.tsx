@@ -12,7 +12,7 @@ const links = [
   { href: '/contact', label: 'contact' },
 ]
 
-export default function Nav({ theme }: { theme: string }) {
+export default function Nav({ room }: { room: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -23,23 +23,24 @@ export default function Nav({ theme }: { theme: string }) {
     return () => { document.body.style.overflow = '' }
   }, [open])
 
+  // /hub replaces the nav with its own OS menu bar (rendered by the hub page)
+  if (room === 'hub') return null
+
   return (
     <>
       <nav
-        data-theme={theme}
+        data-room={room}
         style={{
-          borderBottom: '1px solid var(--border)',
-          backgroundColor: 'color-mix(in srgb, var(--bg) 88%, transparent)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--rule)',
+          backgroundColor: 'var(--bg)',
         }}
         className="fixed top-0 left-0 right-0 z-50 transition-colors duration-300"
       >
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link
             href="/"
-            className="font-mono text-sm tracking-widest transition-opacity hover:opacity-70"
-            style={{ color: 'var(--fg)' }}
+            className="text-sm tracking-widest transition-opacity hover:opacity-70"
+            style={{ color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}
           >
             bwc
           </Link>
@@ -103,7 +104,7 @@ export default function Nav({ theme }: { theme: string }) {
 
       {/* fullscreen overlay — follows page theme */}
       <div
-        data-theme={theme}
+        data-room={room}
         className="md:hidden fixed inset-0 z-40 flex flex-col justify-center px-8 transition-all duration-300"
         style={{
           backgroundColor: 'var(--bg)',

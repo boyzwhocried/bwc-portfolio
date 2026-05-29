@@ -62,6 +62,7 @@
     --accent: var(--vermilion);
     --muted: #6b665d;        /* warm grey on paper */
     --rule: #d8d2c6;         /* hairline grid/rule color on paper */
+    --border: var(--rule);   /* back-compat alias for pages not yet rebuilt (resolves per-room) */
 
     --font-display: 'Clash Grotesk', system-ui, sans-serif;
     --font-body: 'General Sans', system-ui, sans-serif;
