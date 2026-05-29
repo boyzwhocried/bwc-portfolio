@@ -56,7 +56,6 @@ export default function CustomCursor() {
         left: 0,
         pointerEvents: 'none',
         zIndex: 9999,
-        mixBlendMode: 'difference',
         willChange: 'transform',
       }}
     >
@@ -74,7 +73,7 @@ export default function CustomCursor() {
         .cursor-inner::after {
           content: '';
           position: absolute;
-          background: white;
+          background: var(--fg);
           transition: all 0.15s ease;
         }
         .cursor-inner::before {

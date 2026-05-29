@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import CustomCursor from '@/components/ui/CustomCursor'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://boyzwhocried.vercel.app'),
@@ -8,10 +7,10 @@ export const metadata: Metadata = {
     default: 'boyzwhocried',
     template: '%s | boyzwhocried',
   },
-  description: 'Data engineer. Frontend builder. Based in Indonesia.',
+  description: 'data engineer in jakarta. a playground and workshop. i build things & break a few.',
   openGraph: {
     title: 'boyzwhocried',
-    description: 'Data engineer. Frontend builder. Based in Indonesia.',
+    description: 'data engineer in jakarta. i build things & break a few.',
     url: 'https://boyzwhocried.vercel.app',
     siteName: 'boyzwhocried',
     locale: 'en_US',
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'boyzwhocried',
-    description: 'Data engineer. Frontend builder. Based in Indonesia.',
+    description: 'i build things & break a few.',
   },
   robots: {
     index: true,
@@ -39,7 +38,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <CustomCursor />
         {children}
       </body>
     </html>
