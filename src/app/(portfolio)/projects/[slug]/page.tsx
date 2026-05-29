@@ -1,7 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import FadeIn from '@/components/ui/FadeIn'
 import { getAllProjects, getProjectBySlug } from '@/lib/projects'
 
 export const revalidate = 3600
@@ -19,26 +18,17 @@ export async function generateMetadata({
   const { slug } = await params
   const project = await getProjectBySlug(slug)
   if (!project) return { title: 'Not Found' }
-  return {
-    title: project.title,
-    description: project.description,
-  }
+  return { title: project.title, description: project.description }
 }
 
-// derive project type from tags for the header badge
-function getProjectType(tags: string[]): string | null {
-  if (tags.includes('work')) return 'work'
-  if (tags.includes('university') || tags.includes('uni')) return 'university'
-  if (tags.includes('personal')) return 'personal'
-  if (tags.includes('freelance') || tags.includes('client')) return 'freelance'
-  return null
-}
-
-const TYPE_STYLE: Record<string, { label: string; color: string; border: string }> = {
-  work:       { label: 'work',       color: '#c8b560', border: '#c8b56040' },
-  personal:   { label: 'personal',   color: '#8a9e8a', border: '#8a9e8a40' },
-  university: { label: 'university', color: '#8a8aaa', border: '#8a8aaa40' },
-  freelance:  { label: 'freelance',  color: '#c87840', border: '#c8784040' },
+// kicker label from tags
+function getTypeLabel(tags: string[]): string {
+  if (tags.includes('work') || tags.includes('data-engineering')) return 'data engineering'
+  if (tags.includes('startup')) return 'startup'
+  if (tags.includes('freelance')) return 'freelance'
+  if (tags.includes('automation')) return 'automation'
+  if (tags.includes('university')) return 'university'
+  return 'project'
 }
 
 export default async function ProjectDetailPage({
@@ -50,158 +40,156 @@ export default async function ProjectDetailPage({
   const project = await getProjectBySlug(slug)
   if (!project) notFound()
 
-  const projectType = getProjectType(project.tags ?? [])
-  const typeStyle = projectType ? TYPE_STYLE[projectType] : null
-
-  const statusColor =
-    project.status === 'active' ? 'var(--accent)' :
-    project.status === 'archived' ? 'var(--muted)' :
-    'var(--fg)'
+  // vermilion RETURNS here (the index was monochrome; depth gets the accent).
+  // use var(--vermilion) directly to override the projects room's suppressed --accent.
+  const v = 'var(--vermilion)'
+  const typeLabel = getTypeLabel(project.tags ?? [])
+  const paras = project.long_description ? project.long_description.split('\n\n') : []
 
   return (
-    <div className="min-h-screen pt-14">
-      <div className="max-w-2xl mx-auto px-6 pt-24 pb-16">
+    <article className="min-h-screen" style={{ paddingTop: '3.5rem' }}>
+      <div className="mx-auto px-6" style={{ maxWidth: '56rem', paddingTop: '3rem', paddingBottom: '4rem' }}>
+        {/* back to index */}
+        <Link
+          href="/projects"
+          className="transition-opacity hover:opacity-70"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: v }}
+        >
+          ← index
+        </Link>
 
-        <FadeIn>
-          <Link
-            href="/projects"
-            className="font-mono text-xs transition-opacity hover:opacity-70"
-            style={{ color: 'var(--muted)' }}
+        {/* kicker + title */}
+        <div style={{ marginTop: '2rem' }}>
+          <div
+            className="uppercase"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: v, letterSpacing: '0.1em' }}
           >
-            ← projects
-          </Link>
-        </FadeIn>
-
-        <FadeIn delay={0.08}>
-          {/* type + status badges */}
-          <div className="flex items-center gap-2 mt-10 mb-4">
-            {typeStyle && (
-              <span
-                className="font-mono text-xs px-2 py-0.5"
-                style={{ border: `1px solid ${typeStyle.border}`, color: typeStyle.color }}
-              >
-                {typeStyle.label}
-              </span>
-            )}
-            {project.status && project.status !== 'shipped' && (
-              <span className="font-mono text-xs" style={{ color: statusColor }}>
-                {project.status}
-              </span>
-            )}
-            {project.year && (
-              <span className="font-mono text-xs" style={{ color: 'var(--muted)' }}>
-                {project.year}
-              </span>
-            )}
+            CASE STUDY · {typeLabel}
+            {project.year ? ` · ${project.year}` : ''}
           </div>
-
           <h1
-            className="text-3xl font-black tracking-tight mb-4"
-            style={{ color: 'var(--fg)' }}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(2rem, 6vw, 3.25rem)',
+              lineHeight: 0.98,
+              letterSpacing: '-0.02em',
+              marginTop: '0.6rem',
+              color: 'var(--fg)',
+            }}
           >
             {project.title}
           </h1>
-
-          <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--muted)' }}>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--muted)', marginTop: '1rem', maxWidth: '40rem' }}>
             {project.description}
           </p>
-        </FadeIn>
+        </div>
 
-        <FadeIn delay={0.12}>
-          <div className="flex flex-wrap gap-2 mb-8">
-            {project.tech_stack.map((tech) => (
-              <span
-                key={tech}
-                className="font-mono text-xs px-2 py-0.5"
-                style={{ border: '1px solid var(--border)', color: 'var(--muted)' }}
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-        </FadeIn>
-
-        {(project.live_url || project.github_url) && (
-          <FadeIn delay={0.14}>
-            <div
-              className="flex gap-6 font-mono text-sm mb-12 pb-8"
-              style={{ borderBottom: '1px solid var(--border)' }}
-            >
-              {project.live_url && (
-                <a
-                  href={project.live_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-opacity hover:opacity-70"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  live ↗
-                </a>
+        {/* two-column: meta rail + body */}
+        <div
+          className="grid grid-cols-1 md:grid-cols-12 gap-x-10 gap-y-10"
+          style={{ marginTop: '2.5rem', borderTop: '1px solid var(--rule)', paddingTop: '2rem' }}
+        >
+          {/* meta rail */}
+          <aside className="md:col-span-4" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {project.status && (
+                <div>
+                  <div style={{ color: 'var(--muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    status
+                  </div>
+                  <div style={{ color: v, marginTop: 4 }}>● {project.status}</div>
+                </div>
               )}
-              {project.github_url && (
-                <a
-                  href={project.github_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-opacity hover:opacity-70"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  github ↗
-                </a>
+              {project.tech_stack?.length > 0 && (
+                <div>
+                  <div style={{ color: 'var(--muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    stack
+                  </div>
+                  <div style={{ color: 'var(--fg)', marginTop: 4, lineHeight: 1.7 }}>
+                    {project.tech_stack.map((t) => (
+                      <div key={t}>{t}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(project.live_url || project.github_url) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {project.live_url && (
+                    <a href={project.live_url} target="_blank" rel="noopener noreferrer"
+                       className="transition-opacity hover:opacity-70" style={{ color: v }}>
+                      live ↗
+                    </a>
+                  )}
+                  {project.github_url && (
+                    <a href={project.github_url} target="_blank" rel="noopener noreferrer"
+                       className="transition-opacity hover:opacity-70" style={{ color: v }}>
+                      github ↗
+                    </a>
+                  )}
+                </div>
               )}
             </div>
-          </FadeIn>
-        )}
+          </aside>
 
-        {project.long_description && (
-          <FadeIn delay={0.18}>
-            <div className="mb-12">
-              <p className="font-mono text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--muted)' }}>
-                about
-              </p>
-              <div className="space-y-4">
-                {project.long_description.split('\n\n').map((para, i) => (
-                  <p key={i} className="text-sm leading-relaxed" style={{ color: 'var(--fg)' }}>
-                    {para}
+          {/* body */}
+          <div className="md:col-span-8">
+            {paras.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                {paras.map((para, i) => (
+                  <p key={i} style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--fg)' }}>
+                    {i === 0 && (
+                      // crooked vermilion drop-cap (left-aligned body context = valid)
+                      <span
+                        aria-hidden
+                        style={{
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 700,
+                          fontSize: '3.2rem',
+                          lineHeight: 0.7,
+                          color: v,
+                          float: 'left',
+                          margin: '6px 10px 0 0',
+                          transform: 'rotate(-2.5deg)',
+                          display: 'inline-block',
+                        }}
+                      >
+                        {para.charAt(0)}
+                      </span>
+                    )}
+                    {i === 0 ? para.slice(1) : para}
                   </p>
                 ))}
               </div>
-            </div>
-          </FadeIn>
-        )}
+            )}
 
-        {project.highlights && project.highlights.length > 0 && (
-          <FadeIn delay={0.22}>
-            <div className="mb-12">
-              <p className="font-mono text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--muted)' }}>
-                highlights
-              </p>
-              <ul className="space-y-3">
-                {project.highlights.map((item, i) => (
-                  <li key={i} className="flex gap-3 text-sm leading-relaxed" style={{ color: 'var(--fg)' }}>
-                    <span className="flex-shrink-0 font-mono" style={{ color: 'var(--accent)' }}>+</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </FadeIn>
-        )}
+            {project.highlights?.length > 0 && (
+              <div style={{ marginTop: '2.5rem' }}>
+                <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.1em', marginBottom: '1rem' }}>
+                  highlights
+                </p>
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {project.highlights.map((item, i) => (
+                    <li key={i} style={{ display: 'flex', gap: 12, fontSize: 14, lineHeight: 1.6, color: 'var(--fg)' }}>
+                      <span style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', color: v }}>+</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        {project.challenges && (
-          <FadeIn delay={0.26}>
-            <div className="mb-12">
-              <p className="font-mono text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--muted)' }}>
-                what was hard
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--fg)' }}>
-                {project.challenges}
-              </p>
-            </div>
-          </FadeIn>
-        )}
-
+            {project.challenges && (
+              <div style={{ marginTop: '2.5rem' }}>
+                <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.1em', marginBottom: '1rem' }}>
+                  what was hard
+                </p>
+                <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--fg)' }}>{project.challenges}</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </article>
   )
 }
