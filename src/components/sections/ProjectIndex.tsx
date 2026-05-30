@@ -44,12 +44,17 @@ export default function ProjectIndex({ projects }: { projects: Project[] }) {
 
   return (
     <section style={{ position: 'relative', paddingTop: '3.5rem', overflow: 'hidden' }}>
-      <DriftingSquares variant="projects" color="var(--accent)" opacity={0.07} count={6} />
+      <DriftingSquares variant="projects" color="var(--accent)" opacity={0.12} count={9} />
 
       <style>{`
-        .proj-row { transition: background .2s ease, transform .2s ease; }
-        .proj-row:hover { background: linear-gradient(90deg, rgba(26,26,26,0.06), transparent); transform: translateX(4px); }
-        @media (prefers-reduced-motion: reduce) { .proj-row:hover { transform: none; } }
+        .proj-row { position: relative; transition: background .2s ease, transform .2s ease; }
+        .proj-row::before {
+          content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+          background: #e84c28; transform: scaleY(0); transform-origin: center; transition: transform .2s ease;
+        }
+        .proj-row:hover { background: linear-gradient(90deg, rgba(232,76,40,0.06), transparent); transform: translateX(4px); }
+        .proj-row:hover::before { transform: scaleY(1); }
+        @media (prefers-reduced-motion: reduce) { .proj-row:hover { transform: none; } .proj-row::before { transition: none; } }
       `}</style>
 
       <div
@@ -102,7 +107,7 @@ export default function ProjectIndex({ projects }: { projects: Project[] }) {
         {/* table header row (desktop) */}
         <div
           className="hidden md:grid uppercase"
-          style={{ gridTemplateColumns: GRID, gap: 20, marginTop: '2.5rem', paddingBottom: 8, borderBottom: '1px solid var(--fg)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--muted)' }}
+          style={{ gridTemplateColumns: GRID, gap: 20, marginTop: '2.5rem', paddingBottom: 8, borderBottom: '2px solid var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', color: 'var(--muted)' }}
         >
           <span>#</span><span>project</span><span>type</span><span>stack</span><span style={{ textAlign: 'right' }}>year</span>
         </div>
