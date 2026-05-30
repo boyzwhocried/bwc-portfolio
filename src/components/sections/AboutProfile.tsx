@@ -71,14 +71,14 @@ export default function AboutProfile() {
 
       {/* the through-line: wider editorial timeline (fills the void with real story) */}
       <div style={{ ...frame, position: 'relative', zIndex: 1, paddingTop: '3rem', paddingBottom: '2rem' }}>
-        <motion.div variants={fade} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
+        <motion.div variants={fade} initial="hidden" animate="show"
           className="uppercase" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, letterSpacing: '0.12em', color: 'var(--fg)', borderBottom: '1px solid var(--rule)', paddingBottom: 10, marginBottom: '2rem' }}>
           ↓ the through-line
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-6" style={{ maxWidth: '60rem' }}>
           {THROUGHLINE.map((t) => (
-            <motion.div key={t.year} variants={fade} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
+            <motion.div key={t.year} variants={fade} initial="hidden" animate="show"
               className="grid" style={{ gridTemplateColumns: '64px 1fr', gap: 16, paddingBottom: '1rem', borderBottom: '1px solid var(--rule)' }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{t.year}</span>
               <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--fg)' }}>{t.body}</p>
@@ -87,7 +87,7 @@ export default function AboutProfile() {
         </div>
 
         {/* system-note (safe-public) + cross-links */}
-        <motion.div variants={fade} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
+        <motion.div variants={fade} initial="hidden" animate="show"
           className="flex flex-wrap items-center justify-between gap-4" style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--rule)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
           <span style={{ borderLeft: '2px solid var(--accent)', paddingLeft: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
             currently: prepping DP-900, building this site in public, shipping more than sleeping.
