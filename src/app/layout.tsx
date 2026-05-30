@@ -26,7 +26,8 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👾</text></svg>",
+    // the brand mascot: a flat vermilion square
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='14' y='14' width='72' height='72' fill='%23e84c28'/></svg>",
   },
 }
 

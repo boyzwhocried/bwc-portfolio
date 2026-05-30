@@ -179,7 +179,8 @@ export default function HomeHero() {
                 }
               `}</style>
               <div className="home-ticker-track">
-                {[...SKILLS, ...SKILLS].map((item, i) => (
+                {/* 4 copies = two identical halves wider than the viewport, so the -50% loop has no gap */}
+                {[...SKILLS, ...SKILLS, ...SKILLS, ...SKILLS].map((item, i) => (
                   <span
                     key={i}
                     className="flex items-center"
@@ -190,7 +191,7 @@ export default function HomeHero() {
                         fontSize: 11,
                         fontWeight: 300,
                         color: 'var(--muted)',
-                        padding: '0 0.85rem',
+                        padding: '0 1.5rem',
                         whiteSpace: 'nowrap',
                       }}
                     >

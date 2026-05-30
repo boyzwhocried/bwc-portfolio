@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import Square from '@/components/ui/Square'
 
 const links = [
   { href: '/', label: 'home' },
@@ -40,12 +41,17 @@ export default function Nav({ room }: { room: string }) {
         }}
         className="fixed top-0 left-0 right-0 z-50 transition-colors duration-300"
       >
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div
+          className="h-14 flex items-center justify-between"
+          style={{ maxWidth: 'var(--page-max)', marginInline: 'auto', paddingInline: 'var(--page-px)' }}
+        >
           <Link
             href="/"
-            className="text-sm tracking-widest transition-opacity hover:opacity-70"
+            className="group flex items-center gap-2 text-sm tracking-widest transition-opacity hover:opacity-70"
             style={{ color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}
+            aria-label="bwc home"
           >
+            <Square size={11} className="transition-transform group-hover:rotate-45" />
             bwc
           </Link>
 

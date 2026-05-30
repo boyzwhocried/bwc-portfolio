@@ -13,8 +13,7 @@ export default function SpotifyWidget() {
 
   function scheduleNext(isPlaying: boolean) {
     if (intervalRef.current) clearInterval(intervalRef.current)
-    const delay = isPlaying ? POLL_PLAYING : POLL_IDLE
-    intervalRef.current = setInterval(fetchTrack, delay)
+    intervalRef.current = setInterval(fetchTrack, isPlaying ? POLL_PLAYING : POLL_IDLE)
   }
 
   async function fetchTrack() {
@@ -39,47 +38,42 @@ export default function SpotifyWidget() {
     }
   }, [])
 
-  if (loading || !track) {
-    return (
-      <p className="text-xs" style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
-        not playing
-      </p>
-    )
-  }
+  const playing = !!track?.is_playing
+  const label = loading
+    ? 'connecting...'
+    : playing
+    ? `now playing — ${track!.title} · ${track!.artist}`
+    : 'not playing'
+
+  const inner = (
+    <span className="inline-flex items-center gap-2 min-w-0" style={{ color: 'var(--muted)' }}>
+      <span className="flex items-end h-3 flex-shrink-0" aria-hidden>
+        <span className={`sw-bar ${playing ? 'sw-on' : ''}`} />
+        <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.2s' }} />
+        <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.4s' }} />
+      </span>
+      <span className="truncate" style={{ color: playing ? 'var(--fg)' : 'var(--muted)' }}>
+        {label}
+        {playing && ' ↗'}
+      </span>
+    </span>
+  )
 
   return (
     <>
       <style>{`
-        @keyframes barPulse {
-          0%, 100% { transform: scaleY(0.3); }
-          50% { transform: scaleY(1); }
-        }
-        .bar { transform-origin: bottom; display: inline-block; width: 2px; background: currentColor; margin: 0 1px; }
-        .bar-1 { height: 8px; animation: barPulse 0.8s ease-in-out infinite; }
-        .bar-2 { height: 8px; animation: barPulse 0.8s ease-in-out 0.2s infinite; }
-        .bar-3 { height: 8px; animation: barPulse 0.8s ease-in-out 0.4s infinite; }
+        @keyframes swPulse { 0%,100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+        .sw-bar { width: 2px; height: 11px; margin: 0 1px; background: currentColor; transform-origin: bottom; display: inline-block; opacity: 0.5; }
+        .sw-bar.sw-on { opacity: 1; animation: swPulse 0.8s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .sw-bar.sw-on { animation: none; } }
       `}</style>
-      <a
-        href={track.track_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="transition-opacity hover:opacity-70 inline-flex flex-col gap-0.5 min-w-0 max-w-[40%]"
-        style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}
-      >
-        <span className="flex items-center gap-2 text-xs min-w-0">
-          {track.is_playing ? (
-            <span className="flex items-end h-3 flex-shrink-0" aria-hidden>
-              <span className="bar bar-1" />
-              <span className="bar bar-2" />
-              <span className="bar bar-3" />
-            </span>
-          ) : (
-            <span className="flex-shrink-0 text-xs">■</span>
-          )}
-          <span className="truncate" style={{ color: 'var(--fg)' }}>{track.title}</span>
-        </span>
-        <span className="text-xs truncate" style={{ paddingLeft: '14px' }}>by {track.artist}</span>
-      </a>
+      {playing && track?.track_url ? (
+        <a href={track.track_url} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full transition-opacity hover:opacity-70" style={{ fontFamily: 'var(--font-mono)' }}>
+          {inner}
+        </a>
+      ) : (
+        <span className="inline-flex max-w-full" style={{ fontFamily: 'var(--font-mono)' }}>{inner}</span>
+      )}
     </>
   )
 }

@@ -1,43 +1,88 @@
 import Link from 'next/link'
+import Square from '@/components/ui/Square'
 import SpotifyWidget from '@/components/sections/SpotifyWidget'
 
-// every room reachable from the footer (nav only carries the primary 5)
-const SITEMAP = [
+const ROOMS = [
   { href: '/about', label: 'about' },
   { href: '/projects', label: 'projects' },
   { href: '/blog', label: 'blog' },
   { href: '/hub', label: 'hub' },
+  { href: '/now', label: 'now' },
   { href: '/music', label: 'music' },
   { href: '/photography', label: 'photography' },
   { href: '/sandbox', label: 'sandbox' },
   { href: '/cv', label: 'cv' },
-  { href: '/now', label: 'now' },
   { href: '/contact', label: 'contact' },
 ]
+
+const ELSEWHERE = [
+  { href: 'https://github.com/boyzwhocried', label: 'github' },
+  { href: 'https://linkedin.com/in/boyzwhocried', label: 'linkedin' },
+  { href: 'mailto:verrel.alsyoumi@gmail.com', label: 'email' },
+]
+
+function ColHead({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.14em', marginBottom: '1rem' }}>
+      {children}
+    </div>
+  )
+}
 
 export default function Footer({ room }: { room: string }) {
   return (
     <footer
       data-room={room}
-      style={{ borderTop: '1px solid var(--rule)', color: 'var(--muted)', backgroundColor: 'var(--bg)' }}
-      className="mt-32 py-8"
+      style={{ borderTop: '1px solid var(--rule)', color: 'var(--muted)', backgroundColor: 'var(--bg)', marginTop: '6rem' }}
     >
-      <div className="max-w-5xl mx-auto px-6" style={{ fontFamily: 'var(--font-mono)' }}>
-        {/* sitemap row */}
-        <nav className="flex flex-wrap gap-x-4 gap-y-1" style={{ fontSize: 11, paddingBottom: '1.5rem' }} aria-label="all pages">
-          {SITEMAP.map(({ href, label }) => (
-            <Link key={href} href={href} className="transition-opacity hover:opacity-100" style={{ color: 'var(--muted)', opacity: 0.75 }}>
-              {label}
+      <div style={{ maxWidth: 'var(--page-max)', marginInline: 'auto', paddingInline: 'var(--page-px)', paddingTop: '3.5rem', paddingBottom: '2rem' }}>
+        {/* columns */}
+        <div className="grid grid-cols-2 md:grid-cols-12 gap-x-8 gap-y-10">
+          {/* brand */}
+          <div className="col-span-2 md:col-span-4">
+            <Link href="/" className="inline-flex items-center gap-2 transition-opacity hover:opacity-70" style={{ color: 'var(--fg)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em' }}>
+              <Square size={14} />
+              boyzwhocried
             </Link>
-          ))}
-        </nav>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: '0.75rem', maxWidth: '22rem' }}>
+              i build things &amp; break a few. a playground and workshop that keeps growing.
+            </p>
+            <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.1em', marginTop: '1rem' }}>
+              est. 2024 · jakarta, id
+            </p>
+          </div>
 
-        {/* signature row: live now-playing + year */}
-        <div className="flex items-center justify-between gap-6 text-xs" style={{ borderTop: '1px solid var(--rule)', paddingTop: '1.25rem' }}>
+          {/* rooms (two sub-columns) */}
+          <div className="md:col-span-5">
+            <ColHead>rooms</ColHead>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              {ROOMS.map(({ href, label }) => (
+                <Link key={href} href={href} className="transition-opacity hover:opacity-100" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.7 }}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* elsewhere */}
+          <div className="md:col-span-3">
+            <ColHead>elsewhere</ColHead>
+            <div className="flex flex-col gap-2">
+              {ELSEWHERE.map(({ href, label }) => (
+                <a key={label} href={href} target={href.startsWith('mailto') ? '_self' : '_blank'} rel="noopener noreferrer" className="transition-opacity hover:opacity-100" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.7 }}>
+                  {label} ↗
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* baseline bar: now-playing one-liner + year */}
+        <div className="flex items-center justify-between gap-6" style={{ borderTop: '1px solid var(--rule)', marginTop: '3rem', paddingTop: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
           <span className="min-w-0 flex-1">
             <SpotifyWidget />
           </span>
-          <span className="flex-shrink-0">{new Date().getFullYear()}</span>
+          <span className="flex-shrink-0" style={{ color: 'var(--muted)' }}>© {new Date().getFullYear()} bwc</span>
         </div>
       </div>
     </footer>

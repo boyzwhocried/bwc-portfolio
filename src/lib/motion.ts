@@ -21,3 +21,24 @@ export function useDriftIn() {
   }
   return driftIn
 }
+
+/** Scroll-reveal fade-up. Use with whileInView. Reduced-motion-safe via the hook. */
+export function useFadeUp() {
+  const reduce = useReducedMotion()
+  if (reduce) {
+    return { hidden: { opacity: 1, y: 0 }, show: { opacity: 1, y: 0, transition: { duration: 0 } } }
+  }
+  return {
+    hidden: { opacity: 0, y: 22 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const } },
+  }
+}
+
+/** Parent that staggers its children (pair child elements with useFadeUp/driftIn). */
+export const staggerParent = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+}
+
+/** Shared hover lift for cards/rows. Spread onto a motion element's whileHover. */
+export const hoverLift = { y: -3, transition: { type: 'spring' as const, stiffness: 300, damping: 20 } }
