@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Nav from '@/components/layout/Nav'
 import Footer from '@/components/layout/Footer'
 import CustomCursor from '@/components/ui/CustomCursor'
+import SplashOverlay from '@/components/sections/SplashOverlay'
 
 const ROOM_PREFIXES = [
   'about', 'projects', 'blog', 'contact', 'cv',
@@ -27,6 +28,7 @@ export default function PortfolioLayout({ children }: { children: React.ReactNod
     <div data-room={room}>
       {/* cursor lives inside the data-room wrapper so var(--fg) recolors it per room */}
       <CustomCursor />
+      <SplashOverlay />
       <Nav room={room} />
       <main>{children}</main>
       <Footer room={room} />
