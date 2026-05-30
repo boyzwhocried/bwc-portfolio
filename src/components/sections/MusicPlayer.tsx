@@ -8,7 +8,6 @@ import type {
   MusicData,
   TopRange,
   PlaylistCard,
-  PlaylistFeature,
   CachedTrack,
 } from '@/types'
 import DriftingSquares from '@/components/ui/DriftingSquares'
@@ -330,8 +329,8 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           </div>
         )}
 
-        {/* OF INSTA — the signature archive, full-bleed beat (the one break per room) */}
-        {music.ofInsta && (
+        {/* THE TWO PLAYLISTS I LIVE IN — this month + of insta paired in one full-bleed beat (the one break per room) */}
+        {(music.thisMonth || music.ofInsta) && (
           <div
             style={{
               width: '100vw',
@@ -343,49 +342,41 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
               overflow: 'hidden',
             }}
           >
-            <a
-              href={music.ofInsta.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mp-card block"
-              style={{ ...frame, paddingTop: '3.75rem', paddingBottom: '3.75rem' }}
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-14">
-                <div style={{ width: 'clamp(11rem, 26vw, 17rem)', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: 'var(--accent)', flexShrink: 0 }}>
-                  {music.ofInsta.image && (
-                    <Image src={music.ofInsta.image} alt="" fill sizes="(max-width: 768px) 70vw, 17rem" style={{ objectFit: 'cover' }} />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div style={{ ...labelStyle, color: 'var(--accent)' }}>the archive</div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(2.6rem, 8vw, 5rem)', lineHeight: 0.92, letterSpacing: '-0.02em', color: 'var(--fg)', marginTop: '0.5rem' }}>
-                    of insta
-                  </h2>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--accent)', marginTop: '0.75rem' }}>
-                    {music.ofInsta.count.toLocaleString()} tracks, and counting ↗
+            <div style={{ ...frame, paddingTop: '3.75rem', paddingBottom: '3.75rem' }}>
+              <div className="flex flex-col md:flex-row">
+                {/* this month — primary, leads by position */}
+                {music.thisMonth && (
+                  <div className="md:flex-1 min-w-0 md:pr-12 lg:pr-16">
+                    <BeatFeature
+                      href={music.thisMonth.url}
+                      image={music.thisMonth.image}
+                      label="this month"
+                      title={music.thisMonth.name}
+                      meta={`${music.thisMonth.count.toLocaleString()} tracks · updated monthly ↗`}
+                      blurb={music.thisMonth.description ?? 'the diary playlist for right now: what i actually keep on repeat, refreshed every month.'}
+                    />
                   </div>
-                  <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', marginTop: '1.25rem', maxWidth: '54ch' }}>
-                    every song i catch in an instagram reel gets saved here. then a slow ritual sorts it: a
-                    monthly diary playlist, vibe-named shelves, and a gold list of the ones that survive a
-                    second listen. an accidental archive of whatever caught my ear.
-                  </p>
-                </div>
+                )}
+                {/* of insta — the archive; vermilion divider only when paired */}
+                {music.ofInsta && (
+                  <div
+                    className={music.thisMonth ? 'md:flex-1 min-w-0 mt-12 pt-12 border-t md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-12 lg:pl-16' : 'md:flex-1 min-w-0'}
+                    style={music.thisMonth ? { borderColor: 'var(--accent)' } : undefined}
+                  >
+                    <BeatFeature
+                      href={music.ofInsta.url}
+                      image={music.ofInsta.image}
+                      label="the archive"
+                      title="of insta"
+                      meta={`${music.ofInsta.count.toLocaleString()} tracks, and counting ↗`}
+                      blurb="every song i catch in an instagram reel gets saved here, then a slow ritual sorts it: the monthly diary on the left, vibe-named shelves below, and a gold list of the ones that survive a second listen."
+                    />
+                  </div>
+                )}
               </div>
-            </a>
+            </div>
           </div>
         )}
-
-        {/* this month diary */}
-        <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
-          <div style={{ ...labelStyle, marginBottom: '1.25rem' }}>this month</div>
-          {music.thisMonth ? (
-            <PlaylistFeatureBlock f={music.thisMonth} />
-          ) : (
-            <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--muted)' }}>
-              this month&apos;s diary playlist is mid-sync. the footer ticker has the live truth.
-            </p>
-          )}
-        </div>
 
         {/* THE SHELF */}
         {grouped.length > 0 && (
@@ -457,26 +448,46 @@ function TrackRow({ t, i }: { t: CachedTrack; i: number }) {
   )
 }
 
-function PlaylistFeatureBlock({ f, accent }: { f: PlaylistFeature; accent?: boolean }) {
+function BeatFeature({
+  href,
+  image,
+  label,
+  title,
+  meta,
+  blurb,
+}: {
+  href: string
+  image: string
+  label: string
+  title: string
+  meta: string
+  blurb: string
+}) {
   return (
     <a
-      href={f.url}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="mp-card flex gap-4 transition-opacity hover:opacity-90"
-      style={{ marginTop: accent ? '1.5rem' : 0, alignItems: 'flex-start' }}
+      className="mp-card block transition-opacity hover:opacity-90"
     >
-      <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0, overflow: 'hidden', background: 'var(--accent)' }}>
-        {f.image && (
-          <Image src={f.image} alt="" width={96} height={96} quality={70} sizes="96px" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        )}
-      </div>
-      <div className="min-w-0">
-        <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--fg)' }}>{f.name}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', marginTop: 4 }}>{f.count.toLocaleString()} tracks ↗</div>
-        {f.description && (
-          <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--muted)', marginTop: 8 }}>{f.description}</p>
-        )}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-8">
+        <div style={{ width: 'clamp(8rem, 20vw, 12rem)', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: 'var(--accent)', flexShrink: 0 }}>
+          {image && (
+            <Image src={image} alt="" fill sizes="(max-width: 768px) 45vw, 12rem" style={{ objectFit: 'cover' }} />
+          )}
+        </div>
+        <div className="min-w-0">
+          <div style={{ ...labelStyle, color: 'var(--accent)' }}>{label}</div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--fg)', marginTop: '0.4rem', overflowWrap: 'anywhere' }}>
+            {title}
+          </h2>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--accent)', marginTop: '0.6rem' }}>
+            {meta}
+          </div>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--fg)', marginTop: '1rem', maxWidth: '46ch' }}>
+            {blurb}
+          </p>
+        </div>
       </div>
     </a>
   )
