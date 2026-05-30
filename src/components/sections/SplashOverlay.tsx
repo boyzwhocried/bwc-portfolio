@@ -64,9 +64,20 @@ export default function SplashOverlay() {
     markInner.style.clipPath = 'inset(0 100% 0 0)'
 
     // hide the real hero mark for the whole splash, so the flying splash mark is
-    // the only "bwc" on screen (no duplicate). it is cross-faded back in at dock.
+    // the only "bwc" on screen (no duplicate). it is revealed again at dock.
     const heroMark = document.getElementById('hero-mark')
     if (heroMark) heroMark.style.opacity = '0'
+
+    // lock scroll for the whole splash: the splash is position:fixed but the hero
+    // is in-flow, so any scroll mid-flight drifts them apart and the landing misses.
+    // released in cleanup when the splash unmounts.
+    window.scrollTo(0, 0)
+    const SCROLL_KEYS = new Set([' ', 'Spacebar', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown'])
+    const blockScroll = (e: Event) => e.preventDefault()
+    const blockScrollKey = (e: KeyboardEvent) => { if (SCROLL_KEYS.has(e.key)) e.preventDefault() }
+    window.addEventListener('wheel', blockScroll, { passive: false })
+    window.addEventListener('touchmove', blockScroll, { passive: false })
+    window.addEventListener('keydown', blockScrollKey)
 
     // FLIP onto the real hero mark. the splash mark now uses the SAME metrics as
     // BwcMark's #hero-mark (tight ink block, identical font props), so the scale is
@@ -128,11 +139,12 @@ export default function SplashOverlay() {
       ))
       await wait(Math.max(T.morph, VERM_DELAY + T.vermZoom)); if (cancelled) return
 
-      // dock + handoff: reveal the real nav icon + cross-fade the real hero mark
-      // back in while the splash mark fades out (masks any sub-pixel FLIP mismatch),
-      // then unmount the splash.
+      // dock + handoff: reveal the nav icon, then pop the real hero mark to full
+      // opacity INSTANTLY underneath the pixel-aligned splash and fade only the
+      // splash out. something opaque is always on screen, so no paper-bg flash
+      // (a cross-fade left both ~50% transparent mid-way = a brief white flash).
       navsq.style.opacity = '1'
-      if (heroMark) { heroMark.style.transition = 'opacity 0.25s ease'; heroMark.style.opacity = '1' }
+      if (heroMark) heroMark.style.opacity = '1'
       running.push(markInner.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, easing: 'ease', fill: 'forwards' }))
       await wait(260); if (cancelled) return
 
@@ -145,11 +157,14 @@ export default function SplashOverlay() {
     return () => {
       cancelled = true
       running.forEach((a) => a.cancel())
+      window.removeEventListener('wheel', blockScroll)
+      window.removeEventListener('touchmove', blockScroll)
+      window.removeEventListener('keydown', blockScrollKey)
       document.documentElement.dataset.splash = 'done'
       const navsq = document.getElementById('nav-square')
       if (navsq) navsq.style.opacity = '1'
       const heroMark = document.getElementById('hero-mark')
-      if (heroMark) { heroMark.style.opacity = '1'; heroMark.style.transition = '' }
+      if (heroMark) heroMark.style.opacity = '1'
     }
   }, [active])
 
