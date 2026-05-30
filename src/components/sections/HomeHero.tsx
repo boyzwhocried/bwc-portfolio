@@ -44,10 +44,17 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
 
       {/* poster: meta + mark + intro, fills the first view */}
       <div style={{ ...frame, position: 'relative', zIndex: 1 }}>
+        {/* asymmetric hairline grid (the character) */}
+        <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden style={{ zIndex: 0 }}>
+          <div className="absolute top-0 bottom-0" style={{ left: '38%', width: 1, background: 'var(--rule)' }} />
+          <div className="absolute top-0 bottom-0" style={{ left: '66%', width: 1, background: 'var(--rule)' }} />
+          <div className="absolute top-0 bottom-0" style={{ left: '86%', width: 1, background: 'var(--rule)' }} />
+        </div>
+
         {/* meta row */}
         <div
-          className="flex items-center justify-between"
-          style={{ paddingTop: '2rem', paddingBottom: '1rem', borderBottom: '1px solid var(--rule)', fontFamily: 'var(--font-mono)' }}
+          className="relative flex items-center justify-between"
+          style={{ zIndex: 1, paddingTop: '2rem', paddingBottom: '1rem', borderBottom: '1px solid var(--rule)', fontFamily: 'var(--font-mono)' }}
         >
           <motion.span custom={0} variants={drift} className="text-[10px] sm:text-xs uppercase" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
             EST. 2024 · JAKARTA, ID
@@ -58,7 +65,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
         </div>
 
         {/* mark + intro */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-y-12 gap-x-8 items-center" style={{ minHeight: '58vh', paddingTop: '3rem', paddingBottom: '3rem' }}>
+        <div className="relative grid grid-cols-1 md:grid-cols-12 gap-y-12 gap-x-8 items-center" style={{ zIndex: 1, minHeight: '58vh', paddingTop: '3rem', paddingBottom: '3rem' }}>
           <motion.div custom={2} variants={drift} className="md:col-span-7 lg:col-span-8">
             <BwcMark />
           </motion.div>
