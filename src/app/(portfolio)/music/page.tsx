@@ -1,9 +1,11 @@
+import { Metadata } from 'next'
+import MusicPlayer from '@/components/sections/MusicPlayer'
+
+export const metadata: Metadata = {
+  title: 'music',
+  description: 'a listening room. live from spotify, the "of insta" curation.',
+}
+
 export default function MusicPage() {
-  return (
-    <div className="min-h-screen pt-14 flex items-center justify-center">
-      <p className="font-mono text-sm" style={{ color: 'var(--muted)' }}>
-        ♫ music, coming soon
-      </p>
-    </div>
-  )
+  return <MusicPlayer />
 }
