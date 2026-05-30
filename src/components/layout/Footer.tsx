@@ -30,9 +30,14 @@ const inner: React.CSSProperties = {
   paddingRight: 'var(--page-px)',
 }
 
+// header with a hairline rule under it, so it reads as a section header
+// (not a list item) and visually groups everything in its section as one unit
 function ColHead({ children }: { children: React.ReactNode }) {
   return (
-    <div className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.14em', marginBottom: '1rem' }}>
+    <div
+      className="uppercase"
+      style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.14em', paddingBottom: 10, marginBottom: 18, borderBottom: '1px solid var(--rule)' }}
+    >
       {children}
     </div>
   )
@@ -61,10 +66,10 @@ export default function Footer({ room }: { room: string }) {
             </p>
           </div>
 
-          {/* rooms (two content-width sub-columns, sitting close as one block) */}
+          {/* rooms — one section: header+rule spans both columns below it */}
           <div className="md:col-span-5">
             <ColHead>rooms</ColHead>
-            <div style={{ display: 'grid', gridTemplateColumns: 'max-content max-content', columnGap: '4.5rem', rowGap: '0.6rem', justifyContent: 'start' }}>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
               {ROOMS.map(({ href, label }) => (
                 <Link key={href} href={href} className="transition-opacity hover:opacity-100" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.7 }}>
                   {label}
