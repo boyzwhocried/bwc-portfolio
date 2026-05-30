@@ -15,16 +15,19 @@ export async function submitContact(
   const name = formData.get('name')?.toString().trim() ?? ''
   const email = formData.get('email')?.toString().trim() ?? ''
   const message = formData.get('message')?.toString().trim() ?? ''
+  const intent = formData.get('intent')?.toString().trim() ?? ''
 
   if (!name || !email || !message) {
-    return { success: false, error: 'All fields are required.' }
+    return { success: false, error: 'all fields are required.' }
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, error: 'Invalid email address.' }
+    return { success: false, error: 'that email does not look right.' }
   }
 
-  const payload: ContactMessage = { name, email, message }
+  // prepend the chosen intent so the message carries why they reached out
+  const fullMessage = intent ? `[wants to ${intent}]\n\n${message}` : message
+  const payload: ContactMessage = { name, email, message: fullMessage }
   const supabase = createServerClient()
   const { error } = await supabase.from('contact_messages').insert(payload)
 
