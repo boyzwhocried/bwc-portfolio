@@ -1,11 +1,16 @@
 import { Metadata } from 'next'
 import MusicPlayer from '@/components/sections/MusicPlayer'
+import { getMusicData } from '@/lib/music'
 
 export const metadata: Metadata = {
   title: 'music',
   description: 'a listening room. live from spotify, the "of insta" curation.',
 }
 
-export default function MusicPage() {
-  return <MusicPlayer />
+// Re-read the cache every 5 min (the sync refreshes it on its own cron cadence).
+export const revalidate = 300
+
+export default async function MusicPage() {
+  const music = await getMusicData()
+  return <MusicPlayer music={music} />
 }

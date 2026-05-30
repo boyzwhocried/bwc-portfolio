@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 
-const SCOPES = 'user-read-currently-playing user-read-playback-state'
+const SCOPES = [
+  'user-read-currently-playing',
+  'user-read-playback-state',
+  'user-top-read',
+  'user-read-recently-played',
+  'playlist-read-private',
+].join(' ')
 
 export function GET() {
   const params = new URLSearchParams({

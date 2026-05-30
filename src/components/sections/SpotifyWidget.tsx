@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { SpotifyTrack } from '@/types'
 
 const POLL_PLAYING = 30_000
@@ -42,23 +43,10 @@ export default function SpotifyWidget() {
   const label = loading
     ? 'connecting...'
     : playing
-    ? `now playing — ${track!.title} · ${track!.artist}`
-    : 'not playing'
+    ? `now playing, ${track!.title} · ${track!.artist}`
+    : 'the listening room'
 
-  const inner = (
-    <span className="inline-flex items-center gap-2 min-w-0" style={{ color: 'var(--muted)' }}>
-      <span className="flex items-end h-3 flex-shrink-0" aria-hidden>
-        <span className={`sw-bar ${playing ? 'sw-on' : ''}`} />
-        <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.2s' }} />
-        <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.4s' }} />
-      </span>
-      <span className="truncate" style={{ color: playing ? 'var(--fg)' : 'var(--muted)' }}>
-        {label}
-        {playing && ' ↗'}
-      </span>
-    </span>
-  )
-
+  // Footer one-liner funnels into the /music room (internal), NOT the Spotify track.
   return (
     <>
       <style>{`
@@ -67,13 +55,18 @@ export default function SpotifyWidget() {
         .sw-bar.sw-on { opacity: 1; animation: swPulse 0.8s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) { .sw-bar.sw-on { animation: none; } }
       `}</style>
-      {playing && track?.track_url ? (
-        <a href={track.track_url} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full transition-opacity hover:opacity-70" style={{ fontFamily: 'var(--font-mono)' }}>
-          {inner}
-        </a>
-      ) : (
-        <span className="inline-flex max-w-full" style={{ fontFamily: 'var(--font-mono)' }}>{inner}</span>
-      )}
+      <Link href="/music" className="inline-flex max-w-full transition-opacity hover:opacity-70" style={{ fontFamily: 'var(--font-mono)' }}>
+        <span className="inline-flex items-center gap-2 min-w-0" style={{ color: 'var(--muted)' }}>
+          <span className="flex items-end h-3 flex-shrink-0" aria-hidden>
+            <span className={`sw-bar ${playing ? 'sw-on' : ''}`} />
+            <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.2s' }} />
+            <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.4s' }} />
+          </span>
+          <span className="truncate" style={{ color: playing ? 'var(--fg)' : 'var(--muted)' }}>
+            {label} →
+          </span>
+        </span>
+      </Link>
     </>
   )
 }

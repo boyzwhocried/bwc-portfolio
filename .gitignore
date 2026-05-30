@@ -41,3 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .superpowers/
+
+# local scratch (playwright shots, one-off auth helper, dev logs)
+/shots/
+shot*.mjs
+reauth.mjs
+dev.log

@@ -40,6 +40,58 @@ export interface SpotifyTrack {
   track_url: string
 }
 
+// ---- Cached (slow) Spotify data: written by the spotify-sync edge function,
+// read by /music from the public spotify_cache table. 0 live Spotify calls per visit.
+
+export type TopRange = 'short_term' | 'medium_term' | 'long_term'
+
+export interface CachedTrack {
+  name: string
+  artist: string
+  album: string
+  image: string
+  url: string
+  played_at?: string // recently-played only
+}
+
+export interface CachedArtist {
+  name: string
+  image: string
+  url: string
+  genre?: string
+}
+
+export interface PlaylistCard {
+  id: string
+  category: string // vault | rotation | special
+  position: number
+  name: string
+  description: string | null
+  image: string
+  count: number
+  url: string
+}
+
+export interface PlaylistFeature {
+  id: string
+  name: string
+  description: string | null
+  image: string
+  count: number
+  url: string
+  tracks: CachedTrack[]
+}
+
+export interface MusicData {
+  topTracks: Record<TopRange, CachedTrack[]> | null
+  topArtists: Record<TopRange, CachedArtist[]> | null
+  recentlyPlayed: CachedTrack[] | null
+  shelf: PlaylistCard[] | null
+  thisMonth: PlaylistFeature | null
+  ofInsta: PlaylistFeature | null
+  updatedAt: string | null
+}
+
 export interface ContactMessage {
   name: string
   email: string
