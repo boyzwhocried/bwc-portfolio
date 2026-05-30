@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ease, dur } from '@/lib/motion'
 
 type AppStatus = 'live' | 'building' | 'locked'
 
@@ -124,6 +125,7 @@ function WindowChrome({ app }: { app: HubApp }) {
 
 export default function HubDesktop() {
   const deskRef = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* menu bar replaces the nav (the entry gesture) */}
@@ -174,7 +176,7 @@ export default function HubDesktop() {
 
         {/* desktop: absolutely-positioned draggable windows */}
         <div className="hidden md:block">
-          {APPS.map((app) => (
+          {APPS.map((app, i) => (
             <motion.div
               key={app.id}
               drag
@@ -183,6 +185,9 @@ export default function HubDesktop() {
               dragConstraints={deskRef}
               whileDrag={{ scale: 1.02, zIndex: 40, cursor: 'grabbing' }}
               style={{ position: 'absolute', left: app.x, top: app.y, width: app.w }}
+              initial={reduce ? false : { opacity: 0, y: -24, rotate: -1 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ duration: dur.base, ease: ease.out, delay: reduce ? 0 : i * 0.08 }}
             >
               <WindowChrome app={app} />
             </motion.div>
