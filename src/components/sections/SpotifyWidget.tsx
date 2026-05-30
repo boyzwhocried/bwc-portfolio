@@ -40,11 +40,6 @@ export default function SpotifyWidget() {
   }, [])
 
   const playing = !!track?.is_playing
-  const label = loading
-    ? 'connecting...'
-    : playing
-    ? `now playing, ${track!.title} · ${track!.artist}`
-    : 'the listening room'
 
   // Footer one-liner funnels into the /music room (internal), NOT the Spotify track.
   return (
@@ -63,7 +58,18 @@ export default function SpotifyWidget() {
             <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.4s' }} />
           </span>
           <span className="truncate" style={{ color: playing ? 'var(--fg)' : 'var(--muted)', lineHeight: 1.5, paddingBottom: 1 }}>
-            {label} →
+            {loading ? (
+              'connecting...'
+            ) : playing ? (
+              <>
+                {/* "now playing," eats width on small screens, hide it there so the title + artist are not truncated */}
+                <span className="hidden sm:inline">now playing, </span>
+                {track!.title} · {track!.artist}
+              </>
+            ) : (
+              'the listening room'
+            )}{' '}
+            &rarr;
           </span>
         </span>
       </Link>
