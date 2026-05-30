@@ -16,7 +16,6 @@ export default function SplashOverlay() {
   const pathname = usePathname()
   const [active, setActive] = useState(false)
   const vermRef = useRef<HTMLDivElement>(null)
-  const markOuterRef = useRef<HTMLDivElement>(null)
   const markInnerRef = useRef<HTMLDivElement>(null)
   const paperRef = useRef<SVGTextElement>(null)
 
@@ -49,8 +48,8 @@ export default function SplashOverlay() {
       await document.fonts.ready
       if (cancelled) return
 
-      const navsq = document.getElementById('nav-square')
-      if (navsq) navsq.style.opacity = '0'
+      const navsq = document.getElementById('nav-square')!
+      navsq.style.opacity = '0'
 
       const verm = vermRef.current!
       const markInner = markInnerRef.current!
@@ -58,7 +57,7 @@ export default function SplashOverlay() {
 
       document.documentElement.dataset.splash = 'running'
 
-      const nr = document.getElementById('nav-square')!.getBoundingClientRect()
+      const nr = navsq.getBoundingClientRect()
       const vw = window.innerWidth, vh = window.innerHeight
       const baseLeft = (vw - nr.width) / 2
       const baseTop = (vh - nr.height) / 2
@@ -123,7 +122,7 @@ export default function SplashOverlay() {
   return (
     <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 70, overflow: 'hidden', pointerEvents: 'none' }}>
       <div ref={vermRef} style={{ position: 'fixed', width: 13, height: 13, background: 'var(--vermilion)', transformOrigin: 'center' }} />
-      <div ref={markOuterRef} style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+      <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
         <div ref={markInnerRef} style={{ transformOrigin: 'left top' }}>
           <svg viewBox="0 0 600 200" style={{ display: 'block', width: 'min(58vw, 760px)', height: 'auto' }}>
             <defs>
