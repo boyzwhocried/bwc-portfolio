@@ -186,11 +186,16 @@
   }
 }
 
-/* blog post article prose styles (restyled in Phase 4) */
+/* blog post article prose styles — serif body (the /blog TYPE break) */
 .blog-prose {
   color: var(--fg);
   line-height: 1.8;
-  font-size: 1rem;
+  font-size: 1.0625rem;
+  font-family: var(--font-serif);
+}
+.blog-prose h2,
+.blog-prose h3 {
+  font-family: var(--font-display);
 }
 .blog-prose p {
   margin-bottom: 1.5rem;

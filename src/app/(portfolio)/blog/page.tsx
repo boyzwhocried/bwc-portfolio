@@ -1,13 +1,13 @@
 import { Metadata } from 'next'
-import { getAllBlogPosts } from '@/lib/mdx'
+import { getAllBlogPostsWithReadTime } from '@/lib/mdx'
 import BlogList from '@/components/sections/BlogList'
 
 export const metadata: Metadata = {
-  title: 'blog',
-  description: 'writing on data engineering, building things, and more.',
+  title: 'built & broken',
+  description: 'built & broken: a one-person magazine on data, building, and chaos.',
 }
 
 export default function BlogPage() {
-  const posts = getAllBlogPosts()
+  const posts = getAllBlogPostsWithReadTime()
   return <BlogList posts={posts} />
 }

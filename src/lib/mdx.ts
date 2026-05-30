@@ -20,6 +20,25 @@ export function getAllBlogPosts(): BlogPost[] {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }
 
+export interface BlogPostListItem extends BlogPost {
+  readMin: number
+}
+
+/** estimate reading minutes at ~200 wpm, floor of 1. */
+export function readingMinutes(content: string): number {
+  const words = content.trim().split(/\s+/).filter(Boolean).length
+  return Math.max(1, Math.round(words / 200))
+}
+
+/** published posts (newest first) with reading-time, for the magazine index. */
+export function getAllBlogPostsWithReadTime(): BlogPostListItem[] {
+  return getAllBlogSlugs()
+    .map((slug) => getBlogPostWithContent(slug))
+    .filter((p): p is BlogPostWithContent => p !== null && p.published)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .map(({ content, ...meta }) => ({ ...meta, readMin: readingMinutes(content) }))
+}
+
 export function getBlogPostMeta(slug: string): BlogPost | null {
   const filePath = path.join(BLOG_DIR, `${slug}.mdx`)
   if (!fs.existsSync(filePath)) return null

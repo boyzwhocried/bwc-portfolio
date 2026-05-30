@@ -2,8 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
-import { getAllBlogSlugs, getBlogPostWithContent } from '@/lib/mdx'
-import FadeIn from '@/components/ui/FadeIn'
+import { getAllBlogSlugs, getBlogPostWithContent, readingMinutes } from '@/lib/mdx'
 
 export function generateStaticParams() {
   return getAllBlogSlugs().map((slug) => ({ slug }))
@@ -17,10 +16,7 @@ export async function generateMetadata({
   const { slug } = await params
   const post = getBlogPostWithContent(slug)
   if (!post) return { title: 'Not Found' }
-  return {
-    title: post.title,
-    description: post.summary,
-  }
+  return { title: post.title, description: post.summary }
 }
 
 export default async function BlogPostPage({
@@ -32,68 +28,75 @@ export default async function BlogPostPage({
   const post = getBlogPostWithContent(slug)
   if (!post || !post.published) notFound()
 
-  return (
-    <div className="min-h-screen pt-14">
-      <div className="max-w-xl mx-auto px-6 pt-20 pb-24">
+  const readMin = readingMinutes(post.content)
 
-        <FadeIn>
+  return (
+    <article className="min-h-screen" style={{ paddingTop: '3.5rem' }}>
+      <div className="mx-auto px-6" style={{ maxWidth: '42rem', paddingTop: '2.5rem', paddingBottom: '5rem' }}>
+        {/* back to the issue */}
+        <Link
+          href="/blog"
+          className="transition-opacity hover:opacity-70"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}
+        >
+          ← built &amp; broken
+        </Link>
+
+        {/* masthead-style article header */}
+        <header style={{ marginTop: '2rem' }}>
+          <div
+            className="uppercase"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent)', letterSpacing: '0.1em' }}
+          >
+            {post.date} · {readMin} min read
+          </div>
+          <h1
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(2rem, 6vw, 3rem)',
+              lineHeight: 1.02,
+              letterSpacing: '-0.02em',
+              color: 'var(--fg)',
+              marginTop: '0.75rem',
+            }}
+          >
+            {post.title}
+          </h1>
+          <p
+            style={{ fontFamily: 'var(--font-serif)', fontSize: 17, lineHeight: 1.55, color: 'var(--muted)', marginTop: '1rem' }}
+          >
+            {post.summary}
+          </p>
+          <div className="flex flex-wrap gap-2" style={{ marginTop: '1.25rem' }}>
+            {post.tags.map((tag) => (
+              <span
+                key={tag}
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 8px', border: '1px solid var(--rule)', color: 'var(--muted)' }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </header>
+
+        {/* heavy 3px rule, then serif prose */}
+        <div style={{ height: 3, background: 'var(--fg)', marginTop: '1.5rem', marginBottom: '2.5rem' }} />
+
+        <div className="blog-prose">
+          <MDXRemote source={post.content} />
+        </div>
+
+        <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--rule)' }}>
           <Link
             href="/blog"
-            className="font-mono text-xs transition-opacity hover:opacity-60"
-            style={{ color: 'var(--muted)' }}
+            className="transition-opacity hover:opacity-70"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}
           >
-            ← blog
+            ← back to the issue
           </Link>
-        </FadeIn>
-
-        <FadeIn delay={0.08}>
-          <div className="mt-12 mb-10">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="font-mono text-xs px-2 py-0.5"
-                  style={{ border: '1px solid var(--border)', color: 'var(--muted)' }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <h1
-              className="text-3xl font-black tracking-tight leading-tight mb-3"
-              style={{ color: 'var(--fg)' }}
-            >
-              {post.title}
-            </h1>
-            <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--muted)' }}>
-              {post.summary}
-            </p>
-            <p className="font-mono text-xs" style={{ color: 'var(--muted)', opacity: 0.7 }}>
-              {post.date}
-            </p>
-          </div>
-        </FadeIn>
-
-        <FadeIn delay={0.14}>
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '2.5rem' }}>
-            <article className="blog-prose">
-              <MDXRemote source={post.content} />
-            </article>
-          </div>
-        </FadeIn>
-
-        <FadeIn delay={0.2}>
-          <div className="mt-16 pt-8" style={{ borderTop: '1px solid var(--border)' }}>
-            <Link
-              href="/blog"
-              className="font-mono text-xs transition-opacity hover:opacity-60"
-              style={{ color: 'var(--muted)' }}>
-              ← back to blog
-            </Link>
-          </div>
-        </FadeIn>
-
+        </div>
       </div>
-    </div>
+    </article>
   )
 }
