@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Square from '@/components/ui/Square'
+import useRandomTilt from '@/lib/useRandomTilt'
 
 const links = [
   { href: '/', label: 'home' },
@@ -16,6 +17,8 @@ const links = [
 export default function Nav({ room }: { room: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  // random base lean on the brand mark; the inner Square keeps its hover rotate
+  const navTilt = useRandomTilt()
 
   // close the mobile menu on route change (deferred so it is not a sync set in the effect body)
   useEffect(() => {
@@ -51,7 +54,14 @@ export default function Nav({ room }: { room: string }) {
             style={{ color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}
             aria-label="bwc home"
           >
-            <span id="nav-square" style={{ display: 'inline-flex' }}>
+            <span
+              id="nav-square"
+              style={{
+                display: 'inline-flex',
+                transform: navTilt ? `rotate(${navTilt}deg)` : undefined,
+                transformOrigin: 'center',
+              }}
+            >
               <Square size={11} className="transition-transform group-hover:rotate-45" />
             </span>
             bwc

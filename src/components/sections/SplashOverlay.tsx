@@ -14,8 +14,10 @@ const EASE_INOUT = 'cubic-bezier(0.65,0,0.35,1)'
 const START_TILT = 3
 const LAND_TILT = -2
 const VERM_DELAY = 140
-const VERM_ROTATE = 90
 const VERM_MID_PX = 120
+// the verm field's opening rotation: a random spin (sign + magnitude) capped at
+// 60deg, instead of a fixed quarter-turn. it unwinds to the nav square's live tilt.
+const vermSpin = () => (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 30)
 
 export default function SplashOverlay() {
   const pathname = usePathname()
@@ -59,7 +61,8 @@ export default function SplashOverlay() {
     const vdy = nr.top - baseTop
     const cover = (Math.hypot(vw, vh) * 1.1) / nr.width
     const midScale = VERM_MID_PX / nr.width
-    verm.style.transform = `translate(0px,0px) scale(${cover}) rotate(${VERM_ROTATE}deg)`
+    const vermStart = vermSpin()
+    verm.style.transform = `translate(0px,0px) scale(${cover}) rotate(${vermStart}deg)`
     markInner.style.transform = `rotate(${START_TILT}deg)`
     markInner.style.clipPath = 'inset(0 100% 0 0)'
 
@@ -78,6 +81,16 @@ export default function SplashOverlay() {
     window.addEventListener('wheel', blockScroll, { passive: false })
     window.addEventListener('touchmove', blockScroll, { passive: false })
     window.addEventListener('keydown', blockScrollKey)
+
+    // read the nav square's live rotation (it now carries a randomized tilt), so
+    // the verm field docks flush onto it instead of unwinding to a hardcoded 0deg.
+    function navTiltDeg(): number {
+      const tr = getComputedStyle(navsq).transform
+      const m = tr && tr.match(/matrix\(([^)]+)\)/)
+      if (!m) return 0
+      const [a, b] = m[1].split(',').map(parseFloat)
+      return (Math.atan2(b, a) * 180) / Math.PI
+    }
 
     // FLIP onto the real hero mark. the splash mark now uses the SAME metrics as
     // BwcMark's #hero-mark (tight ink block, identical font props), so the scale is
@@ -123,11 +136,12 @@ export default function SplashOverlay() {
         [{ transform: `rotate(${START_TILT}deg)` }, { transform: heroTransform }],
         { duration: T.morph, easing: EASE_OUT, fill: 'forwards' },
       ))
+      const endTilt = navTiltDeg()
       running.push(verm.animate(
         [
-          { transform: `translate(0px,0px) scale(${cover}) rotate(${VERM_ROTATE}deg)`, offset: 0, easing: EASE_OUT },
-          { transform: `translate(0px,0px) scale(${midScale}) rotate(${VERM_ROTATE / 2}deg)`, offset: 0.5, easing: EASE_INOUT },
-          { transform: `translate(${vdx}px,${vdy}px) scale(1) rotate(0deg)`, offset: 1 },
+          { transform: `translate(0px,0px) scale(${cover}) rotate(${vermStart}deg)`, offset: 0, easing: EASE_OUT },
+          { transform: `translate(0px,0px) scale(${midScale}) rotate(${vermStart / 2}deg)`, offset: 0.5, easing: EASE_INOUT },
+          { transform: `translate(${vdx}px,${vdy}px) scale(1) rotate(${endTilt}deg)`, offset: 1 },
         ],
         { duration: T.vermZoom, delay: VERM_DELAY, fill: 'both' },
       ))

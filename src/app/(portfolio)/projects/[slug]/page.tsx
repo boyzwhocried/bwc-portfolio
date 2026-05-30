@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getAllProjects, getProjectBySlug } from '@/lib/projects'
 import Reveal from '@/components/ui/Reveal'
+import DropCap from '@/components/ui/DropCap'
 
 export const revalidate = 3600
 
@@ -142,25 +143,8 @@ export default async function ProjectDetailPage({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
                 {paras.map((para, i) => (
                   <p key={i} style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--fg)' }}>
-                    {i === 0 && (
-                      // crooked vermilion drop-cap (left-aligned body context = valid)
-                      <span
-                        aria-hidden
-                        style={{
-                          fontFamily: 'var(--font-display)',
-                          fontWeight: 700,
-                          fontSize: '3.2rem',
-                          lineHeight: 0.7,
-                          color: v,
-                          float: 'left',
-                          margin: '6px 10px 0 0',
-                          transform: 'rotate(-2.5deg)',
-                          display: 'inline-block',
-                        }}
-                      >
-                        {para.charAt(0)}
-                      </span>
-                    )}
+                    {/* crooked vermilion drop-cap, randomized lean per load */}
+                    {i === 0 && <DropCap char={para.charAt(0)} color={v} />}
                     {i === 0 ? para.slice(1) : para}
                   </p>
                 ))}

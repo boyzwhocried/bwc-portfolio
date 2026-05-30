@@ -55,7 +55,7 @@ export default function Footer({ room }: { room: string }) {
           {/* brand */}
           <div className="col-span-2 md:col-span-4">
             <Link href="/" className="inline-flex items-center gap-2 transition-opacity hover:opacity-70" style={{ color: 'var(--fg)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em' }}>
-              <Square size={14} />
+              <Square size={14} randomTilt />
               boyzwhocried
             </Link>
             <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: '0.75rem', maxWidth: '22rem' }}>

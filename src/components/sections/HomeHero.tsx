@@ -79,7 +79,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
             </p>
 
             <p className="mt-6 flex items-center gap-3" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
-              <Square size={14} tilt={-6} />
+              <Square size={14} randomTilt />
               i build things &amp; break a few
             </p>
 
