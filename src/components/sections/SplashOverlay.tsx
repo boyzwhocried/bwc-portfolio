@@ -22,7 +22,7 @@ export default function SplashOverlay() {
   const [active, setActive] = useState(false)
   const vermRef = useRef<HTMLDivElement>(null)
   const markInnerRef = useRef<HTMLDivElement>(null)
-  const paperRef = useRef<SVGTextElement>(null)
+  const blockRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (pathname !== '/') return
@@ -39,7 +39,7 @@ export default function SplashOverlay() {
     const navsq = document.getElementById('nav-square')!
     const verm = vermRef.current!
     const markInner = markInnerRef.current!
-    const paper = paperRef.current!
+    const block = blockRef.current!
 
     // synchronous pre-paint setup: place + scale the overlay into its initial
     // keyframe BEFORE the browser paints, so the verm square never paints small
@@ -68,18 +68,30 @@ export default function SplashOverlay() {
     const heroMark = document.getElementById('hero-mark')
     if (heroMark) heroMark.style.opacity = '0'
 
-    // FLIP onto the real hero mark by matching CENTERS (rotation-invariant, so the
-    // hero's -2deg tilt does not throw off the landing the way top-left alignment did).
+    // FLIP onto the real hero mark. the splash mark now uses the SAME metrics as
+    // BwcMark's #hero-mark (tight ink block, identical font props), so the scale is
+    // ~1:1 and the letters coincide, not just the bounding boxes.
+    //   - center: land on the hero's DISPLAYED (rotated) center.
+    //   - scale: take the hero's TRUE UNROTATED width. its parent carries
+    //     rotate(-2deg), which widens the AABB and would otherwise inflate s.
     function flipToHero(): string {
       const inner = markInnerRef.current!
       const prev = inner.style.transform
       inner.style.transform = 'none'
       const m0 = inner.getBoundingClientRect()
       inner.style.transform = prev
-      const hero = document.getElementById('hero-mark')!.getBoundingClientRect()
-      const dx = (hero.left + hero.width / 2) - (m0.left + m0.width / 2)
-      const dy = (hero.top + hero.height / 2) - (m0.top + m0.height / 2)
-      const s = hero.width / m0.width
+
+      const heroEl = document.getElementById('hero-mark')!
+      const heroRot = heroEl.getBoundingClientRect()
+      const parent = heroEl.parentElement as HTMLElement | null
+      const prevParent = parent ? parent.style.transform : ''
+      if (parent) parent.style.transform = 'none'
+      const heroFlat = heroEl.getBoundingClientRect()
+      if (parent) parent.style.transform = prevParent
+
+      const dx = (heroRot.left + heroRot.width / 2) - (m0.left + m0.width / 2)
+      const dy = (heroRot.top + heroRot.height / 2) - (m0.top + m0.height / 2)
+      const s = heroFlat.width / m0.width
       return `translate(${dx}px, ${dy}px) rotate(${LAND_TILT}deg) scale(${s})`
     }
 
@@ -108,8 +120,10 @@ export default function SplashOverlay() {
         ],
         { duration: T.vermZoom, delay: VERM_DELAY, fill: 'both' },
       ))
-      running.push(paper.animate(
-        [{ opacity: 0 }, { opacity: 1 }],
+      // letters ride in vermilion (reads as a knockout over the full-screen verm
+      // field), then warm to paper as the mark lands so it matches the real hero.
+      running.push(block.animate(
+        [{ color: '#e84c28' }, { color: '#ece7de' }],
         { duration: T.paperFade, delay: T.morph - T.paperFade, easing: 'ease-out', fill: 'forwards' },
       ))
       await wait(Math.max(T.morph, VERM_DELAY + T.vermZoom)); if (cancelled) return
@@ -146,16 +160,26 @@ export default function SplashOverlay() {
       <div ref={vermRef} style={{ position: 'fixed', width: 13, height: 13, background: 'var(--vermilion)', transformOrigin: 'center' }} />
       <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
         <div ref={markInnerRef} style={{ transformOrigin: 'center' }}>
-          <svg viewBox="0 0 600 200" style={{ display: 'block', width: 'min(58vw, 760px)', height: 'auto' }}>
-            <defs>
-              <mask id="splash-knock">
-                <rect x="0" y="0" width="600" height="200" fill="#fff" />
-                <text x="300" y="158" textAnchor="middle" fontFamily="'Clash Grotesk', sans-serif" fontWeight="700" fontSize="190" letterSpacing="-11" fill="#000">bwc</text>
-              </mask>
-            </defs>
-            <rect x="0" y="0" width="600" height="200" fill="#1a1a1a" mask="url(#splash-knock)" />
-            <text ref={paperRef} x="300" y="158" textAnchor="middle" fontFamily="'Clash Grotesk', sans-serif" fontWeight="700" fontSize="190" letterSpacing="-11" fill="#ece7de" opacity="0">bwc</text>
-          </svg>
+          {/* same metrics as BwcMark's #hero-mark so the FLIP lands ~1:1 (tight ink
+              block, not a 3:1 SVG canvas with margin around the glyphs). */}
+          <div
+            ref={blockRef}
+            style={{
+              display: 'inline-flex',
+              background: 'var(--fg)',
+              padding: '0 0.12em',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(5rem, 16vw, 11rem)',
+              lineHeight: 0.82,
+              letterSpacing: '-0.06em',
+              color: '#e84c28',
+            }}
+          >
+            {['b', 'w', 'c'].map((ch) => (
+              <span key={ch} style={{ display: 'inline-block' }}>{ch}</span>
+            ))}
+          </div>
         </div>
       </div>
     </div>
