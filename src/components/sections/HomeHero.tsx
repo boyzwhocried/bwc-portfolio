@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { motion, useReducedMotion } from 'framer-motion'
-import { useDriftIn } from '@/lib/motion'
+import { useDriftIn, useFadeUp } from '@/lib/motion'
 import { Project } from '@/types'
 import BwcMark from './BwcMark'
 import Square from '@/components/ui/Square'
@@ -31,6 +31,7 @@ function projType(p: Project): string {
 
 export default function HomeHero({ featured }: { featured: Project[] }) {
   const drift = useDriftIn()
+  const fade = useFadeUp()
   const reduce = useReducedMotion()
 
   return (
@@ -120,8 +121,14 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
         </div>
       </motion.div>
 
-      {/* featured-work band: fills the void with real content + cross-links */}
-      <div style={{ ...frame, position: 'relative', zIndex: 1, paddingTop: '4rem', paddingBottom: '2rem' }}>
+      {/* featured-work band: below-fold, scroll-reveals once */}
+      <motion.div
+        variants={fade}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
+        style={{ ...frame, position: 'relative', zIndex: 1, paddingTop: '4rem', paddingBottom: '2rem' }}
+      >
         <div className="flex items-baseline justify-between" style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(1.4rem, 3vw, 2rem)', letterSpacing: '-0.02em', color: 'var(--fg)' }}>
             selected work
@@ -152,7 +159,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
           <Link href="/now" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>what i&apos;m on now →</Link>
           <Link href="/sandbox" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>poke around the sandbox →</Link>
         </div>
-      </div>
+      </motion.div>
     </motion.section>
   )
 }

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import NowHeadline from '@/components/sections/NowHeadline'
 
 export const metadata: Metadata = {
   title: 'now',
@@ -45,10 +46,10 @@ export default function NowPage() {
           <span style={{ color: 'var(--muted)' }}>● updated {LAST_UPDATED} · jakarta</span>
         </div>
 
-        {/* big italic status headline (the entry gesture) */}
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontWeight: 700, fontSize: 'clamp(2.2rem, 6vw, 4rem)', lineHeight: 1.05, color: 'var(--fg)', marginTop: '1.5rem', maxWidth: '20ch' }}>
+        {/* big italic status headline: above-fold load-drift */}
+        <NowHeadline>
           rebuilding this whole site, one room at a time.
-        </h1>
+        </NowHeadline>
 
         {/* two columns: currently (sidebar) + dated feed */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-x-16 gap-y-10" style={{ marginTop: '3.5rem' }}>

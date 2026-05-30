@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import Image from 'next/image'
 import type {
   SpotifyTrack,
@@ -11,6 +12,7 @@ import type {
   CachedTrack,
 } from '@/types'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import { useFadeUp } from '@/lib/motion'
 
 const POLL_PLAYING = 30_000
 const POLL_IDLE = 60_000
@@ -118,6 +120,7 @@ function SegToggle<T extends string>({
 }
 
 export default function MusicPlayer({ music }: { music: MusicData }) {
+  const fade = useFadeUp()
   const [live, setLive] = useState<SpotifyLive | null>(null)
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState<TopRange>('short_term')
@@ -250,7 +253,13 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
 
         {/* TOP TRACKS + ARTISTS, shared range toggle */}
         {(music.topTracks || music.topArtists) && (
-          <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
+          <motion.div
+            variants={fade}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}
+          >
             <div className="flex flex-wrap items-baseline justify-between gap-4" style={{ marginBottom: '1.75rem' }}>
               <div style={labelStyle}>most played</div>
               <SegToggle options={RANGES} value={range} onChange={setRange} ariaLabel="time range" />
@@ -295,12 +304,18 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* RECENTLY PLAYED (live) */}
         {recent.length > 0 && (
-          <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
+          <motion.div
+            variants={fade}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}
+          >
             <div style={{ ...labelStyle, marginBottom: '1.5rem' }}>last spun</div>
             <div style={{ position: 'relative' }}>
               <div className="mp-scroller flex gap-5 overflow-x-auto pb-2">
@@ -326,12 +341,16 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
               {/* right-edge fade cue that there's more to scroll */}
               <div aria-hidden style={{ position: 'absolute', top: 0, right: 0, bottom: 8, width: 48, pointerEvents: 'none', background: 'linear-gradient(to right, transparent, var(--bg))' }} />
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* THE TWO PLAYLISTS I LIVE IN: this month + of insta paired in one full-bleed beat (the one break per room) */}
         {(music.thisMonth || music.ofInsta) && (
-          <div
+          <motion.div
+            variants={fade}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
             style={{
               width: '100vw',
               marginLeft: 'calc(50% - 50vw)',
@@ -375,12 +394,18 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* THE SHELF */}
         {grouped.length > 0 && (
-          <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
+          <motion.div
+            variants={fade}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}
+          >
             <div className="flex flex-wrap items-baseline justify-between gap-4" style={{ marginBottom: '0.5rem' }}>
               <div style={labelStyle}>the shelf</div>
               <SegToggle options={SORTS} value={sort} onChange={setSort} ariaLabel="sort playlists" />
@@ -412,7 +437,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
                 </div>
               )
             })}
-          </div>
+          </motion.div>
         )}
 
         {music.updatedAt && (

@@ -1,4 +1,8 @@
+'use client'
+
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { useDriftIn, useFadeUp } from '@/lib/motion'
 import { BlogPostListItem } from '@/lib/mdx'
 import DriftingSquares from '@/components/ui/DriftingSquares'
 
@@ -14,17 +18,19 @@ export default function BlogList({ posts }: { posts: BlogPostListItem[] }) {
   const issueNo = posts.length
   const featured = posts[0]
   const rest = posts.slice(1)
+  const drift = useDriftIn()
+  const fade = useFadeUp()
 
   return (
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
       <DriftingSquares variant="blog" color="var(--vermilion)" opacity={0.08} count={6} />
 
       <div style={{ ...frame, position: 'relative', zIndex: 1, paddingTop: '2.5rem', paddingBottom: '2rem' }}>
-        {/* masthead */}
+        {/* masthead: above-fold, load-drift */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(3rem, 11vw, 8rem)', lineHeight: 0.82, letterSpacing: '-0.04em', color: 'var(--fg)' }}>
+          <motion.h1 variants={drift} initial="hidden" animate="show" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(3rem, 11vw, 8rem)', lineHeight: 0.82, letterSpacing: '-0.04em', color: 'var(--fg)' }}>
             built &amp; broken
-          </h1>
+          </motion.h1>
           <div className="md:text-right" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', lineHeight: 1.7 }}>
             <div>ISSUE No. {String(issueNo).padStart(2, '0')}</div>
             <div style={{ color: 'var(--muted)' }}>jakarta · 2026</div>
@@ -37,7 +43,14 @@ export default function BlogList({ posts }: { posts: BlogPostListItem[] }) {
         {posts.length === 0 ? (
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--muted)', marginTop: '2rem' }}>nothing published yet.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-x-12 gap-y-12" style={{ marginTop: '3rem' }}>
+          <motion.div
+            variants={fade}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-12 gap-x-12 gap-y-12"
+            style={{ marginTop: '3rem' }}
+          >
             {/* featured lead article */}
             <div className="md:col-span-7 md:pr-12" style={{ borderRight: '1px solid var(--rule)' }}>
               <Link href={`/blog/${featured.slug}`} className="group block transition-opacity hover:opacity-80">
@@ -71,7 +84,7 @@ export default function BlogList({ posts }: { posts: BlogPostListItem[] }) {
                 ))}
               </ul>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* footer-of-room cross-links */}

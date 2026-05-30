@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { useFadeUp } from '@/lib/motion'
 
 // placeholder set. real photos drop into public/photography/ at build (open-loop);
 // swap each `bg` for an <img src> then. shape + flow are final now.
@@ -18,6 +20,7 @@ const PHOTOS: Photo[] = [
 export default function PhotoGallery() {
   const [sel, setSel] = useState(0)
   const photo = PHOTOS[sel]
+  const fade = useFadeUp()
 
   return (
     <section style={{ paddingTop: '3.5rem', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -60,8 +63,12 @@ export default function PhotoGallery() {
         </div>
       </div>
 
-      {/* film-strip thumbnail rail */}
-      <div
+      {/* film-strip thumbnail rail: below-fold, scroll-reveals once */}
+      <motion.div
+        variants={fade}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
         className="flex gap-2 overflow-x-auto"
         style={{ padding: '0.75rem 5%', borderTop: '1px solid var(--rule)' }}
       >
@@ -84,7 +91,7 @@ export default function PhotoGallery() {
             }}
           />
         ))}
-      </div>
+      </motion.div>
     </section>
   )
 }
