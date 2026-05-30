@@ -44,7 +44,7 @@ export default function ProjectIndex({ projects }: { projects: Project[] }) {
 
   return (
     <section style={{ position: 'relative', paddingTop: '3.5rem', overflow: 'hidden' }}>
-      <DriftingSquares variant="projects" color="var(--fg)" opacity={0.06} count={6} />
+      <DriftingSquares variant="projects" color="var(--accent)" opacity={0.07} count={6} />
 
       <style>{`
         .proj-row { transition: background .2s ease, transform .2s ease; }
@@ -126,14 +126,13 @@ export default function ProjectIndex({ projects }: { projects: Project[] }) {
                     paddingTop: 16,
                     paddingBottom: 16,
                     borderBottom: '1px solid var(--rule)',
-                    opacity: archived ? 0.5 : 1,
                     textDecoration: 'none',
                   }}
                 >
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)' }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <span className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(1.2rem, 2.4vw, 1.6rem)', color: 'var(--fg)' }}>
+                  <span className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(1.2rem, 2.4vw, 1.6rem)', color: archived ? 'var(--muted)' : 'var(--fg)' }}>
                     {p.title}
                   </span>
                   <span className="hidden md:block truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>

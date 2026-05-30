@@ -59,7 +59,7 @@ function WindowChrome({ app }: { app: HubApp }) {
     <div
       style={{
         background: locked ? 'var(--vermilion)' : 'var(--ink)',
-        color: locked ? '#efe2dc' : 'var(--paper)',
+        color: locked ? 'var(--ink)' : 'var(--paper)',
         fontFamily: 'var(--font-mono)',
         fontSize: 10,
         padding: '4px 8px',
@@ -80,7 +80,7 @@ function WindowChrome({ app }: { app: HubApp }) {
   const actionStyle: React.CSSProperties = {
     fontFamily: 'var(--font-mono)',
     fontSize: 10,
-    color: locked ? 'var(--vermilion)' : building ? '#a07a2a' : 'var(--accent)',
+    color: building ? '#6d5212' : 'var(--accent-text)',
     marginTop: 10,
     display: 'inline-block',
   }
@@ -115,7 +115,7 @@ function WindowChrome({ app }: { app: HubApp }) {
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: locked ? '#5a4a44' : 'var(--fg)' }}>
           {app.name}
         </div>
-        <div style={{ fontSize: 11, color: locked ? '#8a7a74' : 'var(--muted)', marginTop: 4 }}>{app.blurb}</div>
+        <div style={{ fontSize: 11, color: locked ? '#6e5d56' : 'var(--muted)', marginTop: 4 }}>{app.blurb}</div>
         {actionEl}
       </div>
     </div>
@@ -158,7 +158,9 @@ export default function HubDesktop() {
           className="px-5"
           style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', paddingTop: 12 }}
         >
-          drag the windows around (grab a title bar). 🔒 = private, sign-in required.
+          <span className="hidden md:inline">drag the windows around (grab a title bar). </span>
+          <span className="md:hidden">tap a window to open. </span>
+          🔒 = private, sign-in required.
         </p>
 
         {/* mobile: stacked windows (no absolute positioning) */}

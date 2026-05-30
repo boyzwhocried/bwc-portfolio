@@ -37,7 +37,7 @@ export default async function BlogPostPage({
         <Link
           href="/blog"
           className="transition-opacity hover:opacity-70"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)' }}
         >
           ← built &amp; broken
         </Link>
@@ -46,7 +46,7 @@ export default async function BlogPostPage({
         <header style={{ marginTop: '2rem' }}>
           <div
             className="uppercase"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent)', letterSpacing: '0.1em' }}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-text)', letterSpacing: '0.1em' }}
           >
             {post.date} · {readMin} min read
           </div>
@@ -91,7 +91,7 @@ export default async function BlogPostPage({
           <Link
             href="/blog"
             className="transition-opacity hover:opacity-70"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)' }}
           >
             ← back to the issue
           </Link>

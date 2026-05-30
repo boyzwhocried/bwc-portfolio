@@ -66,12 +66,12 @@ export default function Footer({ room }: { room: string }) {
             </p>
           </div>
 
-          {/* rooms — one section: header+rule spans both columns below it */}
+          {/* rooms - one section: header+rule spans both columns below it */}
           <div className="md:col-span-5">
             <ColHead>rooms</ColHead>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
               {ROOMS.map(({ href, label }) => (
-                <Link key={href} href={href} className="transition-opacity hover:opacity-100" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.7 }}>
+                <Link key={href} href={href} className="footer-link" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                   {label}
                 </Link>
               ))}
@@ -83,7 +83,7 @@ export default function Footer({ room }: { room: string }) {
             <ColHead>elsewhere</ColHead>
             <div className="flex flex-col gap-2">
               {ELSEWHERE.map(({ href, label }) => (
-                <a key={label} href={href} target={href.startsWith('mailto') ? '_self' : '_blank'} rel="noopener noreferrer" className="transition-opacity hover:opacity-100" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.7 }}>
+                <a key={label} href={href} target={href.startsWith('mailto') ? '_self' : '_blank'} rel="noopener noreferrer" className="footer-link" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                   {label} ↗
                 </a>
               ))}

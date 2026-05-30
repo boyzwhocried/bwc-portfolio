@@ -24,14 +24,14 @@ const SOCIALS = [
 export default function ContactPage() {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
-      {/* ink squares on the vermilion flood (no color detox — structure/content only) */}
+      {/* ink squares on the vermilion flood (no color detox; a11y handled via full-ink text + near-ink --muted) */}
       <DriftingSquares variant="contact" color="var(--ink)" opacity={0.06} count={6} />
 
       <div style={{ ...frame, position: 'relative', zIndex: 1, paddingTop: '3rem', paddingBottom: '4rem' }}>
         {/* availability status */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg)', marginBottom: '2.5rem' }}>
           <span>● open to: freelance · collabs · a chat</span>
-          <span style={{ opacity: 0.7 }}>· based in jakarta (GMT+7) · usually replies within a day</span>
+          <span style={{ color: 'var(--muted)' }}>· based in jakarta (GMT+7) · usually replies within a day</span>
         </div>
 
         <ContactForm />
@@ -41,12 +41,12 @@ export default function ContactPage() {
           <div className="md:col-span-7 flex flex-wrap gap-x-8 gap-y-2">
             {SOCIALS.map(({ label, value, href }) => (
               <a key={label} href={href} target={href.startsWith('mailto') ? '_self' : '_blank'} rel="noopener noreferrer" className="group transition-opacity hover:opacity-70" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                <span style={{ color: 'var(--fg)', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label} </span>
+                <span style={{ color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label} </span>
                 <span style={{ color: 'var(--fg)' }}>{value} ↗</span>
               </a>
             ))}
           </div>
-          <p className="md:col-span-5 md:text-right" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.8 }}>
+          <p className="md:col-span-5 md:text-right" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)' }}>
             no pitch decks required. a sentence is fine.
           </p>
         </div>

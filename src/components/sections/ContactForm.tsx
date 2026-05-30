@@ -27,7 +27,7 @@ export default function ContactForm() {
     fontSize: 14,
     color: 'var(--fg)',
     borderBottom: '1px solid var(--fg)',
-    // no outline:none — keyboard focus ring (global :focus-visible) must stay visible
+    // no outline:none; keyboard focus ring (global :focus-visible) must stay visible
   }
   const labelStyle: React.CSSProperties = {
     display: 'block',
