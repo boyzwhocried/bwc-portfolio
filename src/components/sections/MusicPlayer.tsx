@@ -329,7 +329,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           </div>
         )}
 
-        {/* THE TWO PLAYLISTS I LIVE IN — this month + of insta paired in one full-bleed beat (the one break per room) */}
+        {/* THE TWO PLAYLISTS I LIVE IN: this month + of insta paired in one full-bleed beat (the one break per room) */}
         {(music.thisMonth || music.ofInsta) && (
           <div
             style={{
@@ -344,7 +344,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           >
             <div style={{ ...frame, paddingTop: '3.75rem', paddingBottom: '3.75rem' }}>
               <div className="flex flex-col md:flex-row">
-                {/* this month — primary, leads by position */}
+                {/* this month: primary, leads by position */}
                 {music.thisMonth && (
                   <div className="md:flex-1 min-w-0 md:pr-12 lg:pr-16">
                     <BeatFeature
@@ -357,7 +357,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
                     />
                   </div>
                 )}
-                {/* of insta — the archive; vermilion divider only when paired */}
+                {/* of insta: the archive; vermilion divider only when paired */}
                 {music.ofInsta && (
                   <div
                     className={music.thisMonth ? 'md:flex-1 min-w-0 mt-12 pt-12 border-t md:mt-0 md:pt-0 md:border-t-0 md:border-l md:pl-12 lg:pl-16' : 'md:flex-1 min-w-0'}
