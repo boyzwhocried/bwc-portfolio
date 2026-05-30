@@ -112,7 +112,6 @@ export default function CVPage() {
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: '0.75rem' }}
           >
             <a href="mailto:verrel.alsyoumi@gmail.com" style={{ color: 'var(--fg)' }}>verrel.alsyoumi@gmail.com</a>
-            <span>+62 811 1340 923</span>
             <a href="https://linkedin.com/in/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg)' }}>linkedin.com/in/boyzwhocried</a>
             <a href="https://github.com/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg)' }}>github.com/boyzwhocried</a>
             <span>East Jakarta, Indonesia · open to remote</span>
