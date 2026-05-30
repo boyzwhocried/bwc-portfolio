@@ -1,7 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+
+// run the splash setup before paint on the client (so the overlay never paints
+// in its untransformed state), but fall back to useEffect on the server to avoid
+// the SSR useLayoutEffect warning.
+const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 const T = { rollerIn: 780, hold: 500, morph: 1050, vermZoom: 1300, paperFade: 670 }
 const EASE_OUT = 'cubic-bezier(0.16,1,0.3,1)'
@@ -25,11 +30,38 @@ export default function SplashOverlay() {
     setActive(true)
   }, [pathname])
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     if (!active) return
     let cancelled = false
     const running: Animation[] = []
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+    const navsq = document.getElementById('nav-square')!
+    const verm = vermRef.current!
+    const markInner = markInnerRef.current!
+    const paper = paperRef.current!
+
+    // synchronous pre-paint setup: place + scale the overlay into its initial
+    // keyframe BEFORE the browser paints, so the verm square never paints small
+    // then jumps to full-screen (that small->huge change registers as a 1.0 CLS).
+    navsq.style.opacity = '0'
+    document.documentElement.dataset.splash = 'running'
+    const nr = navsq.getBoundingClientRect()
+    const vw = window.innerWidth, vh = window.innerHeight
+    const baseLeft = (vw - nr.width) / 2
+    const baseTop = (vh - nr.height) / 2
+    verm.style.left = baseLeft + 'px'
+    verm.style.top = baseTop + 'px'
+    verm.style.width = nr.width + 'px'
+    verm.style.height = nr.height + 'px'
+    verm.style.transformOrigin = 'center'
+    const vdx = nr.left - baseLeft
+    const vdy = nr.top - baseTop
+    const cover = (Math.hypot(vw, vh) * 1.1) / nr.width
+    const midScale = VERM_MID_PX / nr.width
+    verm.style.transform = `translate(0px,0px) scale(${cover}) rotate(${VERM_ROTATE}deg)`
+    markInner.style.transform = `rotate(${START_TILT}deg)`
+    markInner.style.clipPath = 'inset(0 100% 0 0)'
 
     function flipToHero(): string {
       const inner = markInnerRef.current!
@@ -47,32 +79,6 @@ export default function SplashOverlay() {
     async function play() {
       await document.fonts.ready
       if (cancelled) return
-
-      const navsq = document.getElementById('nav-square')!
-      navsq.style.opacity = '0'
-
-      const verm = vermRef.current!
-      const markInner = markInnerRef.current!
-      const paper = paperRef.current!
-
-      document.documentElement.dataset.splash = 'running'
-
-      const nr = navsq.getBoundingClientRect()
-      const vw = window.innerWidth, vh = window.innerHeight
-      const baseLeft = (vw - nr.width) / 2
-      const baseTop = (vh - nr.height) / 2
-      verm.style.left = baseLeft + 'px'
-      verm.style.top = baseTop + 'px'
-      verm.style.width = nr.width + 'px'
-      verm.style.height = nr.height + 'px'
-      verm.style.transformOrigin = 'center'
-      const vdx = nr.left - baseLeft
-      const vdy = nr.top - baseTop
-      const cover = (Math.hypot(vw, vh) * 1.1) / nr.width
-      const midScale = VERM_MID_PX / nr.width
-      verm.style.transform = `translate(0px,0px) scale(${cover}) rotate(${VERM_ROTATE}deg)`
-
-      markInner.style.transform = `rotate(${START_TILT}deg)`
 
       running.push(markInner.animate(
         [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0%)' }],
