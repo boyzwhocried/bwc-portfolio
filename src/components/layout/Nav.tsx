@@ -51,7 +51,9 @@ export default function Nav({ room }: { room: string }) {
             style={{ color: 'var(--fg)', fontFamily: 'var(--font-mono)' }}
             aria-label="bwc home"
           >
-            <Square size={11} className="transition-transform group-hover:rotate-45" />
+            <span id="nav-square" style={{ display: 'inline-flex' }}>
+              <Square size={11} className="transition-transform group-hover:rotate-45" />
+            </span>
             bwc
           </Link>
 

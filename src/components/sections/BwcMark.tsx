@@ -49,6 +49,7 @@ export default function BwcMark() {
 
       <div
         ref={blockRef}
+        id="hero-mark"
         aria-hidden
         className="inline-flex"
         style={{
