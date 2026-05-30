@@ -70,6 +70,7 @@
     --bg: var(--paper);
     --fg: var(--ink);
     --accent: var(--vermilion);
+    --accent-text: #b83612;  /* AA-safe deep vermilion for SMALL text on light bg (bright --accent stays for large/non-text) */
     --muted: #6b665d;        /* warm grey on paper */
     --rule: #d8d2c6;         /* hairline grid/rule color on paper */
     --border: var(--rule);   /* back-compat alias for pages not yet rebuilt (resolves per-room) */
@@ -88,6 +89,7 @@
     --fg: var(--paper);
     --muted: #9a9489;
     --rule: #34322d;
+    --accent-text: var(--vermilion);  /* bright vermilion is AA on dark */
     /* accent (vermilion) stays */
   }
 
@@ -96,6 +98,7 @@
     --bg: var(--paper);
     --fg: var(--ink);
     --accent: var(--ink);    /* vermilion suppressed; returns on case-study page */
+    --accent-text: var(--ink);
     --muted: #6b665d;
     --rule: #d8d2c6;
   }
@@ -114,6 +117,7 @@
     --bg: var(--vermilion);
     --fg: var(--ink);
     --accent: var(--ink);
+    --accent-text: var(--ink);
     --muted: #7a2e1a;
     --rule: #c43f1f;
   }
@@ -132,6 +136,7 @@
     --bg: #0e0e12;
     --fg: #ece7de;
     --accent: var(--vermilion);
+    --accent-text: var(--vermilion);  /* bright vermilion is AA on dark */
     --muted: #8a8794;
     --rule: #26252e;
   }
@@ -141,6 +146,7 @@
     --bg: #222222;
     --fg: #ece7de;
     --accent: var(--vermilion);
+    --accent-text: #f4633f;  /* lighter vermilion to clear AA on #222 */
     --muted: #8d8d8d;
     --rule: #383838;
   }

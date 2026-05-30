@@ -425,7 +425,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
         )}
 
         {music.updatedAt && (
-          <p style={{ ...labelStyle, marginTop: '3.5rem', opacity: 0.6 }}>
+          <p style={{ ...labelStyle, marginTop: '3.5rem' }}>
             slow data synced {timeAgo(music.updatedAt)} · now-playing is live
           </p>
         )}

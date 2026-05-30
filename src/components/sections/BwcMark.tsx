@@ -94,7 +94,7 @@ export default function BwcMark() {
         style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 'clamp(0.7rem, 1.6vw, 0.85rem)',
-          color: 'var(--accent)',
+          color: 'var(--accent-text)',
           marginTop: '0.9rem',
           marginLeft: '0.4rem',
           transform: 'rotate(0.6deg)',

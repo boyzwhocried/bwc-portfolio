@@ -65,8 +65,7 @@ export default function Nav({ room }: { room: string }) {
                     href={href}
                     className="text-sm transition-all"
                     style={{
-                      color: active ? 'var(--accent)' : 'var(--muted)',
-                      opacity: active ? 1 : 0.8,
+                      color: active ? 'var(--accent-text)' : 'var(--muted)',
                     }}
                   >
                     {label}

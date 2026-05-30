@@ -82,7 +82,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
               i build things &amp; break a few
             </p>
 
-            <p className="mt-4 text-[10px] uppercase" style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)', letterSpacing: '0.08em' }}>
+            <p className="mt-4 text-[10px] uppercase" style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-text)', letterSpacing: '0.08em' }}>
               scroll to dig in ↓
             </p>
           </motion.div>
@@ -126,7 +126,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(1.4rem, 3vw, 2rem)', letterSpacing: '-0.02em', color: 'var(--fg)' }}>
             selected work
           </h2>
-          <Link href="/projects" className="transition-opacity hover:opacity-60" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>
+          <Link href="/projects" className="transition-opacity hover:opacity-60" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)' }}>
             all work →
           </Link>
         </div>
@@ -139,7 +139,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
               className="group grid items-baseline transition-opacity hover:opacity-100"
               style={{ gridTemplateColumns: '40px minmax(0,1fr) auto', gap: 20, paddingTop: 16, paddingBottom: 16, borderBottom: '1px solid var(--rule)', textDecoration: 'none' }}
             >
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{String(i + 1).padStart(2, '0')}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)' }}>{String(i + 1).padStart(2, '0')}</span>
               <span className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(1.1rem, 2.2vw, 1.5rem)', color: 'var(--fg)' }}>{p.title}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{projType(p)} · {p.year}</span>
             </Link>
