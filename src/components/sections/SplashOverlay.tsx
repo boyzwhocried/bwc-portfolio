@@ -63,6 +63,13 @@ export default function SplashOverlay() {
     markInner.style.transform = `rotate(${START_TILT}deg)`
     markInner.style.clipPath = 'inset(0 100% 0 0)'
 
+    // hide the real hero mark for the whole splash, so the flying splash mark is
+    // the only "bwc" on screen (no duplicate). it is cross-faded back in at dock.
+    const heroMark = document.getElementById('hero-mark')
+    if (heroMark) heroMark.style.opacity = '0'
+
+    // FLIP onto the real hero mark by matching CENTERS (rotation-invariant, so the
+    // hero's -2deg tilt does not throw off the landing the way top-left alignment did).
     function flipToHero(): string {
       const inner = markInnerRef.current!
       const prev = inner.style.transform
@@ -70,8 +77,8 @@ export default function SplashOverlay() {
       const m0 = inner.getBoundingClientRect()
       inner.style.transform = prev
       const hero = document.getElementById('hero-mark')!.getBoundingClientRect()
-      const dx = hero.left - m0.left
-      const dy = hero.top - m0.top
+      const dx = (hero.left + hero.width / 2) - (m0.left + m0.width / 2)
+      const dy = (hero.top + hero.height / 2) - (m0.top + m0.height / 2)
       const s = hero.width / m0.width
       return `translate(${dx}px, ${dy}px) rotate(${LAND_TILT}deg) scale(${s})`
     }
@@ -107,7 +114,14 @@ export default function SplashOverlay() {
       ))
       await wait(Math.max(T.morph, VERM_DELAY + T.vermZoom)); if (cancelled) return
 
-      if (navsq) navsq.style.opacity = '1'
+      // dock + handoff: reveal the real nav icon + cross-fade the real hero mark
+      // back in while the splash mark fades out (masks any sub-pixel FLIP mismatch),
+      // then unmount the splash.
+      navsq.style.opacity = '1'
+      if (heroMark) { heroMark.style.transition = 'opacity 0.25s ease'; heroMark.style.opacity = '1' }
+      running.push(markInner.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, easing: 'ease', fill: 'forwards' }))
+      await wait(260); if (cancelled) return
+
       sessionStorage.setItem('bwc-splash-seen', '1')
       document.documentElement.dataset.splash = 'done'
       setActive(false)
@@ -120,6 +134,8 @@ export default function SplashOverlay() {
       document.documentElement.dataset.splash = 'done'
       const navsq = document.getElementById('nav-square')
       if (navsq) navsq.style.opacity = '1'
+      const heroMark = document.getElementById('hero-mark')
+      if (heroMark) { heroMark.style.opacity = '1'; heroMark.style.transition = '' }
     }
   }, [active])
 
@@ -129,7 +145,7 @@ export default function SplashOverlay() {
     <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 70, overflow: 'hidden', pointerEvents: 'none' }}>
       <div ref={vermRef} style={{ position: 'fixed', width: 13, height: 13, background: 'var(--vermilion)', transformOrigin: 'center' }} />
       <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
-        <div ref={markInnerRef} style={{ transformOrigin: 'left top' }}>
+        <div ref={markInnerRef} style={{ transformOrigin: 'center' }}>
           <svg viewBox="0 0 600 200" style={{ display: 'block', width: 'min(58vw, 760px)', height: 'auto' }}>
             <defs>
               <mask id="splash-knock">
