@@ -61,10 +61,10 @@ export default function Footer({ room }: { room: string }) {
             </p>
           </div>
 
-          {/* rooms (two sub-columns) */}
+          {/* rooms (two content-width sub-columns, sitting close as one block) */}
           <div className="md:col-span-5">
             <ColHead>rooms</ColHead>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+            <div style={{ display: 'grid', gridTemplateColumns: 'max-content max-content', columnGap: '4.5rem', rowGap: '0.6rem', justifyContent: 'start' }}>
               {ROOMS.map(({ href, label }) => (
                 <Link key={href} href={href} className="transition-opacity hover:opacity-100" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg)', opacity: 0.7 }}>
                   {label}

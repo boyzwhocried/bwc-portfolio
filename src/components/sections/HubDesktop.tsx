@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
@@ -75,23 +75,29 @@ function WindowChrome({ app }: { app: HubApp }) {
     </div>
   )
 
-  const body = (
-    <div style={{ padding: 12 }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: locked ? '#5a4a44' : 'var(--fg)' }}>
-        {app.name}
-      </div>
-      <div style={{ fontSize: 11, color: locked ? '#8a7a74' : 'var(--muted)', marginTop: 4 }}>{app.blurb}</div>
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          color: locked ? 'var(--vermilion)' : building ? '#a07a2a' : 'var(--accent)',
-          marginTop: 10,
-        }}
-      >
-        {action}
-      </div>
-    </div>
+  // only the action line is a link; the rest of the window is the drag surface.
+  // stopPropagation on pointer-down so clicking the link does not start a drag.
+  const actionStyle: React.CSSProperties = {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 10,
+    color: locked ? 'var(--vermilion)' : building ? '#a07a2a' : 'var(--accent)',
+    marginTop: 10,
+    display: 'inline-block',
+  }
+  const actionEl = !app.href ? (
+    <span style={actionStyle}>{action}</span>
+  ) : app.external ? (
+    <a href={app.href} target="_blank" rel="noopener noreferrer" draggable={false}
+       onPointerDownCapture={(e) => e.stopPropagation()}
+       className="transition-opacity hover:opacity-60" style={actionStyle}>
+      {action}
+    </a>
+  ) : (
+    <Link href={app.href} draggable={false}
+       onPointerDownCapture={(e) => e.stopPropagation()}
+       className="transition-opacity hover:opacity-60" style={actionStyle}>
+      {action}
+    </Link>
   )
 
   const windowStyle: React.CSSProperties = {
@@ -99,34 +105,25 @@ function WindowChrome({ app }: { app: HubApp }) {
     background: locked ? '#efe2dc' : '#f1ede4',
     border: locked ? '1px dashed var(--vermilion)' : '1px solid var(--ink)',
     boxShadow: locked ? '4px 4px 0 var(--vermilion)' : '4px 4px 0 var(--ink)',
+    userSelect: 'none',
   }
 
-  // live apps with an href are launchable; locked/building are not
-  if (!app.href) {
-    return (
-      <div style={windowStyle} aria-label={`${app.name}, ${app.status}`}>
-        {titleBar}
-        {body}
-      </div>
-    )
-  }
-  if (app.external) {
-    return (
-      <a href={app.href} target="_blank" rel="noopener noreferrer" style={{ ...windowStyle, display: 'block', textDecoration: 'none' }}>
-        {titleBar}
-        {body}
-      </a>
-    )
-  }
   return (
-    <Link href={app.href} style={{ ...windowStyle, display: 'block', textDecoration: 'none' }}>
+    <div style={windowStyle} aria-label={`${app.name}, ${app.status}`}>
       {titleBar}
-      {body}
-    </Link>
+      <div style={{ padding: 12 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: locked ? '#5a4a44' : 'var(--fg)' }}>
+          {app.name}
+        </div>
+        <div style={{ fontSize: 11, color: locked ? '#8a7a74' : 'var(--muted)', marginTop: 4 }}>{app.blurb}</div>
+        {actionEl}
+      </div>
+    </div>
   )
 }
 
 export default function HubDesktop() {
+  const deskRef = useRef<HTMLDivElement>(null)
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* menu bar replaces the nav (the entry gesture) */}
@@ -156,12 +153,12 @@ export default function HubDesktop() {
       </div>
 
       {/* desktop surface */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 760 }}>
+      <div ref={deskRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 760 }}>
         <p
           className="px-5"
           style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', paddingTop: 12 }}
         >
-          drag the windows around. 🔒 = private, sign-in required.
+          drag the windows around (grab a title bar). 🔒 = private, sign-in required.
         </p>
 
         {/* mobile: stacked windows (no absolute positioning) */}
@@ -180,8 +177,9 @@ export default function HubDesktop() {
               key={app.id}
               drag
               dragMomentum={false}
-              dragElastic={0}
-              whileDrag={{ scale: 1.02, zIndex: 40 }}
+              dragElastic={0.06}
+              dragConstraints={deskRef}
+              whileDrag={{ scale: 1.02, zIndex: 40, cursor: 'grabbing' }}
               style={{ position: 'absolute', left: app.x, top: app.y, width: app.w }}
             >
               <WindowChrome app={app} />
