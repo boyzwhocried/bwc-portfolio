@@ -52,12 +52,12 @@
 /* wide landscape page frame — plain top-level :root (kept out of @layer base so
    Lightning CSS does not drop it; shared by Container, nav, footer) */
 :root {
-  --page-max: 1600px;
+  --page-max: 1840px;   /* near full-bleed; only caps on ultrawide */
   --page-px: 1.25rem;
 }
-@media (min-width: 640px)  { :root { --page-px: 2.25rem; } }
-@media (min-width: 1024px) { :root { --page-px: 3.5rem; } }
-@media (min-width: 1440px) { :root { --page-px: 5rem; } }
+@media (min-width: 640px)  { :root { --page-px: 1.75rem; } }
+@media (min-width: 1024px) { :root { --page-px: 2.5rem; } }   /* ~40px, ECA-tight */
+@media (min-width: 1440px) { :root { --page-px: 2.75rem; } }  /* ~44px */
 
 @layer base {
   :root {
