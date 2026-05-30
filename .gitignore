@@ -42,10 +42,13 @@ yarn-error.log*
 next-env.d.ts
 .superpowers/
 
-# local scratch (playwright shots, one-off auth helper, dev logs)
+# local scratch (playwright shots, one-off auth helper, dev logs, motion protos)
 /shots/
 shot*.mjs
 reauth.mjs
 dev.log
+*-proto.html
+lh-*.json
+server.log
 
 .vercel
