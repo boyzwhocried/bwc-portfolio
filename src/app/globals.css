@@ -186,6 +186,12 @@
   }
 }
 
+/* keyboard focus ring (the custom cursor hides the mouse cursor, so this matters) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* blog post article prose styles: serif body (the /blog TYPE break) */
 .blog-prose {
   color: var(--fg);

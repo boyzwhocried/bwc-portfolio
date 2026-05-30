@@ -26,8 +26,8 @@ export default function ContactForm() {
     padding: '0.5rem 0',
     fontSize: 14,
     color: 'var(--fg)',
-    outline: 'none',
     borderBottom: '1px solid var(--fg)',
+    // no outline:none — keyboard focus ring (global :focus-visible) must stay visible
   }
   const labelStyle: React.CSSProperties = {
     display: 'block',
@@ -36,8 +36,7 @@ export default function ContactForm() {
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
     marginBottom: 6,
-    color: 'var(--fg)',
-    opacity: 0.7,
+    color: 'var(--fg)', // full ink for AA contrast on the vermilion flood
   }
 
   return (
