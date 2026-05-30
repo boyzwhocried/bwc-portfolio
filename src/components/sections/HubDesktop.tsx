@@ -1,0 +1,193 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+
+type AppStatus = 'live' | 'building' | 'locked'
+
+interface HubApp {
+  id: string
+  name: string
+  file: string
+  blurb: string
+  status: AppStatus
+  href?: string // external (↗) or internal (→); absent for locked/building
+  external?: boolean
+  // desktop placement (draggable from here)
+  x: string
+  y: number
+  w: number
+}
+
+// NOTE: Personal OS + Undangin have no public app URL, so they launch to their
+// case study. Outreach OS + Vault of Frights launch externally. FinOS is locked.
+const APPS: HubApp[] = [
+  { id: 'pos', name: 'Personal OS', file: 'personal-os.app', blurb: 'the wiki + bot that runs my life', status: 'live', href: '/projects/personal-os', x: '4%', y: 24, w: 300 },
+  { id: 'vof', name: 'Vault of Frights', file: 'vault-of-frights.app', blurb: 'auto horror-shorts channel', status: 'live', href: 'https://youtube.com/@VaultOfFrights', external: true, x: '40%', y: 96, w: 300 },
+  { id: 'oos', name: 'Outreach OS', file: 'outreach-os.app', blurb: 'freelance outreach generator', status: 'live', href: 'https://outreach-os-smoky.vercel.app', external: true, x: '10%', y: 220, w: 290 },
+  { id: 'und', name: 'Undangin', file: 'undangin.app', blurb: 'b2b wedding e-invites', status: 'live', href: '/projects/undangin', x: '46%', y: 286, w: 280 },
+  { id: 'fin', name: 'FinOS', file: 'finos.app', blurb: 'finance · auth required', status: 'locked', x: '18%', y: 400, w: 290 },
+  { id: 'next', name: 'next thing', file: 'building...', blurb: 'always growing', status: 'building', x: '50%', y: 470, w: 250 },
+]
+
+function Clock() {
+  const [time, setTime] = useState<string>('')
+  useEffect(() => {
+    const fmt = () =>
+      new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta',
+      }).format(new Date())
+    setTime(fmt())
+    const t = setInterval(() => setTime(fmt()), 30_000)
+    return () => clearInterval(t)
+  }, [])
+  return <span suppressHydrationWarning>{time || '--:--'} · jakarta</span>
+}
+
+function WindowChrome({ app }: { app: HubApp }) {
+  const locked = app.status === 'locked'
+  const building = app.status === 'building'
+
+  const statusLabel =
+    locked ? '🔒 locked' : building ? '◐ building' : '● live'
+  const action =
+    locked ? 'sign in to access →' : building ? 'soon' : app.external ? 'open ↗' : 'open →'
+
+  const titleBar = (
+    <div
+      style={{
+        background: locked ? 'var(--vermilion)' : 'var(--ink)',
+        color: locked ? '#efe2dc' : 'var(--paper)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        padding: '4px 8px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+        cursor: 'grab',
+      }}
+    >
+      <span>{app.file}</span>
+      <span>{locked || building ? statusLabel : `${statusLabel}  □ ✕`}</span>
+    </div>
+  )
+
+  const body = (
+    <div style={{ padding: 12 }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: locked ? '#5a4a44' : 'var(--fg)' }}>
+        {app.name}
+      </div>
+      <div style={{ fontSize: 11, color: locked ? '#8a7a74' : 'var(--muted)', marginTop: 4 }}>{app.blurb}</div>
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          color: locked ? 'var(--vermilion)' : building ? '#a07a2a' : 'var(--accent)',
+          marginTop: 10,
+        }}
+      >
+        {action}
+      </div>
+    </div>
+  )
+
+  const windowStyle: React.CSSProperties = {
+    width: '100%',
+    background: locked ? '#efe2dc' : '#f1ede4',
+    border: locked ? '1px dashed var(--vermilion)' : '1px solid var(--ink)',
+    boxShadow: locked ? '4px 4px 0 var(--vermilion)' : '4px 4px 0 var(--ink)',
+  }
+
+  // live apps with an href are launchable; locked/building are not
+  if (!app.href) {
+    return (
+      <div style={windowStyle} aria-label={`${app.name}, ${app.status}`}>
+        {titleBar}
+        {body}
+      </div>
+    )
+  }
+  if (app.external) {
+    return (
+      <a href={app.href} target="_blank" rel="noopener noreferrer" style={{ ...windowStyle, display: 'block', textDecoration: 'none' }}>
+        {titleBar}
+        {body}
+      </a>
+    )
+  }
+  return (
+    <Link href={app.href} style={{ ...windowStyle, display: 'block', textDecoration: 'none' }}>
+      {titleBar}
+      {body}
+    </Link>
+  )
+}
+
+export default function HubDesktop() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* menu bar replaces the nav (the entry gesture) */}
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          height: 30,
+          background: 'var(--ink)',
+          color: 'var(--paper)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          padding: '0 14px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+        }}
+      >
+        <Link href="/" style={{ color: 'var(--vermilion)' }}>◆ bwc.os</Link>
+        <span style={{ opacity: 0.8 }}>file</span>
+        <span style={{ opacity: 0.8 }}>apps</span>
+        <Link href="/about" style={{ color: 'var(--paper)', opacity: 0.8 }}>about</Link>
+        <span style={{ marginLeft: 'auto', opacity: 0.85 }}>
+          <Clock />
+        </span>
+      </div>
+
+      {/* desktop surface */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 760 }}>
+        <p
+          className="px-5"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', paddingTop: 12 }}
+        >
+          drag the windows around. 🔒 = private, sign-in required.
+        </p>
+
+        {/* mobile: stacked windows (no absolute positioning) */}
+        <div className="md:hidden flex flex-col gap-5 px-5" style={{ paddingTop: 16, paddingBottom: 40 }}>
+          {APPS.map((app) => (
+            <div key={app.id} style={{ maxWidth: 360 }}>
+              <WindowChrome app={app} />
+            </div>
+          ))}
+        </div>
+
+        {/* desktop: absolutely-positioned draggable windows */}
+        <div className="hidden md:block">
+          {APPS.map((app) => (
+            <motion.div
+              key={app.id}
+              drag
+              dragMomentum={false}
+              dragElastic={0}
+              whileDrag={{ scale: 1.02, zIndex: 40 }}
+              style={{ position: 'absolute', left: app.x, top: app.y, width: app.w }}
+            >
+              <WindowChrome app={app} />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
