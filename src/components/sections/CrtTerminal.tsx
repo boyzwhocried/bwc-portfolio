@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ease, dur } from '@/lib/motion'
 
 const BOOT = [
   '$ booting bwc.os ...',
@@ -78,10 +79,13 @@ export default function CrtTerminal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div
+    <motion.div
       role="dialog"
       aria-label="bwc.os terminal"
       onClick={() => inputRef.current?.focus()}
+      initial={reduce ? false : { opacity: 0, scaleY: 0.6, filter: 'brightness(2.5)' }}
+      animate={{ opacity: 1, scaleY: 1, filter: 'brightness(1)' }}
+      transition={{ duration: dur.quick, ease: ease.out }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -95,6 +99,7 @@ export default function CrtTerminal({ onClose }: { onClose: () => void }) {
         display: 'flex',
         flexDirection: 'column',
         cursor: 'text',
+        transformOrigin: 'center',
       }}
     >
       {/* scanlines */}
@@ -133,6 +138,6 @@ export default function CrtTerminal({ onClose }: { onClose: () => void }) {
           />
         </form>
       </div>
-    </div>
+    </motion.div>
   )
 }
