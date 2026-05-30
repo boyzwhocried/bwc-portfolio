@@ -38,7 +38,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var s=sessionStorage.getItem('bwc-splash-seen');var m=matchMedia('(prefers-reduced-motion: reduce)').matches;document.documentElement.dataset.splash=(s||m||location.pathname!=='/')?'seen':'play';}catch(e){document.documentElement.dataset.splash='seen';}",
+          }}
+        />
+      </head>
       <body>
+        <div id="splash-cover" aria-hidden />
         {children}
       </body>
     </html>

@@ -218,6 +218,17 @@
   color: var(--fg);
 }
 
+/* splash pre-paint cover: shown before hydration when the splash will play,
+   removed by SplashOverlay once it mounts (it sets data-splash to "running"/"done").
+   keeps the page from flashing before the splash takes over. */
+html[data-splash="play"] #splash-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--vermilion);
+}
+html:not([data-splash="play"]) #splash-cover { display: none; }
+
 /* blog post article prose styles: serif body (the /blog TYPE break) */
 .blog-prose {
   color: var(--fg);
