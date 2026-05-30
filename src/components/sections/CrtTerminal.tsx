@@ -116,7 +116,7 @@ export default function CrtTerminal({ onClose }: { onClose: () => void }) {
       </button>
 
       <div ref={scrollRef} style={{ position: 'relative', flex: 1, overflowY: 'auto', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-        <div style={{ opacity: 0.85, marginBottom: 8 }}>bwc.crt — phosphor terminal</div>
+        <div style={{ opacity: 0.85, marginBottom: 8 }}>bwc.crt · phosphor terminal</div>
         {lines.map((l, i) => (
           <div key={i}>{l}</div>
         ))}

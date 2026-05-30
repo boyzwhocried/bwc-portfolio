@@ -36,7 +36,7 @@ export default function PhotoGallery() {
 
         {/* EXIF caption + title, lower-left */}
         <div style={{ position: 'absolute', left: '5%', bottom: '1.5rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', letterSpacing: '0.08em' }}>
             {photo.exif}
           </div>
           <h1

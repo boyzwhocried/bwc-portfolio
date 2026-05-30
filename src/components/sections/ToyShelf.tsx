@@ -48,7 +48,6 @@ export default function ToyShelf() {
           <div style={{ transform: 'rotate(-1.5deg)' }}>
             <button
               onClick={() => setBooted(true)}
-              aria-label="boot the CRT terminal"
               style={{ display: 'block', width: 170, height: 134, background: 'var(--ink)', borderRadius: 12, padding: 9, boxShadow: SHADOW, border: 'none', cursor: 'pointer' }}
             >
               <span style={{ display: 'block', position: 'relative', height: '100%', background: '#0a140a', borderRadius: 5, overflow: 'hidden', fontFamily: 'var(--font-mono)', color: '#4af07a', fontSize: 10, textAlign: 'left', padding: 8, textShadow: '0 0 3px #4af07a' }}>
@@ -56,7 +55,7 @@ export default function ToyShelf() {
                 <span aria-hidden style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(0deg, transparent 0 2px, rgba(10,20,10,0.35) 2px 4px)' }} />
               </span>
             </button>
-            <Caption>CRT-OS <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 400, fontSize: 9, color: 'var(--accent)' }}>· click to boot</span></Caption>
+            <Caption>CRT-OS <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 400, fontSize: 9, color: 'var(--accent-text)' }}>· click to boot</span></Caption>
           </div>
 
           {/* generative circles (circle object) */}
@@ -75,7 +74,6 @@ export default function ToyShelf() {
           <div style={{ transform: 'rotate(-2deg)' }}>
             <button
               onClick={() => setClicks((c) => c + 1)}
-              aria-label="the useless button"
               style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--vermilion)', border: '1.5px solid var(--ink)', boxShadow: SHADOW_INK, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--ink)', textAlign: 'center', lineHeight: 0.9 }}>
@@ -110,7 +108,7 @@ export default function ToyShelf() {
 
           {/* more soon (dashed square) */}
           <div style={{ transform: 'rotate(2deg)' }}>
-            <div style={{ width: 96, height: 78, background: '#e9e4da', border: '1.5px dashed #b3ada0', boxShadow: '3px 3px 0 #b3ada0', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+            <div style={{ width: 96, height: 78, background: '#f1ede4', border: '1.5px dashed #b3ada0', boxShadow: '3px 3px 0 #b3ada0', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
               + more soon<br />always growing
             </div>
           </div>

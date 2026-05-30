@@ -41,7 +41,7 @@ export default function NowPage() {
       <div style={{ ...frame, position: 'relative', zIndex: 1, paddingTop: '3.5rem', paddingBottom: '2rem' }}>
         {/* kicker + live updated line */}
         <div className="flex flex-wrap items-center justify-between gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-          <span className="uppercase" style={{ color: 'var(--accent)', letterSpacing: '0.12em' }}>/now</span>
+          <span className="uppercase" style={{ color: 'var(--accent-text)', letterSpacing: '0.12em' }}>/now</span>
           <span style={{ color: 'var(--muted)' }}>● updated {LAST_UPDATED} · jakarta</span>
         </div>
 
@@ -58,14 +58,14 @@ export default function NowPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {CURRENTLY.map((c) => (
                 <div key={c.k} className="flex items-baseline gap-3" style={{ borderBottom: '1px solid var(--rule)', paddingBottom: '0.75rem' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', width: 72, flexShrink: 0 }}>{c.k}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', width: 72, flexShrink: 0 }}>{c.k}</span>
                   <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, color: 'var(--fg)' }}>{c.v}</span>
                 </div>
               ))}
             </div>
             <p style={{ fontFamily: 'var(--font-serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--muted)', marginTop: '1.5rem' }}>
               a living changelog. not finished essays (those live in{' '}
-              <Link href="/blog" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>built &amp; broken</Link>
+              <Link href="/blog" style={{ color: 'var(--accent-text)', textDecoration: 'underline', textUnderlineOffset: 3 }}>built &amp; broken</Link>
               ), just what is actually happening.
             </p>
           </div>
@@ -76,7 +76,7 @@ export default function NowPage() {
             <div style={{ borderTop: '3px solid var(--fg)' }}>
               {ENTRIES.map((e) => (
                 <div key={e.date} className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-x-6 gap-y-1" style={{ padding: '1.5rem 0', borderBottom: '1px solid var(--rule)' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)', paddingTop: 2 }}>{e.date}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)', paddingTop: 2 }}>{e.date}</div>
                   <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 1.6, color: 'var(--fg)' }}>{e.body}</p>
                 </div>
               ))}
