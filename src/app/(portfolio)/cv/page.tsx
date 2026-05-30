@@ -34,7 +34,7 @@ function Entry({
           <ul style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 5 }}>
             {bullets.map((b) => (
               <li key={b} style={{ display: 'flex', gap: 8, fontSize: 12.5, lineHeight: 1.55, color: 'var(--fg)' }}>
-                <span style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>+</span>
+                <span style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', color: 'var(--accent-text)' }}>+</span>
                 {b}
               </li>
             ))}
@@ -55,7 +55,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
       <div className="grid" style={{ gridTemplateColumns: 'var(--rail)' }}>
         <div
           className="uppercase"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent)', letterSpacing: '0.1em', paddingTop: 3 }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-text)', letterSpacing: '0.1em', paddingTop: 3 }}
         >
           {label}
         </div>
@@ -70,10 +70,15 @@ export default function CVPage() {
   return (
     <section className="min-h-screen relative overflow-hidden" style={{ paddingTop: '3.5rem' }}>
       <style>{`
-        /* the rail width is the visible margin/column system */
-        .cv-doc { --rail: 110px 1fr; }
+        /* the rail width is the visible margin/column system; stacks to one column on phones */
+        .cv-doc { --rail: 1fr; }
+        @media (min-width: 560px) { .cv-doc { --rail: 110px 1fr; } }
         @media (min-width: 768px) { .cv-doc { --rail: 150px 1fr; } }
+        @media (max-width: 559px) {
+          .cv-row, .cv-section > .grid { row-gap: 0.35rem; }
+        }
         @media print {
+          .cv-doc { --rail: 150px 1fr !important; }
           nav, footer, .cv-actions, [aria-hidden="true"] { display: none !important; }
           [data-room="cv"] { background: #fff !important; color: #000 !important; }
           .cv-doc { padding: 0 !important; max-width: 100% !important; border: none !important; }
@@ -109,7 +114,7 @@ export default function CVPage() {
           >
             Verrel Mohammad Al Syoumi
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--accent)', marginTop: 2 }}>data engineer</p>
+          <p style={{ fontSize: 14, color: 'var(--accent-text)', marginTop: 2 }}>data engineer</p>
           <div
             className="flex flex-wrap gap-x-4 gap-y-1"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: '0.75rem' }}
