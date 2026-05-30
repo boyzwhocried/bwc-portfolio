@@ -49,6 +49,16 @@
   font-display: swap;
 }
 
+/* wide landscape page frame — plain top-level :root (kept out of @layer base so
+   Lightning CSS does not drop it; shared by Container, nav, footer) */
+:root {
+  --page-max: 1600px;
+  --page-px: 1.25rem;
+}
+@media (min-width: 640px)  { :root { --page-px: 2.25rem; } }
+@media (min-width: 1024px) { :root { --page-px: 3.5rem; } }
+@media (min-width: 1440px) { :root { --page-px: 5rem; } }
+
 @layer base {
   :root {
     /* 3-color system */
@@ -68,15 +78,7 @@
     --font-body: 'General Sans', system-ui, sans-serif;
     --font-serif: 'Sentient', Georgia, serif;
     --font-mono: 'Space Mono', ui-monospace, monospace;
-
-    /* wide landscape page frame (shared by Container, nav, footer) */
-    --page-max: 1600px;
-    --page-px: 1.25rem;
   }
-
-  @media (min-width: 640px) { :root { --page-px: 2.25rem; } }
-  @media (min-width: 1024px) { :root { --page-px: 3.5rem; } }
-  @media (min-width: 1440px) { :root { --page-px: 5rem; } }
 
   /* ---- per-room overrides via data-room on the layout wrapper ---- */
 

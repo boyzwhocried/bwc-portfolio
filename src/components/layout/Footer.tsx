@@ -35,7 +35,7 @@ export default function Footer({ room }: { room: string }) {
       data-room={room}
       style={{ borderTop: '1px solid var(--rule)', color: 'var(--muted)', backgroundColor: 'var(--bg)', marginTop: '6rem' }}
     >
-      <div style={{ maxWidth: 'var(--page-max)', marginInline: 'auto', paddingInline: 'var(--page-px)', paddingTop: '3.5rem', paddingBottom: '2rem' }}>
+      <div style={{ maxWidth: 'var(--page-max)', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 'var(--page-px)', paddingRight: 'var(--page-px)', paddingTop: '3.5rem', paddingBottom: '2rem' }}>
         {/* columns */}
         <div className="grid grid-cols-2 md:grid-cols-12 gap-x-8 gap-y-10">
           {/* brand */}

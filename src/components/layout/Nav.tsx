@@ -43,7 +43,7 @@ export default function Nav({ room }: { room: string }) {
       >
         <div
           className="h-14 flex items-center justify-between"
-          style={{ maxWidth: 'var(--page-max)', marginInline: 'auto', paddingInline: 'var(--page-px)' }}
+          style={{ maxWidth: 'var(--page-max)', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 'var(--page-px)', paddingRight: 'var(--page-px)' }}
         >
           <Link
             href="/"

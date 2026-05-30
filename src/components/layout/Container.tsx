@@ -17,8 +17,10 @@ export default function Container({
       style={{
         width: '100%',
         maxWidth: 'var(--page-max)',
-        marginInline: 'auto',
-        paddingInline: 'var(--page-px)',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        paddingLeft: 'var(--page-px)',
+        paddingRight: 'var(--page-px)',
         ...style,
       }}
     >
