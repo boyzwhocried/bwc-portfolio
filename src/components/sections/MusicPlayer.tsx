@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import type {
   SpotifyTrack,
+  SpotifyLive,
   MusicData,
   TopRange,
   PlaylistCard,
@@ -13,9 +14,34 @@ import type {
 import DriftingSquares from '@/components/ui/DriftingSquares'
 
 const POLL_PLAYING = 30_000
-const POLL_IDLE = 120_000
+const POLL_IDLE = 60_000
 const BARS = [10, 22, 14, 24, 8, 18, 12, 20, 15]
-const SHELF_PREVIEW = 6 // cards shown per group before "show all"
+const SHELF_PREVIEW_DESKTOP = 6
+const SHELF_PREVIEW_PHONE = 4 // fewer cards per group on small screens
+
+function useIsPhone() {
+  const [phone, setPhone] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const apply = () => setPhone(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+  return phone
+}
+
+// recent track -> the shared SpotifyTrack shape used by the hero
+function asTrack(r: CachedTrack): SpotifyTrack {
+  return {
+    is_playing: false,
+    title: r.name,
+    artist: r.artist,
+    album: r.album,
+    album_art_url: r.image,
+    track_url: r.url,
+  }
+}
 
 const RANGES: { key: TopRange; label: string }[] = [
   { key: 'short_term', label: 'last 4 weeks' },
@@ -93,37 +119,45 @@ function SegToggle<T extends string>({
 }
 
 export default function MusicPlayer({ music }: { music: MusicData }) {
-  const [track, setTrack] = useState<SpotifyTrack | null>(null)
+  const [live, setLive] = useState<SpotifyLive | null>(null)
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState<TopRange>('short_term')
   const [sort, setSort] = useState<SortKey>('curated')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isPhone = useIsPhone()
+  const shelfPreview = isPhone ? SHELF_PREVIEW_PHONE : SHELF_PREVIEW_DESKTOP
 
   useEffect(() => {
-    async function fetchTrack() {
+    async function fetchLive() {
       if (document.hidden) return
       try {
-        const res = await fetch('/api/spotify/now-playing')
+        const res = await fetch('/api/spotify/live')
         if (res.status === 429) return
-        const data: SpotifyTrack | null = await res.json()
-        setTrack(data)
+        const data: SpotifyLive = await res.json()
+        setLive(data)
         if (intervalRef.current) clearInterval(intervalRef.current)
-        intervalRef.current = setInterval(fetchTrack, data?.is_playing ? POLL_PLAYING : POLL_IDLE)
+        intervalRef.current = setInterval(fetchLive, data?.nowPlaying?.is_playing ? POLL_PLAYING : POLL_IDLE)
       } catch {
-        setTrack(null)
+        // keep last-known live state on a transient error
       } finally {
         setLoading(false)
       }
     }
-    fetchTrack()
+    fetchLive()
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [])
 
-  const playing = !!track?.is_playing
-  const hasArt = !!track?.album_art_url
+  // live recent, falling back to the server-rendered cache for first paint / no-JS
+  const recent = live?.recent?.length ? live.recent : music.recentlyPlayed ?? []
+  const nowPlaying = live?.nowPlaying ?? null
+  const playing = !!nowPlaying?.is_playing
+  // hero shows what is actually true: the live track, or the last played track
+  const hero: SpotifyTrack | null = nowPlaying ?? (recent[0] ? asTrack(recent[0]) : null)
+  const isLastPlayed = !nowPlaying && !!recent[0]
+  const hasArt = !!hero?.album_art_url
 
   const topTracks = music.topTracks?.[range] ?? []
   const topArtists = music.topArtists?.[range] ?? []
@@ -176,28 +210,34 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           >
             {hasArt && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={track!.album_art_url} alt={`album art: ${track!.album}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <img src={hero!.album_art_url} alt={`album art: ${hero!.album}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             )}
           </div>
 
           <div className="min-w-0">
             <div className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.12em' }}>
-              {loading ? 'connecting to spotify...' : playing ? '● now playing · spotify live' : '○ not playing right now'}
+              {loading && !hero
+                ? 'connecting to spotify...'
+                : playing
+                ? '● now playing · spotify live'
+                : isLastPlayed
+                ? '○ not listening right now · last played'
+                : '○ not listening right now'}
             </div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(2.2rem, 7vw, 4rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--fg)', marginTop: '0.75rem' }}>
-              {track?.title ?? 'silence'}
+              {hero?.title ?? (loading ? 'connecting' : 'silence')}
             </h1>
             <p style={{ fontSize: 16, color: 'var(--muted)', marginTop: '0.5rem' }}>
-              {track ? `${track.artist}${track.album ? ` · ${track.album}` : ''}` : 'nothing on the speakers at the moment'}
+              {hero ? `${hero.artist}${hero.album ? ` · ${hero.album}` : ''}` : loading ? 'reading the turntable...' : 'nothing on the speakers right now'}
             </p>
             <div className="flex items-end gap-1.5" style={{ height: 32, marginTop: '1.75rem' }} aria-hidden>
               {BARS.map((h, i) => (
                 <span key={i} className={`eq-bar${playing ? ' animate' : ''}`} style={{ height: h, animationDelay: `${i * 0.12}s`, opacity: playing ? 1 : 0.4 }} />
               ))}
             </div>
-            {track?.track_url && (
-              <a href={track.track_url} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70 inline-block" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)', marginTop: '1.75rem' }}>
-                open in spotify ↗
+            {hero?.track_url && (
+              <a href={hero.track_url} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70 inline-block" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)', marginTop: '1.75rem' }}>
+                {playing ? 'open in spotify ↗' : 'play it on spotify ↗'}
               </a>
             )}
           </div>
@@ -259,13 +299,13 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           </div>
         )}
 
-        {/* RECENTLY PLAYED */}
-        {music.recentlyPlayed && music.recentlyPlayed.length > 0 && (
+        {/* RECENTLY PLAYED (live) */}
+        {recent.length > 0 && (
           <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
             <div style={{ ...labelStyle, marginBottom: '1.5rem' }}>last spun</div>
             <div style={{ position: 'relative' }}>
               <div className="mp-scroller flex gap-5 overflow-x-auto pb-2">
-                {music.recentlyPlayed.slice(0, 14).map((t, i) => (
+                {recent.slice(0, 14).map((t, i) => (
                   <a
                     key={`${t.url}-${i}`}
                     href={t.url}
@@ -327,7 +367,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
             </p>
             {grouped.map((g) => {
               const isOpen = !!expanded[g.key]
-              const items = isOpen ? g.items : g.items.slice(0, SHELF_PREVIEW)
+              const items = isOpen ? g.items : g.items.slice(0, shelfPreview)
               return (
                 <div key={g.key} style={{ marginBottom: '2.5rem' }}>
                   <div className="flex items-baseline gap-3" style={{ marginBottom: '1.25rem' }}>
@@ -337,7 +377,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
                   <div className="grid gap-x-6 gap-y-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
                     {items.map((p) => <ShelfCard key={p.id} p={p} />)}
                   </div>
-                  {g.items.length > SHELF_PREVIEW && (
+                  {g.items.length > shelfPreview && (
                     <button
                       onClick={() => setExpanded((s) => ({ ...s, [g.key]: !s[g.key] }))}
                       className="transition-opacity hover:opacity-70"

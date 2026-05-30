@@ -92,6 +92,13 @@ export interface MusicData {
   updatedAt: string | null
 }
 
+// Live (fast) data: now-playing + recently-played, refreshed ~30s, shared across
+// all visitors via unstable_cache so Spotify load stays flat under heavy traffic.
+export interface SpotifyLive {
+  nowPlaying: SpotifyTrack | null
+  recent: CachedTrack[]
+}
+
 export interface ContactMessage {
   name: string
   email: string
