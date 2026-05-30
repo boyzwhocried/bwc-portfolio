@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import ContactForm from '@/components/sections/ContactForm'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import ContactWipe from '@/components/sections/ContactWipe'
 
 export const metadata: Metadata = {
   title: 'contact',
@@ -23,6 +24,8 @@ const SOCIALS = [
 
 export default function ContactPage() {
   return (
+    <>
+    <ContactWipe />
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
       {/* ink squares on the vermilion flood (no color detox; a11y handled via full-ink text + near-ink --muted) */}
       <DriftingSquares variant="contact" color="var(--ink)" opacity={0.06} count={6} />
@@ -52,5 +55,6 @@ export default function ContactPage() {
         </div>
       </div>
     </section>
+    </>
   )
 }
