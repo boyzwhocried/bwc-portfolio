@@ -21,6 +21,15 @@ const ELSEWHERE = [
   { href: 'mailto:verrel.alsyoumi@gmail.com', label: 'email' },
 ]
 
+// shared padded inner frame
+const inner: React.CSSProperties = {
+  maxWidth: 'var(--page-max)',
+  marginLeft: 'auto',
+  marginRight: 'auto',
+  paddingLeft: 'var(--page-px)',
+  paddingRight: 'var(--page-px)',
+}
+
 function ColHead({ children }: { children: React.ReactNode }) {
   return (
     <div className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.14em', marginBottom: '1rem' }}>
@@ -35,8 +44,8 @@ export default function Footer({ room }: { room: string }) {
       data-room={room}
       style={{ borderTop: '1px solid var(--rule)', color: 'var(--muted)', backgroundColor: 'var(--bg)', marginTop: '6rem' }}
     >
-      <div style={{ maxWidth: 'var(--page-max)', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 'var(--page-px)', paddingRight: 'var(--page-px)', paddingTop: '3.5rem', paddingBottom: '2rem' }}>
-        {/* columns */}
+      {/* columns */}
+      <div style={{ ...inner, paddingTop: '3.5rem', paddingBottom: '3rem' }}>
         <div className="grid grid-cols-2 md:grid-cols-12 gap-x-8 gap-y-10">
           {/* brand */}
           <div className="col-span-2 md:col-span-4">
@@ -76,10 +85,15 @@ export default function Footer({ room }: { room: string }) {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* baseline bar: now-playing one-liner + year */}
-        <div className="flex items-center justify-between gap-6" style={{ borderTop: '1px solid var(--rule)', marginTop: '3rem', paddingTop: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-          <span className="min-w-0 flex-1">
+      {/* baseline bar: full-width top border, equal top/bottom padding around the line */}
+      <div style={{ borderTop: '1px solid var(--rule)' }}>
+        <div
+          className="flex items-center justify-between gap-6"
+          style={{ ...inner, paddingTop: '1.25rem', paddingBottom: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1 }}
+        >
+          <span className="min-w-0 flex-1 flex items-center">
             <SpotifyWidget />
           </span>
           <span className="flex-shrink-0" style={{ color: 'var(--muted)' }}>© {new Date().getFullYear()} bwc</span>
