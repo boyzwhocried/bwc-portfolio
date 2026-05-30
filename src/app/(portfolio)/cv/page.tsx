@@ -119,9 +119,9 @@ export default function CVPage() {
             className="flex flex-wrap gap-x-4 gap-y-1"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: '0.75rem' }}
           >
-            <a href="mailto:verrel.alsyoumi@gmail.com" style={{ color: 'var(--fg)' }}>verrel.alsyoumi@gmail.com</a>
-            <a href="https://linkedin.com/in/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg)' }}>linkedin.com/in/boyzwhocried</a>
-            <a href="https://github.com/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg)' }}>github.com/boyzwhocried</a>
+            <a href="mailto:verrel.alsyoumi@gmail.com" style={{ color: 'var(--fg)', display: 'inline-flex', alignItems: 'center', minHeight: 24 }}>verrel.alsyoumi@gmail.com</a>
+            <a href="https://linkedin.com/in/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg)', display: 'inline-flex', alignItems: 'center', minHeight: 24 }}>linkedin.com/in/boyzwhocried</a>
+            <a href="https://github.com/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg)', display: 'inline-flex', alignItems: 'center', minHeight: 24 }}>github.com/boyzwhocried</a>
             <span>East Jakarta, Indonesia · open to remote</span>
           </div>
         </header>

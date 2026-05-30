@@ -41,8 +41,10 @@ export default async function ProjectDetailPage({
   if (!project) notFound()
 
   // vermilion RETURNS here (the index was monochrome; depth gets the accent).
-  // use var(--vermilion) directly to override the projects room's suppressed --accent.
+  // bright var(--vermilion) for LARGE display marks (drop-cap); the AA-safe
+  // var(--accent-text) for SMALL text (bright vermilion is only 3.1:1 on paper, fails AA).
   const v = 'var(--vermilion)'
+  const vText = 'var(--accent-text)'
   const typeLabel = getTypeLabel(project.tags ?? [])
   const paras = project.long_description ? project.long_description.split('\n\n') : []
 
@@ -53,7 +55,7 @@ export default async function ProjectDetailPage({
         <Link
           href="/projects"
           className="transition-opacity hover:opacity-70"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: v }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: vText }}
         >
           ← index
         </Link>
@@ -62,7 +64,7 @@ export default async function ProjectDetailPage({
         <div style={{ marginTop: '2rem' }}>
           <div
             className="uppercase"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: v, letterSpacing: '0.1em' }}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: vText, letterSpacing: '0.1em' }}
           >
             CASE STUDY · {typeLabel}
             {project.year ? ` · ${project.year}` : ''}
@@ -98,7 +100,7 @@ export default async function ProjectDetailPage({
                   <div style={{ color: 'var(--muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     status
                   </div>
-                  <div style={{ color: v, marginTop: 4 }}>● {project.status}</div>
+                  <div style={{ color: vText, marginTop: 4 }}>● {project.status}</div>
                 </div>
               )}
               {project.tech_stack?.length > 0 && (
@@ -117,13 +119,13 @@ export default async function ProjectDetailPage({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {project.live_url && (
                     <a href={project.live_url} target="_blank" rel="noopener noreferrer"
-                       className="transition-opacity hover:opacity-70" style={{ color: v }}>
+                       className="transition-opacity hover:opacity-70" style={{ color: vText }}>
                       live ↗
                     </a>
                   )}
                   {project.github_url && (
                     <a href={project.github_url} target="_blank" rel="noopener noreferrer"
-                       className="transition-opacity hover:opacity-70" style={{ color: v }}>
+                       className="transition-opacity hover:opacity-70" style={{ color: vText }}>
                       github ↗
                     </a>
                   )}
@@ -171,7 +173,7 @@ export default async function ProjectDetailPage({
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {project.highlights.map((item, i) => (
                     <li key={i} style={{ display: 'flex', gap: 12, fontSize: 14, lineHeight: 1.6, color: 'var(--fg)' }}>
-                      <span style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', color: v }}>+</span>
+                      <span style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', color: vText }}>+</span>
                       {item}
                     </li>
                   ))}
