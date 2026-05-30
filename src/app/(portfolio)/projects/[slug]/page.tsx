@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getAllProjects, getProjectBySlug } from '@/lib/projects'
+import Reveal from '@/components/ui/Reveal'
 
 export const revalidate = 3600
 
@@ -61,7 +62,7 @@ export default async function ProjectDetailPage({
         </Link>
 
         {/* kicker + title */}
-        <div style={{ marginTop: '2rem' }}>
+        <Reveal style={{ marginTop: '2rem' }}>
           <div
             className="uppercase"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: vText, letterSpacing: '0.1em' }}
@@ -85,7 +86,7 @@ export default async function ProjectDetailPage({
           <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--muted)', marginTop: '1rem', maxWidth: '40rem' }}>
             {project.description}
           </p>
-        </div>
+        </Reveal>
 
         {/* two-column: meta rail + body */}
         <div
@@ -94,7 +95,7 @@ export default async function ProjectDetailPage({
         >
           {/* meta rail */}
           <aside className="md:col-span-4" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <Reveal delay={0.08} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {project.status && (
                 <div>
                   <div style={{ color: 'var(--muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -131,11 +132,12 @@ export default async function ProjectDetailPage({
                   )}
                 </div>
               )}
-            </div>
+            </Reveal>
           </aside>
 
           {/* body */}
           <div className="md:col-span-8">
+            <Reveal delay={0.16}>
             {paras.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
                 {paras.map((para, i) => (
@@ -189,6 +191,7 @@ export default async function ProjectDetailPage({
                 <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--fg)' }}>{project.challenges}</p>
               </div>
             )}
+            </Reveal>
           </div>
         </div>
       </div>

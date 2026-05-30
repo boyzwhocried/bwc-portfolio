@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getAllBlogSlugs, getBlogPostWithContent, readingMinutes } from '@/lib/mdx'
+import Reveal from '@/components/ui/Reveal'
 
 export function generateStaticParams() {
   return getAllBlogSlugs().map((slug) => ({ slug }))
@@ -43,7 +44,8 @@ export default async function BlogPostPage({
         </Link>
 
         {/* masthead-style article header */}
-        <header style={{ marginTop: '2rem' }}>
+        <Reveal style={{ marginTop: '2rem' }}>
+        <header>
           <div
             className="uppercase"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-text)', letterSpacing: '0.1em' }}
@@ -79,13 +81,14 @@ export default async function BlogPostPage({
             ))}
           </div>
         </header>
+        </Reveal>
 
         {/* heavy 3px rule, then serif prose */}
         <div style={{ height: 3, background: 'var(--fg)', marginTop: '1.5rem', marginBottom: '2.5rem' }} />
 
-        <div className="blog-prose">
+        <Reveal className="blog-prose" amount={0.05}>
           <MDXRemote source={post.content} />
-        </div>
+        </Reveal>
 
         <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--rule)' }}>
           <Link
