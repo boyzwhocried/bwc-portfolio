@@ -62,3 +62,20 @@ create table if not exists spotify_playlists (
 );
 alter table spotify_playlists enable row level security;
 -- RLS on, no policy => private. Service role manages it.
+
+-- Manual "refresh now" helper (instead of waiting for the 2h pg_cron). The live
+-- copy embeds the anon key + sync secret in its body and is restricted to the
+-- dashboard/service role; values below are placeholders.
+-- create or replace function public.trigger_spotify_sync()
+--   returns text language plpgsql security definer set search_path = public, extensions
+-- as $fn$
+-- declare req_id bigint;
+-- begin
+--   select net.http_post(
+--     url := 'https://<ref>.supabase.co/functions/v1/spotify-sync',
+--     headers := jsonb_build_object('Content-Type','application/json',
+--       'Authorization','Bearer <ANON_KEY>', 'x-sync-secret','<SYNC_SECRET>'),
+--     body := '{}'::jsonb, timeout_milliseconds := 150000) into req_id;
+--   return 'spotify sync triggered (request ' || req_id || ')';
+-- end; $fn$;
+-- revoke execute on function public.trigger_spotify_sync() from public, anon, authenticated;

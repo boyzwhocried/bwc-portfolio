@@ -466,7 +466,13 @@ function ShelfCard({ p }: { p: PlaylistCard }) {
       <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, color: 'var(--fg)', marginTop: 10 }}>{p.name}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent)', marginTop: 3 }}>{p.count.toLocaleString()} tracks</div>
       {p.description && (
-        <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--muted)', marginTop: 6 }}>{p.description}</p>
+        <p
+          title={p.description}
+          className="truncate"
+          style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--muted)', marginTop: 6 }}
+        >
+          {p.description}
+        </p>
       )}
     </a>
   )

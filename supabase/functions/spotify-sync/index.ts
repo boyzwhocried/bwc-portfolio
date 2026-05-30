@@ -109,11 +109,12 @@ async function fetchRecent(token: string) {
 async function playlistMeta(token: string, id: string) {
   const data = await api(
     token,
-    `/playlists/${id}?fields=id,name,images,external_urls(spotify),tracks(total)`,
+    `/playlists/${id}?fields=id,name,description,images,external_urls(spotify),tracks(total)`,
   )
   return {
     id: data.id,
     name: data.name,
+    spotifyDescription: (data.description ?? '').trim(), // the owner's own blurb, if any
     image: img(data.images),
     count: data.tracks?.total ?? 0,
     url: data.external_urls?.spotify ?? `https://open.spotify.com/playlist/${id}`,
@@ -151,14 +152,17 @@ async function resolveThisMonth(token: string): Promise<string | null> {
 
 // ---- AI description (Claude Haiku), best-effort ------------------------------
 
-// First-person, in Verrel's casual voice. Uses ONLY the playlist name + tracks
-// (no private/wiki context). The name often carries the personal meaning, so the
-// model is told to interpret it as the owner would ("sound of eca" -> "tracks
-// that remind me of eca"). Hand-edited rows (description_locked) are never touched.
-async function describe(name: string, tracks: any[]): Promise<string | null> {
+// First-person, in the owner's casual voice. Context = playlist name + the owner's
+// OWN Spotify description (strongest signal, his actual words) + a track sample.
+// No private/wiki context (public page). Truly personal meaning is set by hand.
+async function describe(
+  name: string,
+  spotifyDescription: string,
+  tracks: any[],
+): Promise<string | null> {
   const key = Deno.env.get('ANTHROPIC_API_KEY')
   if (!key || tracks.length === 0) return null
-  const sample = tracks.slice(0, 25).map((t) => `${t.artist} - ${t.name}`).join('\n')
+  const sample = tracks.slice(0, 30).map((t) => `${t.artist} - ${t.name}`).join('\n')
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -174,12 +178,21 @@ async function describe(name: string, tracks: any[]): Promise<string | null> {
           'You write one-line playlist blurbs in the FIRST PERSON, as the playlist owner ' +
           'describing what the playlist is to him for visitors on his personal site. ' +
           'Voice: casual, warm, lowercase, a little dry. Like telling a friend, not a music critic. ' +
+          'Priority of signal: (1) if the playlist has its OWN description, base the blurb on what it ' +
+          'says, just rephrased in my casual voice, and never contradict it; (2) otherwise read the ' +
+          'playlist NAME personally (e.g. "sound of eca" -> "tracks that remind me of eca"); ' +
+          '(3) use the tracks only to confirm the mood. ' +
           'Hard rules: use "i"/"my"; max 13 words; all lowercase; no emoji, no quotes, no hashtags, ' +
-          'no em-dashes; do not name-drop specific artists. Interpret the playlist NAME personally ' +
-          '(e.g. a name like "sound of eca" becomes "tracks that remind me of eca"). Output ONLY the line.',
+          'no em-dashes; do not name-drop specific artists; do not invent personal facts (who someone ' +
+          'is, feelings, backstory) not present in the name or description. Output ONLY the line.',
         messages: [{
           role: 'user',
-          content: `playlist name: "${name}"\nsome of my tracks in it:\n${sample}\n\nwrite my one-line blurb:`,
+          content:
+            `playlist name: "${name}"\n` +
+            (spotifyDescription
+              ? `the playlist's own description (my words): "${spotifyDescription}"\n`
+              : `(this playlist has no description of its own)\n`) +
+            `some of my tracks in it:\n${sample}\n\nwrite my one-line blurb:`,
         }],
       }),
     })
@@ -270,7 +283,7 @@ Deno.serve(async (req) => {
       if (!description && !row.description_locked) {
         try {
           const sample = await playlistSample(token, row.id, 30)
-          description = await describe(row.title_override ?? meta.name, sample)
+          description = await describe(row.title_override ?? meta.name, meta.spotifyDescription, sample)
           if (description) {
             await supabase.from('spotify_playlists').update({ description }).eq('id', row.id)
           }
