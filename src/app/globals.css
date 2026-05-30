@@ -186,7 +186,7 @@
   }
 }
 
-/* blog post article prose styles — serif body (the /blog TYPE break) */
+/* blog post article prose styles: serif body (the /blog TYPE break) */
 .blog-prose {
   color: var(--fg);
   line-height: 1.8;

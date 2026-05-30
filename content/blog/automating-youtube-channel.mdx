@@ -38,7 +38,7 @@ def generate_script(topic: str) -> str:
     - Under 200 words
     - First-person narrator
     - Twist or unsettling ending
-    - No jump scares — psychological dread only
+    - No jump scares, psychological dread only
     """
     response = groq_client.chat.completions.create(...)
     return response.choices[0].message.content

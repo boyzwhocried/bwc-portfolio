@@ -66,7 +66,7 @@ export default function Nav({ room }: { room: string }) {
             })}
           </ul>
 
-          {/* hamburger — mobile only */}
+          {/* hamburger, mobile only */}
           <button
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'close menu' : 'open menu'}
@@ -102,7 +102,7 @@ export default function Nav({ room }: { room: string }) {
         </div>
       </nav>
 
-      {/* fullscreen overlay — follows page theme */}
+      {/* fullscreen overlay, follows page theme */}
       <div
         data-room={room}
         className="md:hidden fixed inset-0 z-40 flex flex-col justify-center px-8 transition-all duration-300"
