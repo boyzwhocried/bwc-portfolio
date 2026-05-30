@@ -53,8 +53,15 @@ export default function ContactForm() {
         }}
       >
         hey verrel, i want to{' '}
-        <span style={{ borderBottom: '3px solid var(--fg)', paddingBottom: 2 }}>
-          {intent || '______'}
+        <span
+          style={{
+            display: 'inline-block',
+            minWidth: intent ? undefined : '4ch',
+            borderBottom: '3px solid var(--fg)',
+            paddingBottom: 2,
+          }}
+        >
+          {intent || ' '}
         </span>
         .
       </p>
