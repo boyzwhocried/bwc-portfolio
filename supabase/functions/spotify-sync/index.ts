@@ -151,6 +151,10 @@ async function resolveThisMonth(token: string): Promise<string | null> {
 
 // ---- AI description (Claude Haiku), best-effort ------------------------------
 
+// First-person, in Verrel's casual voice. Uses ONLY the playlist name + tracks
+// (no private/wiki context). The name often carries the personal meaning, so the
+// model is told to interpret it as the owner would ("sound of eca" -> "tracks
+// that remind me of eca"). Hand-edited rows (description_locked) are never touched.
 async function describe(name: string, tracks: any[]): Promise<string | null> {
   const key = Deno.env.get('ANTHROPIC_API_KEY')
   if (!key || tracks.length === 0) return null
@@ -166,18 +170,22 @@ async function describe(name: string, tracks: any[]): Promise<string | null> {
       body: JSON.stringify({
         model: 'claude-haiku-4-5',
         max_tokens: 60,
+        system:
+          'You write one-line playlist blurbs in the FIRST PERSON, as the playlist owner ' +
+          'describing what the playlist is to him for visitors on his personal site. ' +
+          'Voice: casual, warm, lowercase, a little dry. Like telling a friend, not a music critic. ' +
+          'Hard rules: use "i"/"my"; max 13 words; all lowercase; no emoji, no quotes, no hashtags, ' +
+          'no em-dashes; do not name-drop specific artists. Interpret the playlist NAME personally ' +
+          '(e.g. a name like "sound of eca" becomes "tracks that remind me of eca"). Output ONLY the line.',
         messages: [{
           role: 'user',
-          content:
-            `Playlist name: "${name}"\nSample tracks:\n${sample}\n\n` +
-            `Write ONE short lowercase sentence (max 14 words) describing the vibe of this playlist. ` +
-            `No emoji, no quotes, no hashtags, no em-dashes. Just the sentence.`,
+          content: `playlist name: "${name}"\nsome of my tracks in it:\n${sample}\n\nwrite my one-line blurb:`,
         }],
       }),
     })
     if (!res.ok) return null
     const data = await res.json()
-    const text = (data.content?.[0]?.text ?? '').trim().replace(/^["']|["']$/g, '')
+    const text = (data.content?.[0]?.text ?? '').trim().replace(/^["']|["']$/g, '').replace(/—/g, ',')
     return text || null
   } catch {
     return null

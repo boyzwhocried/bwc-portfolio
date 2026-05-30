@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
 import type {
   SpotifyTrack,
   MusicData,
@@ -14,6 +15,7 @@ import DriftingSquares from '@/components/ui/DriftingSquares'
 const POLL_PLAYING = 30_000
 const POLL_IDLE = 120_000
 const BARS = [10, 22, 14, 24, 8, 18, 12, 20, 15]
+const SHELF_PREVIEW = 6 // cards shown per group before "show all"
 
 const RANGES: { key: TopRange; label: string }[] = [
   { key: 'short_term', label: 'last 4 weeks' },
@@ -21,7 +23,13 @@ const RANGES: { key: TopRange; label: string }[] = [
   { key: 'long_term', label: 'all time' },
 ]
 
-// shelf groups render in this fixed order with these display labels
+type SortKey = 'curated' | 'az' | 'size'
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: 'curated', label: 'curated' },
+  { key: 'az', label: 'a–z' },
+  { key: 'size', label: 'size' },
+]
+
 const GROUPS: { key: string; label: string }[] = [
   { key: 'vault', label: 'the vault' },
   { key: 'rotation', label: 'on rotation' },
@@ -44,10 +52,52 @@ const labelStyle: React.CSSProperties = {
   textTransform: 'uppercase',
 }
 
+function SegToggle<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  options: { key: T; label: string }[]
+  value: T
+  onChange: (k: T) => void
+  ariaLabel: string
+}) {
+  return (
+    <div className="flex gap-1.5" role="tablist" aria-label={ariaLabel}>
+      {options.map((o) => {
+        const active = o.key === value
+        return (
+          <button
+            key={o.key}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(o.key)}
+            className="transition-colors"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              letterSpacing: '0.04em',
+              padding: '5px 11px',
+              color: active ? 'var(--bg)' : 'var(--muted)',
+              background: active ? 'var(--accent)' : 'transparent',
+              border: `1px solid ${active ? 'var(--accent)' : 'var(--rule)'}`,
+            }}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function MusicPlayer({ music }: { music: MusicData }) {
   const [track, setTrack] = useState<SpotifyTrack | null>(null)
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState<TopRange>('short_term')
+  const [sort, setSort] = useState<SortKey>('curated')
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -82,13 +132,17 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
 
   const grouped = useMemo(() => {
     const shelf = music.shelf ?? []
+    const cmp =
+      sort === 'az'
+        ? (a: PlaylistCard, b: PlaylistCard) => a.name.localeCompare(b.name)
+        : sort === 'size'
+        ? (a: PlaylistCard, b: PlaylistCard) => b.count - a.count
+        : (a: PlaylistCard, b: PlaylistCard) => a.position - b.position
     return GROUPS.map((g) => ({
       ...g,
-      items: shelf
-        .filter((p) => p.category === g.key)
-        .sort((a, b) => a.position - b.position),
+      items: shelf.filter((p) => p.category === g.key).sort(cmp),
     })).filter((g) => g.items.length > 0)
-  }, [music.shelf])
+  }, [music.shelf, sort])
 
   return (
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
@@ -99,6 +153,8 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
         .eq-bar.animate { animation: eqBar 0.9s ease-in-out infinite; }
         .mp-card img { transition: transform 0.4s ease; }
         .mp-card:hover img { transform: scale(1.04); }
+        .mp-scroller { scrollbar-width: none; -ms-overflow-style: none; }
+        .mp-scroller::-webkit-scrollbar { display: none; }
         @media (prefers-reduced-motion: reduce) {
           .eq-bar.animate { animation: none; }
           .mp-card:hover img { transform: none; }
@@ -158,31 +214,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
             <div className="flex flex-wrap items-baseline justify-between gap-4" style={{ marginBottom: '1.75rem' }}>
               <div style={labelStyle}>most played</div>
-              <div className="flex gap-1.5" role="tablist" aria-label="time range">
-                {RANGES.map((r) => {
-                  const active = r.key === range
-                  return (
-                    <button
-                      key={r.key}
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => setRange(r.key)}
-                      className="transition-colors"
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
-                        letterSpacing: '0.04em',
-                        padding: '5px 11px',
-                        color: active ? 'var(--bg)' : 'var(--muted)',
-                        background: active ? 'var(--accent)' : 'transparent',
-                        border: `1px solid ${active ? 'var(--accent)' : 'var(--rule)'}`,
-                      }}
-                    >
-                      {r.label}
-                    </button>
-                  )
-                })}
-              </div>
+              <SegToggle options={RANGES} value={range} onChange={setRange} ariaLabel="time range" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-x-16 gap-y-12">
@@ -213,8 +245,7 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
                       >
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', width: 18 }}>{String(i + 1).padStart(2, '0')}</span>
                         {a.image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={a.image} alt="" width={32} height={32} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />
+                          <Image src={a.image} alt="" width={32} height={32} quality={70} sizes="32px" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />
                         ) : (
                           <span style={{ width: 32, height: 32, background: 'var(--accent)', borderRadius: '50%', flexShrink: 0 }} />
                         )}
@@ -232,26 +263,29 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
         {music.recentlyPlayed && music.recentlyPlayed.length > 0 && (
           <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
             <div style={{ ...labelStyle, marginBottom: '1.5rem' }}>last spun</div>
-            <div className="flex gap-5 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-              {music.recentlyPlayed.slice(0, 12).map((t, i) => (
-                <a
-                  key={`${t.url}-${i}`}
-                  href={t.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mp-card flex-shrink-0 transition-opacity hover:opacity-90"
-                  style={{ width: 116 }}
-                >
-                  <div style={{ width: 116, height: 116, overflow: 'hidden', background: 'var(--accent)' }}>
-                    {t.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={t.image} alt="" width={116} height={116} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    )}
-                  </div>
-                  <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, color: 'var(--fg)', marginTop: 8 }}>{t.name}</div>
-                  <div className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{t.artist}</div>
-                </a>
-              ))}
+            <div style={{ position: 'relative' }}>
+              <div className="mp-scroller flex gap-5 overflow-x-auto pb-2">
+                {music.recentlyPlayed.slice(0, 14).map((t, i) => (
+                  <a
+                    key={`${t.url}-${i}`}
+                    href={t.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mp-card flex-shrink-0 transition-opacity hover:opacity-90"
+                    style={{ width: 116 }}
+                  >
+                    <div style={{ position: 'relative', width: 116, height: 116, overflow: 'hidden', background: 'var(--accent)' }}>
+                      {t.image && (
+                        <Image src={t.image} alt="" width={116} height={116} quality={70} sizes="116px" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      )}
+                    </div>
+                    <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, color: 'var(--fg)', marginTop: 8, width: 116 }}>{t.name}</div>
+                    <div className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2, width: 116 }}>{t.artist}</div>
+                  </a>
+                ))}
+              </div>
+              {/* right-edge fade cue that there's more to scroll */}
+              <div aria-hidden style={{ position: 'absolute', top: 0, right: 0, bottom: 8, width: 48, pointerEvents: 'none', background: 'linear-gradient(to right, transparent, var(--bg))' }} />
             </div>
           </div>
         )}
@@ -284,18 +318,37 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
         {/* THE SHELF */}
         {grouped.length > 0 && (
           <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
-            <div style={{ ...labelStyle, marginBottom: '0.5rem' }}>the shelf</div>
+            <div className="flex flex-wrap items-baseline justify-between gap-4" style={{ marginBottom: '0.5rem' }}>
+              <div style={labelStyle}>the shelf</div>
+              <SegToggle options={SORTS} value={sort} onChange={setSort} ariaLabel="sort playlists" />
+            </div>
             <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: '2rem' }}>
               curated playlists, kept fresh automatically.
             </p>
-            {grouped.map((g) => (
-              <div key={g.key} style={{ marginBottom: '2.5rem' }}>
-                <div style={{ ...labelStyle, color: 'var(--accent)', marginBottom: '1.25rem' }}>{g.label}</div>
-                <div className="grid gap-x-6 gap-y-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-                  {g.items.map((p) => <ShelfCard key={p.id} p={p} />)}
+            {grouped.map((g) => {
+              const isOpen = !!expanded[g.key]
+              const items = isOpen ? g.items : g.items.slice(0, SHELF_PREVIEW)
+              return (
+                <div key={g.key} style={{ marginBottom: '2.5rem' }}>
+                  <div className="flex items-baseline gap-3" style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ ...labelStyle, color: 'var(--accent)' }}>{g.label}</div>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{g.items.length}</span>
+                  </div>
+                  <div className="grid gap-x-6 gap-y-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+                    {items.map((p) => <ShelfCard key={p.id} p={p} />)}
+                  </div>
+                  {g.items.length > SHELF_PREVIEW && (
+                    <button
+                      onClick={() => setExpanded((s) => ({ ...s, [g.key]: !s[g.key] }))}
+                      className="transition-opacity hover:opacity-70"
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)', marginTop: '1.25rem', letterSpacing: '0.04em' }}
+                    >
+                      {isOpen ? '− show less' : `+ show all ${g.items.length}`}
+                    </button>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -320,8 +373,7 @@ function TrackRow({ t, i }: { t: CachedTrack; i: number }) {
     >
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>{String(i + 1).padStart(2, '0')}</span>
       {t.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={t.image} alt="" width={40} height={40} style={{ width: 40, height: 40, objectFit: 'cover', display: 'block' }} />
+        <Image src={t.image} alt="" width={40} height={40} quality={70} sizes="40px" style={{ width: 40, height: 40, objectFit: 'cover', display: 'block' }} />
       ) : (
         <span style={{ width: 40, height: 40, background: 'var(--accent)', display: 'block' }} />
       )}
@@ -342,10 +394,9 @@ function PlaylistFeatureBlock({ f, accent }: { f: PlaylistFeature; accent?: bool
       className="mp-card flex gap-4 transition-opacity hover:opacity-90"
       style={{ marginTop: accent ? '1.5rem' : 0, alignItems: 'flex-start' }}
     >
-      <div style={{ width: 96, height: 96, flexShrink: 0, overflow: 'hidden', background: 'var(--accent)' }}>
+      <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0, overflow: 'hidden', background: 'var(--accent)' }}>
         {f.image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={f.image} alt="" width={96} height={96} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <Image src={f.image} alt="" width={96} height={96} quality={70} sizes="96px" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         )}
       </div>
       <div className="min-w-0">
@@ -367,10 +418,9 @@ function ShelfCard({ p }: { p: PlaylistCard }) {
       rel="noopener noreferrer"
       className="mp-card block transition-opacity hover:opacity-95"
     >
-      <div style={{ width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: 'var(--accent)' }}>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: 'var(--accent)' }}>
         {p.image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <Image src={p.image} alt="" fill quality={70} sizes="(max-width: 768px) 42vw, 180px" style={{ objectFit: 'cover' }} />
         )}
       </div>
       <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, color: 'var(--fg)', marginTop: 10 }}>{p.name}</div>
