@@ -1,4 +1,4 @@
-// spotify-sync — Supabase edge function (Deno)
+// spotify-sync: Supabase edge function (Deno)
 //
 // Refreshes the slow Spotify data the /music room reads, on a pg_cron schedule.
 // Writes into public.spotify_cache (public read). Page visits make 0 Spotify calls.
