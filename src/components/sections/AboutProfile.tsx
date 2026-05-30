@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { useDriftIn, useFadeUp } from '@/lib/motion'
+import { motion, useReducedMotion } from 'framer-motion'
+import { useDriftIn, useFadeUp, ease, dur } from '@/lib/motion'
 import DriftingSquares from '@/components/ui/DriftingSquares'
 
 const frame: React.CSSProperties = {
@@ -24,6 +24,7 @@ const THROUGHLINE = [
 export default function AboutProfile() {
   const drift = useDriftIn()
   const fade = useFadeUp()
+  const reduce = useReducedMotion()
 
   return (
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
@@ -76,14 +77,35 @@ export default function AboutProfile() {
           ↓ the through-line
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-6" style={{ maxWidth: '60rem' }}>
-          {THROUGHLINE.map((t) => (
-            <motion.div key={t.year} variants={fade} initial="hidden" animate="show"
-              className="grid" style={{ gridTemplateColumns: '64px 1fr', gap: 16, paddingBottom: '1rem', borderBottom: '1px solid var(--rule)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{t.year}</span>
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--fg)' }}>{t.body}</p>
-            </motion.div>
-          ))}
+        {/* spine + grid wrapper (relative so spine is scoped to this block) */}
+        <div style={{ position: 'relative' }}>
+          {/* vertical through-line spine: draws itself on scroll-reveal */}
+          <motion.div
+            aria-hidden
+            initial={reduce ? false : { scaleY: 0 }}
+            whileInView={{ scaleY: 1 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ duration: dur.slow, ease: ease.out }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 1,
+              height: '100%',
+              background: 'var(--accent)',
+              transformOrigin: 'top',
+            }}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-6" style={{ maxWidth: '60rem', paddingLeft: 16 }}>
+            {THROUGHLINE.map((t) => (
+              <motion.div key={t.year} variants={fade} initial="hidden" animate="show"
+                className="grid" style={{ gridTemplateColumns: '64px 1fr', gap: 16, paddingBottom: '1rem', borderBottom: '1px solid var(--rule)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>{t.year}</span>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--fg)' }}>{t.body}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         {/* system-note (safe-public) + cross-links */}

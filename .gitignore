@@ -45,10 +45,13 @@ next-env.d.ts
 # local scratch (playwright shots, one-off auth helper, dev logs, motion protos)
 /shots/
 shot*.mjs
+shot*.png
 reauth.mjs
 dev.log
 *-proto.html
 lh-*.json
 server.log
+*.report.html
+server-*.log
 
 .vercel
