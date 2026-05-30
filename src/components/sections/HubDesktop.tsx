@@ -38,9 +38,10 @@ function Clock() {
       new Intl.DateTimeFormat('en-GB', {
         hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta',
       }).format(new Date())
-    setTime(fmt())
+    // deferred initial set + interval (avoids a sync setState in the effect body)
+    const t0 = setTimeout(() => setTime(fmt()), 0)
     const t = setInterval(() => setTime(fmt()), 30_000)
-    return () => clearInterval(t)
+    return () => { clearTimeout(t0); clearInterval(t) }
   }, [])
   return <span suppressHydrationWarning>{time || '--:--'} · jakarta</span>
 }

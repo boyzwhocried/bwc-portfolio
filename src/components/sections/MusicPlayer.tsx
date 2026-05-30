@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useReducedMotion } from 'framer-motion'
 import { SpotifyTrack } from '@/types'
 
 const POLL_PLAYING = 30_000
@@ -9,7 +8,6 @@ const POLL_IDLE = 120_000
 const BARS = [10, 22, 14, 24, 8, 18, 12, 20, 15] // base heights for the hero equalizer
 
 export default function MusicPlayer() {
-  const reduce = useReducedMotion()
   const [track, setTrack] = useState<SpotifyTrack | null>(null)
   const [loading, setLoading] = useState(true)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)

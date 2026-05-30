@@ -16,7 +16,11 @@ export default function Nav({ room }: { room: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
-  useEffect(() => { setOpen(false) }, [pathname])
+  // close the mobile menu on route change (deferred so it is not a sync set in the effect body)
+  useEffect(() => {
+    const t = setTimeout(() => setOpen(false), 0)
+    return () => clearTimeout(t)
+  }, [pathname])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''

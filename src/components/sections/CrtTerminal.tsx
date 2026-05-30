@@ -42,8 +42,9 @@ export default function CrtTerminal({ onClose }: { onClose: () => void }) {
   // boot reveal: staggered when motion allowed, instant under reduced-motion
   useEffect(() => {
     if (reduce) {
-      setLines(BOOT)
-      return
+      // deferred so it is not a sync setState in the effect body
+      const t0 = setTimeout(() => setLines(BOOT), 0)
+      return () => clearTimeout(t0)
     }
     let i = 0
     const t = setInterval(() => {

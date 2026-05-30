@@ -100,7 +100,7 @@ export default function BwcMark() {
           transform: 'rotate(0.6deg)',
         }}
       >
-        // boyz who cried
+        {'// boyz who cried'}
       </div>
     </div>
   )

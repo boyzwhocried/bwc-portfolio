@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'now',
@@ -43,7 +44,7 @@ export default function NowPage() {
 
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 1.6, color: 'var(--muted)', marginTop: '1rem' }}>
           a living changelog. not finished essays (those live in{' '}
-          <a href="/blog" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>built &amp; broken</a>
+          <Link href="/blog" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 3 }}>built &amp; broken</Link>
           ), just what is actually happening right now.
         </p>
 
