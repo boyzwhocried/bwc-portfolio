@@ -330,29 +330,61 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
           </div>
         )}
 
-        {/* OF INSTA + THIS MONTH (the system) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-x-16 gap-y-12" style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
-          <div className="md:col-span-7">
-            <div style={{ ...labelStyle, marginBottom: '1.25rem' }}>the system</div>
-            <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', maxWidth: '46ch' }}>
-              every song i catch in an instagram reel gets saved to one playlist, &ldquo;of insta&rdquo;.
-              then a slow ritual sorts it: a monthly diary playlist (one per month, pastel cover), vibe-named
-              shelves, and a gold list of the songs that survive a second listen. an accidental archive of
-              whatever caught my ear.
-            </p>
-            {music.ofInsta && <PlaylistFeatureBlock f={music.ofInsta} accent />}
+        {/* OF INSTA — the signature archive, full-bleed beat (the one break per room) */}
+        {music.ofInsta && (
+          <div
+            style={{
+              width: '100vw',
+              marginLeft: 'calc(50% - 50vw)',
+              marginTop: '5rem',
+              borderTop: '1px solid var(--accent)',
+              borderBottom: '1px solid var(--accent)',
+              background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
+              overflow: 'hidden',
+            }}
+          >
+            <a
+              href={music.ofInsta.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mp-card block"
+              style={{ ...frame, paddingTop: '3.75rem', paddingBottom: '3.75rem' }}
+            >
+              <div className="flex flex-col md:flex-row md:items-center gap-8 md:gap-14">
+                <div style={{ width: 'clamp(11rem, 26vw, 17rem)', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: 'var(--accent)', flexShrink: 0 }}>
+                  {music.ofInsta.image && (
+                    <Image src={music.ofInsta.image} alt="" fill sizes="(max-width: 768px) 70vw, 17rem" style={{ objectFit: 'cover' }} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div style={{ ...labelStyle, color: 'var(--accent)' }}>the archive</div>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(2.6rem, 8vw, 5rem)', lineHeight: 0.92, letterSpacing: '-0.02em', color: 'var(--fg)', marginTop: '0.5rem' }}>
+                    of insta
+                  </h2>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--accent)', marginTop: '0.75rem' }}>
+                    {music.ofInsta.count.toLocaleString()} tracks, and counting ↗
+                  </div>
+                  <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', marginTop: '1.25rem', maxWidth: '54ch' }}>
+                    every song i catch in an instagram reel gets saved here. then a slow ritual sorts it: a
+                    monthly diary playlist, vibe-named shelves, and a gold list of the ones that survive a
+                    second listen. an accidental archive of whatever caught my ear.
+                  </p>
+                </div>
+              </div>
+            </a>
           </div>
+        )}
 
-          <div className="md:col-span-5">
-            <div style={{ ...labelStyle, marginBottom: '1.25rem' }}>this month</div>
-            {music.thisMonth ? (
-              <PlaylistFeatureBlock f={music.thisMonth} />
-            ) : (
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--muted)' }}>
-                this month&apos;s diary playlist is mid-sync. the footer ticker has the live truth.
-              </p>
-            )}
-          </div>
+        {/* this month diary */}
+        <div style={{ marginTop: '5rem', borderTop: '1px solid var(--rule)', paddingTop: '3rem' }}>
+          <div style={{ ...labelStyle, marginBottom: '1.25rem' }}>this month</div>
+          {music.thisMonth ? (
+            <PlaylistFeatureBlock f={music.thisMonth} />
+          ) : (
+            <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--muted)' }}>
+              this month&apos;s diary playlist is mid-sync. the footer ticker has the live truth.
+            </p>
+          )}
         </div>
 
         {/* THE SHELF */}
