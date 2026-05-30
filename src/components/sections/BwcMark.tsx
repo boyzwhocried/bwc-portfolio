@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import useIsTouch from '@/lib/useIsTouch'
 
 const LETTERS = ['b', 'w', 'c'] as const
 
@@ -10,13 +11,14 @@ const LETTER_BIAS = [-1, 0, 1] as const
 
 export default function BwcMark() {
   const reduce = useReducedMotion()
+  const touch = useIsTouch()
   const blockRef = useRef<HTMLDivElement>(null)
   // pointer offset from the mark center, normalized to roughly [-1, 1]
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [active, setActive] = useState(false)
 
   function handleMove(e: React.PointerEvent) {
-    if (reduce) return
+    if (reduce || touch) return
     const el = blockRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
