@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import PrintButton from '@/components/ui/PrintButton'
+import DriftingSquares from '@/components/ui/DriftingSquares'
 
 export const metadata: Metadata = {
   title: 'cv',
@@ -67,7 +68,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 
 export default function CVPage() {
   return (
-    <section className="min-h-screen" style={{ paddingTop: '3.5rem' }}>
+    <section className="min-h-screen relative overflow-hidden" style={{ paddingTop: '3.5rem' }}>
       <style>{`
         /* the rail width is the visible margin/column system */
         .cv-doc { --rail: 110px 1fr; }
@@ -80,8 +81,10 @@ export default function CVPage() {
         }
       `}</style>
 
+      <DriftingSquares variant="cv" color="var(--vermilion)" opacity={0.05} count={5} />
+
       {/* screen-only actions */}
-      <div className="cv-actions mx-auto px-6 flex items-center justify-between" style={{ maxWidth: '48rem', paddingTop: '1.5rem' }}>
+      <div className="cv-actions mx-auto px-6 flex items-center justify-between" style={{ maxWidth: '60rem', paddingTop: '1.5rem', position: 'relative', zIndex: 1 }}>
         <Link href="/about" className="transition-opacity hover:opacity-70" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
           ← about
         </Link>
@@ -91,7 +94,7 @@ export default function CVPage() {
       {/* the document */}
       <div
         className="cv-doc mx-auto px-8 py-10"
-        style={{ maxWidth: '48rem', marginTop: '1.5rem', border: '1px solid var(--rule)', background: 'var(--bg)' }}
+        style={{ maxWidth: '60rem', marginTop: '1.5rem', border: '1px solid var(--rule)', background: 'var(--bg)', position: 'relative', zIndex: 1 }}
       >
         {/* letterhead */}
         <header style={{ borderBottom: '2px solid var(--fg)', paddingBottom: '1.25rem' }}>

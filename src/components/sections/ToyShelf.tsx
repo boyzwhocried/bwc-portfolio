@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import CrtTerminal from './CrtTerminal'
+import DriftingSquares from '@/components/ui/DriftingSquares'
 
 const SHADOW = '4px 4px 0 #b3ada0'
 const SHADOW_INK = '4px 4px 0 var(--ink)'
@@ -28,8 +29,9 @@ export default function ToyShelf() {
   const [clicks, setClicks] = useState(0)
 
   return (
-    <section className="min-h-screen" style={{ paddingTop: '3.5rem' }}>
-      <div className="mx-auto px-6" style={{ maxWidth: '64rem', paddingTop: '2.5rem', paddingBottom: '4rem' }}>
+    <section className="min-h-screen relative overflow-hidden" style={{ paddingTop: '3.5rem' }}>
+      <DriftingSquares variant="sandbox" color="var(--vermilion)" opacity={0.1} count={7} />
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--page-max)', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 'var(--page-px)', paddingRight: 'var(--page-px)', paddingTop: '2.5rem', paddingBottom: '4rem' }}>
         {/* header */}
         <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(2rem, 5vw, 2.6rem)', letterSpacing: '-0.02em', color: 'var(--fg)' }}>
