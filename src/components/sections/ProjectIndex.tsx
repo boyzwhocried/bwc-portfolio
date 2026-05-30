@@ -93,7 +93,10 @@ export default function ProjectIndex({ projects }: { projects: Project[] }) {
                     fontWeight: filter === f ? 700 : 400,
                     textDecoration: filter === f ? 'underline' : 'none',
                     textUnderlineOffset: 3,
-                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    // a11y target-size: >=24px tap target without changing the text size
+                    minHeight: 24, minWidth: 24, padding: '0 4px',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
                   {f === 'all' ? '[ all ]' : f}
