@@ -120,9 +120,8 @@ export default function ProjectIndex({ projects }: { projects: Project[] }) {
               >
                 <Link
                   href={`/projects/${p.slug}`}
-                  className="proj-row grid items-baseline px-3"
+                  className="proj-row grid items-baseline px-3 grid-cols-[40px_minmax(0,1fr)_56px] md:grid-cols-[40px_minmax(0,1fr)_150px_300px_56px]"
                   style={{
-                    gridTemplateColumns: GRID,
                     gap: 20,
                     paddingTop: 16,
                     paddingBottom: 16,

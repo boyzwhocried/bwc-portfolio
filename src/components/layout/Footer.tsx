@@ -96,7 +96,7 @@ export default function Footer({ room }: { room: string }) {
       <div style={{ borderTop: '1px solid var(--rule)' }}>
         <div
           className="flex items-center justify-between gap-6"
-          style={{ ...inner, paddingTop: '1.25rem', paddingBottom: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1 }}
+          style={{ ...inner, paddingTop: '1.25rem', paddingBottom: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.4 }}
         >
           <span className="min-w-0 flex-1 flex items-center">
             <SpotifyWidget />

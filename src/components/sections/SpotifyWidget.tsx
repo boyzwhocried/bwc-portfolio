@@ -62,7 +62,7 @@ export default function SpotifyWidget() {
             <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.2s' }} />
             <span className={`sw-bar ${playing ? 'sw-on' : ''}`} style={{ animationDelay: '0.4s' }} />
           </span>
-          <span className="truncate" style={{ color: playing ? 'var(--fg)' : 'var(--muted)' }}>
+          <span className="truncate" style={{ color: playing ? 'var(--fg)' : 'var(--muted)', lineHeight: 1.5, paddingBottom: 1 }}>
             {label} →
           </span>
         </span>

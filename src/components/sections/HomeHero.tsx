@@ -53,13 +53,13 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
 
         {/* meta row */}
         <div
-          className="relative flex items-center justify-between"
+          className="relative flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
           style={{ zIndex: 1, paddingTop: '2rem', paddingBottom: '1rem', borderBottom: '1px solid var(--rule)', fontFamily: 'var(--font-mono)' }}
         >
-          <motion.span custom={0} variants={drift} className="text-[10px] sm:text-xs uppercase" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
+          <motion.span custom={0} variants={drift} className="text-[10px] sm:text-xs uppercase whitespace-nowrap" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
             EST. 2024 · JAKARTA, ID
           </motion.span>
-          <motion.span custom={1} variants={drift} className="text-[10px] sm:text-xs uppercase" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
+          <motion.span custom={1} variants={drift} className="text-[10px] sm:text-xs uppercase whitespace-nowrap" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
             [ SITE v2 · ALWAYS GROWING ]
           </motion.span>
         </div>
