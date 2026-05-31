@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useDriftIn, useFadeUp, ease, dur } from '@/lib/motion'
 import DriftingSquares from '@/components/ui/DriftingSquares'
@@ -42,9 +43,16 @@ export default function AboutProfile() {
           </motion.h1>
 
           <motion.div custom={2} variants={drift} className="mx-auto" style={{ width: '15rem', marginTop: '2.5rem' }}>
-            <div aria-label="portrait of verrel (placeholder, real photo pending)" style={{ width: '100%', aspectRatio: '4 / 5', border: '1px solid var(--fg)', background: 'linear-gradient(135deg, #2b2b2b, #1f1f1f)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>[ verrel.jpg ]</span>
-              <span style={{ position: 'absolute', bottom: 6, left: 6, fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>JAKARTA, 2026</span>
+            <div style={{ width: '100%', aspectRatio: '3 / 4', border: '1px solid var(--fg)', position: 'relative', overflow: 'hidden', background: 'var(--ink)' }}>
+              <Image
+                src="/portrait.jpg"
+                alt="verrel leaning against a graffiti wall in jakarta"
+                fill
+                sizes="240px"
+                quality={70}
+                style={{ objectFit: 'cover' }}
+              />
+              <span style={{ position: 'absolute', bottom: 6, left: 6, fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--paper)', mixBlendMode: 'difference' }}>JAKARTA, 2026</span>
             </div>
             <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: '0.5rem', letterSpacing: '0.06em' }}>
               VERREL ALSYOUMI · data engineer, tinkerer
