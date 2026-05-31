@@ -25,10 +25,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  icons: {
-    // the brand mascot: a flat vermilion square
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='14' y='14' width='72' height='72' fill='%23e84c28'/></svg>",
-  },
+  // icons come from the file convention: src/app/icon.svg (rel=icon) and
+  // src/app/apple-icon.tsx (apple-touch-icon for iOS). no inline data-URI here,
+  // which iOS Safari ignored and which would override the real icon files.
 }
 
 export default function RootLayout({
