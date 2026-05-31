@@ -19,7 +19,7 @@ export default function ContactForm() {
     )
   }
 
-  // ink-on-vermilion field styling
+  // token-driven field styling (room now rides the calm paper base)
   const fieldStyle: React.CSSProperties = {
     width: '100%',
     background: 'transparent',
@@ -36,7 +36,7 @@ export default function ContactForm() {
     textTransform: 'uppercase',
     letterSpacing: '0.1em',
     marginBottom: 6,
-    color: 'var(--fg)', // full ink for AA contrast on the vermilion flood
+    color: 'var(--fg)',
   }
 
   return (

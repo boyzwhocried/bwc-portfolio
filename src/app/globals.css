@@ -112,14 +112,16 @@
     --rule: #ded8cc;
   }
 
-  /* /contact: COLOR break -> vermilion flood */
+  /* /contact: COLOR break is now a CONTAINED vermilion CTA panel (see ContactPanel),
+     not a page-wide flood. the room rides the calm paper base so nav + footer + the
+     form column read quietly; vermilion lives only inside the panel island. */
   [data-room="contact"] {
-    --bg: var(--vermilion);
+    --bg: var(--paper);
     --fg: var(--ink);
-    --accent: var(--ink);
-    --accent-text: var(--ink);
-    --muted: #2b0d05;  /* near-ink: only ink-dark text clears AA on the bright vermilion flood */
-    --rule: #c43f1f;
+    --accent: var(--vermilion);
+    --accent-text: #b83612;  /* AA-safe deep vermilion for small text on paper */
+    --muted: #6b665d;
+    --rule: #d8d2c6;
   }
 
   /* /cv: TYPE+layout break -> near-white print document */
