@@ -18,6 +18,8 @@ const ROOMS = [
 const ELSEWHERE = [
   { href: 'https://github.com/boyzwhocried', label: 'github' },
   { href: 'https://linkedin.com/in/boyzwhocried', label: 'linkedin' },
+  { href: 'https://instagram.com/boyzwhocried', label: 'instagram' },
+  { href: 'https://open.spotify.com/user/boyzwhocried', label: 'spotify' },
   { href: 'mailto:verrel.alsyoumi@gmail.com', label: 'email' },
 ]
 

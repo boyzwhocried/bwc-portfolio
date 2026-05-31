@@ -73,9 +73,11 @@ export default function ContactPanel() {
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: INK, marginBottom: '0.6rem' }}>
             elsewhere
           </p>
-          <div style={{ display: 'flex', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.25rem' }}>
             <a href="https://github.com/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', color: INK, borderBottom: `1px solid ${INK}` }}>github</a>
             <a href="https://linkedin.com/in/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', color: INK, borderBottom: `1px solid ${INK}` }}>linkedin</a>
+            <a href="https://instagram.com/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', color: INK, borderBottom: `1px solid ${INK}` }}>instagram</a>
+            <a href="https://open.spotify.com/user/boyzwhocried" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', color: INK, borderBottom: `1px solid ${INK}` }}>spotify</a>
           </div>
         </div>
         <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: INK }}>
