@@ -23,7 +23,7 @@ type NowCurrently = { id: number; key: string; value: string; sort_order: number
 export default async function NowPage() {
   const supabase = createServerClient()
 
-  const [{ data: entries }, { data: currently }] = await Promise.all([
+  const [entriesResult, currentlyResult] = await Promise.all([
     supabase
       .from('now_entries')
       .select('id, date, body')
@@ -35,8 +35,11 @@ export default async function NowPage() {
       .order('sort_order', { ascending: true }),
   ])
 
-  const nowEntries: NowEntry[] = entries ?? []
-  const nowCurrently: NowCurrently[] = currently ?? []
+  if (entriesResult.error) throw new Error(`Failed to fetch now entries: ${entriesResult.error.message}`)
+  if (currentlyResult.error) throw new Error(`Failed to fetch now currently: ${currentlyResult.error.message}`)
+
+  const nowEntries: NowEntry[] = entriesResult.data ?? []
+  const nowCurrently: NowCurrently[] = currentlyResult.data ?? []
   const lastUpdated = nowEntries[0]?.date ?? ''
 
   return (
