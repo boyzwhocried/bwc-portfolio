@@ -35,8 +35,8 @@ export default async function NowPage() {
       .order('sort_order', { ascending: true }),
   ])
 
-  if (entriesResult.error) throw new Error(`Failed to fetch now entries: ${entriesResult.error.message}`)
-  if (currentlyResult.error) throw new Error(`Failed to fetch now currently: ${currentlyResult.error.message}`)
+  if (entriesResult.error) { console.error('[now] entries fetch failed:', entriesResult.error.message); throw new Error('Failed to load /now content') }
+  if (currentlyResult.error) { console.error('[now] currently fetch failed:', currentlyResult.error.message); throw new Error('Failed to load /now content') }
 
   const nowEntries: NowEntry[] = entriesResult.data ?? []
   const nowCurrently: NowCurrently[] = currentlyResult.data ?? []
