@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import DriftingSquares from '@/components/ui/DriftingSquares'
 import NowHeadline from '@/components/sections/NowHeadline'
+import { createServerClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'now',
@@ -16,25 +17,28 @@ const frame: React.CSSProperties = {
   paddingRight: 'var(--page-px)',
 }
 
-// public-safe only: no private plans, no salary. short dated status, newest first.
-const ENTRIES: { date: string; body: string }[] = [
-  { date: '2026-05-30', body: 'rebuilding this whole site, one room at a time. new design system: swiss backbone, zine soul, eleven distinct rooms, plus an orange-square mascot.' },
-  { date: '2026-05-29', body: 'shipped outreach os, a freelance outreach generator. live and in use.' },
-  { date: '2026-05-24', body: 'vault of frights now posts a horror short every day, fully automated end to end.' },
-  { date: '2026-05-20', body: 'personal os keeps growing: a wiki plus a telegram bot that runs my life, syncing weekly.' },
-  { date: '2026-05-15', body: 'studying for the azure DP-900. data fundamentals, slowly but surely.' },
-]
+type NowEntry = { id: number; date: string; body: string }
+type NowCurrently = { id: number; key: string; value: string; sort_order: number }
 
-const CURRENTLY = [
-  { k: 'building', v: 'this site, v2' },
-  { k: 'learning', v: 'azure DP-900' },
-  { k: 'listening', v: 'whatever the footer says' },
-  { k: 'shipping', v: 'more than sleeping' },
-]
+export default async function NowPage() {
+  const supabase = createServerClient()
 
-const LAST_UPDATED = '2026-05-30'
+  const [{ data: entries }, { data: currently }] = await Promise.all([
+    supabase
+      .from('now_entries')
+      .select('id, date, body')
+      .eq('published', true)
+      .order('date', { ascending: false }),
+    supabase
+      .from('now_currently')
+      .select('id, key, value, sort_order')
+      .order('sort_order', { ascending: true }),
+  ])
 
-export default function NowPage() {
+  const nowEntries: NowEntry[] = entries ?? []
+  const nowCurrently: NowCurrently[] = currently ?? []
+  const lastUpdated = nowEntries[0]?.date ?? ''
+
   return (
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
       <DriftingSquares variant="now" color="var(--vermilion)" opacity={0.09} count={6} />
@@ -43,12 +47,12 @@ export default function NowPage() {
         {/* kicker + live updated line */}
         <div className="flex flex-wrap items-center justify-between gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>
           <span className="uppercase" style={{ color: 'var(--accent-text)', letterSpacing: '0.12em' }}>/now</span>
-          <span style={{ color: 'var(--muted)' }}>● updated {LAST_UPDATED} · jakarta</span>
+          <span style={{ color: 'var(--muted)' }}>● updated {lastUpdated} · jakarta</span>
         </div>
 
-        {/* big italic status headline: above-fold load-drift */}
+        {/* big italic status headline — derives from latest entry */}
         <NowHeadline>
-          rebuilding this whole site, one room at a time.
+          {nowEntries[0]?.body ?? 'building things.'}
         </NowHeadline>
 
         {/* two columns: currently (sidebar) + dated feed */}
@@ -57,10 +61,10 @@ export default function NowPage() {
           <div className="md:col-span-4">
             <div className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', marginBottom: '1.25rem' }}>currently</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {CURRENTLY.map((c) => (
-                <div key={c.k} className="flex items-baseline gap-3" style={{ borderBottom: '1px solid var(--rule)', paddingBottom: '0.75rem' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', width: 72, flexShrink: 0 }}>{c.k}</span>
-                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, color: 'var(--fg)' }}>{c.v}</span>
+              {nowCurrently.map((c) => (
+                <div key={c.id} className="flex items-baseline gap-3" style={{ borderBottom: '1px solid var(--rule)', paddingBottom: '0.75rem' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', width: 72, flexShrink: 0 }}>{c.key}</span>
+                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, color: 'var(--fg)' }}>{c.value}</span>
                 </div>
               ))}
             </div>
@@ -75,8 +79,8 @@ export default function NowPage() {
           <div className="md:col-span-8">
             <div className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', marginBottom: '0.5rem' }}>the log</div>
             <div style={{ borderTop: '3px solid var(--fg)' }}>
-              {ENTRIES.map((e) => (
-                <div key={e.date} className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-x-6 gap-y-1" style={{ padding: '1.5rem 0', borderBottom: '1px solid var(--rule)' }}>
+              {nowEntries.map((e) => (
+                <div key={e.id} className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-x-6 gap-y-1" style={{ padding: '1.5rem 0', borderBottom: '1px solid var(--rule)' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)', paddingTop: 2 }}>{e.date}</div>
                   <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 1.6, color: 'var(--fg)' }}>{e.body}</p>
                 </div>
