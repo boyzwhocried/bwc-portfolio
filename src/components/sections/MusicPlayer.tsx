@@ -53,7 +53,7 @@ const RANGES: { key: TopRange; label: string }[] = [
 type SortKey = 'curated' | 'az' | 'size'
 const SORTS: { key: SortKey; label: string }[] = [
   { key: 'curated', label: 'curated' },
-  { key: 'az', label: 'a–z' },
+  { key: 'az', label: 'a-z' },
   { key: 'size', label: 'size' },
 ]
 

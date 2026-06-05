@@ -2,11 +2,11 @@
 title: "My Personal OS"
 date: "2026-06-04"
 tags: ["personal-os", "building", "ai"]
-summary: "I'm a forgetful person. Never journaled, never took notes — just tried to keep everything in my head. That doesn't work. So I built a system."
+summary: "I'm a forgetful person. Never journaled, never took notes, just tried to keep everything in my head. That doesn't work. So I built a system."
 published: true
 ---
 
-I forget things. Not the dramatic kind — not names or faces — but the quiet kind. Months go by and you realise you never followed through on something you cared about. You keep making the same mistake. You are aware of who you are but somehow cannot change the things you don't like.
+I forget things. Not the dramatic kind, not names or faces, but the quiet kind. Months go by and you realise you never followed through on something you cared about. You keep making the same mistake. You are aware of who you are but somehow cannot change the things you don't like.
 
 Before this, I tried nothing. That is the honest answer. No Notion, no journaling, no habit trackers. Just my head. I figured if something mattered, I would remember it.
 
@@ -16,13 +16,13 @@ That doesn't work.
 
 ## What I built
 
-In late 2025 I started building a personal operating system. Not productivity software — I have seen those, and they require you to maintain them. This is different. It is an Obsidian vault where an AI (Claude, by Anthropic) maintains the knowledge layer. I feed it raw material. It writes the wiki.
+In late 2025 I started building a personal operating system. Not productivity software. I have seen those, and they require you to maintain them. This is different. It is an Obsidian vault where an AI (Claude, by Anthropic) maintains the knowledge layer. I feed it raw material. It writes the wiki.
 
 The vault has three layers:
 
-- **Raw sources** — immutable input. Daily journal transcripts, work documents, exported data.
-- **Wiki** — Claude-maintained. Entities (people, projects, habits), concepts (frameworks I keep returning to), processed daily notes.
-- **Working layer** — in-progress thinking. Drafts, extracts, scratchpad notes before they earn a wiki page.
+- **Raw sources**: immutable input. Daily journal transcripts, work documents, exported data.
+- **Wiki**: Claude-maintained. Entities (people, projects, habits), concepts (frameworks I keep returning to), processed daily notes.
+- **Working layer**: in-progress thinking. Drafts, extracts, scratchpad notes before they earn a wiki page.
 
 Every evening a Telegram bot asks me about my day. Spending, mood, what I worked on. I answer in short messages, the way I actually talk. The bot processes the session, Claude synthesises it, and by morning there is a new daily note in the wiki. Transactions logged. Patterns flagged. Open loops tracked.
 
@@ -42,11 +42,11 @@ Whether I act on it is still on me. But at least I cannot pretend I did not see 
 
 ## The Ecosystem Hub
 
-The more systems I built — journal bot, finance dashboard, monitoring stack, portfolio site, data pipelines at work — the more they started to drift from each other. Something changes in one place and three others are quietly wrong. You only notice weeks later.
+The more systems I built (journal bot, finance dashboard, monitoring stack, portfolio site, data pipelines at work), the more they started to drift from each other. Something changes in one place and three others are quietly wrong. You only notice weeks later.
 
 The Ecosystem Hub is my answer to that. It is a reflex, not a tool. You do not call it. Every time I end a Claude Code session, a hook runs a reconciler that reads what changed, updates a state file for each tracked project, and stages proposals if one change implies action somewhere else. Next session, it surfaces a digest: "saw X, updated Y, two proposals pending."
 
-The hub is the connective tissue. Not just inside the personal OS — across every project I am running. Side projects, deployed apps, work tools. One source of truth, maintained automatically as a side effect of working normally.
+The hub is the connective tissue. Not just inside the personal OS, but across every project I am running. Side projects, deployed apps, work tools. One source of truth, maintained automatically as a side effect of working normally.
 
 It went live two days ago. 174 tests, seven sessions of TDD. The fact that I built it with that level of rigour for a system designed to help me stop forgetting things is not lost on me.
 

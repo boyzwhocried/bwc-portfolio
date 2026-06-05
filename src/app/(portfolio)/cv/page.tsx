@@ -140,7 +140,7 @@ export default function CVPage() {
 
         <Section label="experience">
           <Entry
-            date="Sep 2024 – now"
+            date="Sep 2024 - now"
             title="Data Engineer"
             org="life-insurance sector · contract (via IT consultancy) · hybrid, Jakarta"
             bullets={[
@@ -151,7 +151,7 @@ export default function CVPage() {
             stack="SQL Server (SSMS) · SSIS · T-SQL · Python · Tableau"
           />
           <Entry
-            date="Aug – Dec 2019"
+            date="Aug - Dec 2019"
             title="Maintenance Engineer"
             org="PT Federal Izumi Mfg. · internship · Cileungsi, West Java"
             bullets={[
@@ -184,12 +184,12 @@ export default function CVPage() {
 
         <Section label="education">
           <Entry
-            date="2021 – 2023"
+            date="2021 - 2023"
             title="BINUS University"
             org="Bachelor of Computer Science · GPA 3.46 · thesis: micro-frontend HR app (React, Webpack federation)"
           />
           <Entry
-            date="2017 – 2020"
+            date="2017 - 2020"
             title="Polman Bandung (PMS-ITB)"
             org="Associate, Mechatronics Engineering · GPA 3.14 · final project: 3D interpolation engraving CNC machine (VB.NET)"
           />

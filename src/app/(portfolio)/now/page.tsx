@@ -53,7 +53,7 @@ export default async function NowPage() {
           <span style={{ color: 'var(--muted)' }}>● updated {lastUpdated} · jakarta</span>
         </div>
 
-        {/* big italic status headline — derives from latest entry */}
+        {/* big italic status headline, derives from latest entry */}
         <NowHeadline>
           {nowEntries[0]?.body ?? 'building things.'}
         </NowHeadline>
