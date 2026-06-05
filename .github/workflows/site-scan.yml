@@ -1,0 +1,85 @@
+name: site-scan
+
+# Living-site monthly health heartbeat (the mechanical half of the bwc site-ops design).
+# Runs the read-only scan engine (scripts/site-ops) and, ONLY on WARN/FAIL, pushes an ntfy
+# alert + opens/updates a single GitHub issue. Green months are silent.
+#
+# Setup required before this fires (one-time):
+#   1. Push this branch + merge to master so the workflow is registered.
+#   2. Add repo secret NTFY_TOPIC = the ntfy topic (e.g. verrel-os-a7x92k). Settings >
+#      Secrets and variables > Actions > New repository secret. Never hardcode it: this is a
+#      public repo and the topic is a write key to the phone.
+# Manual run anytime via the Actions tab (workflow_dispatch).
+
+on:
+  schedule:
+    - cron: "0 2 1 * *" # 02:00 UTC on the 1st of each month
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install npm deps (for npm audit / npm outdated)
+        run: npm ci
+
+      - name: Run scan engine
+        id: scan
+        working-directory: scripts/site-ops
+        run: |
+          set +e
+          deno run --allow-run --allow-net --allow-read --allow-env scan.ts > report.txt
+          set -e
+          echo "----- report -----"
+          cat report.txt
+          echo "overall=$(head -1 report.txt | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Push ntfy alert (WARN/FAIL only)
+        if: steps.scan.outputs.overall != 'PASS'
+        working-directory: scripts/site-ops
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_TOPIC secret not set; skipping push (issue still opens)."
+            exit 0
+          fi
+          curl -s \
+            -H "Title: bwc site-scan: ${{ steps.scan.outputs.overall }}" \
+            -H "Tags: warning" \
+            --data-binary @report.txt \
+            "https://ntfy.sh/$NTFY_TOPIC"
+
+      - name: Open or update the site-scan issue (WARN/FAIL only)
+        if: steps.scan.outputs.overall != 'PASS'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('scripts/site-ops/report.txt', 'utf8');
+            const today = new Date().toISOString().slice(0, 10);
+            const overall = '${{ steps.scan.outputs.overall }}';
+            const title = `site-scan: ${overall} (${today})`;
+            const body = '```\n' + report + '\n```\n\n_Monthly living-site heartbeat. Route fixes through `site-upgrade`._';
+            const { owner, repo } = context.repo;
+            const open = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: 'site-scan' });
+            const existing = open.data.find((i) => i.title.startsWith('site-scan:'));
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, title, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body, labels: ['site-scan'] });
+            }
