@@ -14,6 +14,8 @@ const frame: React.CSSProperties = {
   paddingRight: 'var(--page-px)',
 }
 
+type NowCurrently = { id: number; key: string; value: string; sort_order: number }
+
 // the journey, public-safe (no german plan, no salary). third-person about-voice.
 const THROUGHLINE = [
   { year: '2017', body: 'started in mechatronics, fixing CNC machines on a factory floor and wiring an alert system so the machines could tell on themselves.' },
@@ -22,7 +24,7 @@ const THROUGHLINE = [
   { year: 'now', body: 'started pointing the same habit at his own life: a wiki that remembers everything, a bot that runs the day, a channel that writes and uploads horror on its own.' },
 ]
 
-export default function AboutProfile() {
+export default function AboutProfile({ currently }: { currently: NowCurrently[] }) {
   const drift = useDriftIn()
   const fade = useFadeUp()
   const reduce = useReducedMotion()
@@ -119,9 +121,19 @@ export default function AboutProfile() {
         {/* system-note (safe-public) + cross-links */}
         <motion.div variants={fade} initial="hidden" animate="show"
           className="flex flex-wrap items-center justify-between gap-4" style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--rule)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-          <span style={{ borderLeft: '2px solid var(--accent)', paddingLeft: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-            currently: prepping DP-900, building this site in public, shipping more than sleeping.
-          </span>
+          {currently.length > 0 ? (
+            <span style={{ borderLeft: '2px solid var(--accent)', paddingLeft: 12, color: 'var(--muted)', lineHeight: 1.6, maxWidth: '46rem' }}>
+              currently:{' '}
+              {currently.map((c, i) => (
+                <span key={c.id}>
+                  {i > 0 && ' · '}
+                  <span style={{ color: 'var(--accent-text)' }}>{c.key}</span> {c.value}
+                </span>
+              ))}
+            </span>
+          ) : (
+            <span />
+          )}
           <span className="flex gap-6">
             <Link href="/cv" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>the cv →</Link>
             <Link href="/contact" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>say hi →</Link>
