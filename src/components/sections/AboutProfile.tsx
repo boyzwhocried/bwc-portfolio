@@ -48,13 +48,13 @@ export default function AboutProfile({ currently }: { currently: NowCurrently[] 
             <div style={{ width: '100%', aspectRatio: '3 / 4', border: '1px solid var(--fg)', position: 'relative', overflow: 'hidden', background: 'var(--ink)' }}>
               <Image
                 src="/portrait.jpg"
-                alt="verrel leaning against a graffiti wall in jakarta"
+                alt="verrel leaning against a graffiti wall in bandung"
                 fill
                 sizes="240px"
                 quality={70}
                 style={{ objectFit: 'cover' }}
               />
-              <span style={{ position: 'absolute', bottom: 6, left: 6, fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--paper)', mixBlendMode: 'difference' }}>JAKARTA, 2026</span>
+              <span style={{ position: 'absolute', bottom: 6, left: 6, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--paper)', background: 'rgba(26,26,26,0.72)', padding: '2px 6px' }}>BANDUNG, 2026</span>
             </div>
             <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: '0.5rem', letterSpacing: '0.06em' }}>
               VERREL ALSYOUMI · data engineer, tinkerer

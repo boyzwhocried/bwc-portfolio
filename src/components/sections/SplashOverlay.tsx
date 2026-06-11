@@ -29,6 +29,9 @@ export default function SplashOverlay() {
   useEffect(() => {
     if (pathname !== '/') return
     if (document.documentElement.dataset.splash !== 'play') return
+    // one-shot arm from external state (the <html data-splash> flag set by the
+    // inline boot script) — must read the DOM, so it cannot move into render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(true)
   }, [pathname])
 

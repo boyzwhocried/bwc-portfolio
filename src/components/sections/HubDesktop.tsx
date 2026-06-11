@@ -26,10 +26,11 @@ interface HubApp {
 const APPS: HubApp[] = [
   { id: 'pos', name: 'Personal OS', file: 'personal-os.app', blurb: 'the wiki + bot that runs my life', status: 'live', href: '/projects/personal-os', x: '4%', y: 24, w: 300 },
   { id: 'vof', name: 'Vault of Frights', file: 'vault-of-frights.app', blurb: 'auto horror-shorts channel', status: 'live', href: 'https://youtube.com/@VaultOfFrights', external: true, x: '40%', y: 96, w: 300 },
-  { id: 'oos', name: 'Outreach OS', file: 'outreach-os.app', blurb: 'freelance outreach generator', status: 'live', href: 'https://outreach-os-smoky.vercel.app', external: true, x: '10%', y: 220, w: 290 },
+  { id: 'oos', name: 'Outreach OS', file: 'outreach-os.app', blurb: 'freelance outreach · private tooling', status: 'locked', x: '10%', y: 220, w: 290 },
   { id: 'und', name: 'Undangin', file: 'undangin.app', blurb: 'b2b wedding e-invites', status: 'live', href: '/projects/undangin', x: '46%', y: 286, w: 280 },
-  { id: 'fin', name: 'FinOS', file: 'finos.app', blurb: 'finance · auth required', status: 'locked', href: 'https://finance-dashboard-five-ashen.vercel.app', external: true, x: '18%', y: 400, w: 290 },
-  { id: 'next', name: 'next thing', file: 'building...', blurb: 'always growing', status: 'building', x: '50%', y: 470, w: 250 },
+  { id: 'gwf', name: 'Greywater Falls', file: 'greywater-falls.app', blurb: 'a town that writes its own daily paper', status: 'live', href: 'https://greywater-falls.vercel.app', external: true, x: '52%', y: 386, w: 300 },
+  { id: 'fin', name: 'FinOS', file: 'finos.app', blurb: 'finance · auth required', status: 'locked', href: 'https://finance-dashboard-five-ashen.vercel.app', external: true, x: '14%', y: 410, w: 290 },
+  { id: 'next', name: 'next thing', file: 'building...', blurb: 'always growing', status: 'building', x: '36%', y: 500, w: 250 },
 ]
 
 function Clock() {
@@ -54,7 +55,7 @@ function WindowChrome({ app }: { app: HubApp }) {
   const statusLabel =
     locked ? '🔒 locked' : building ? '◐ building' : '● live'
   const action =
-    locked ? 'sign in to access →' : building ? 'soon' : app.external ? 'open ↗' : 'open →'
+    locked ? (app.href ? 'sign in to access →' : 'owner only') : building ? 'soon' : app.external ? 'open ↗' : 'open →'
 
   const titleBar = (
     <div

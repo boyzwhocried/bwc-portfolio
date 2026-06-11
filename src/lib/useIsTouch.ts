@@ -1,15 +1,17 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
-/** True on coarse-pointer (touch) devices. SSR-safe (defaults false until mounted). */
+function subscribe(onChange: () => void): () => void {
+  const mq = window.matchMedia('(pointer: coarse)')
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
+}
+
+/** True on coarse-pointer (touch) devices. SSR-safe (false on the server). */
 export default function useIsTouch(): boolean {
-  const [touch, setTouch] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse)')
-    setTouch(mq.matches)
-    const on = () => setTouch(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return touch
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia('(pointer: coarse)').matches,
+    () => false,
+  )
 }

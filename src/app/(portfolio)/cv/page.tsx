@@ -163,6 +163,15 @@ export default function CVPage() {
 
         <Section label="projects">
           <Entry
+            date="2026"
+            title="Strata"
+            org="personal · github.com/boyzwhocried/strata"
+            bullets={[
+              'Public medallion pipeline (Bronze/Silver/Gold) on synthetic insurance data: SCD2 dimensions, data contracts, 42 automated tests, CI green on every push',
+            ]}
+            stack="DuckDB · dbt · Python · GitHub Actions"
+          />
+          <Entry
             date="ongoing"
             title="Personal OS / Knowledge Bot"
             org="personal"
