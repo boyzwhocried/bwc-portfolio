@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: 'what i am focused on right now. a living changelog of the platform growing.',
 }
 
+// hourly ISR: new now_entries appear without a redeploy (kills the stale-bake class)
+export const revalidate = 3600
+
 const frame: React.CSSProperties = {
   maxWidth: 'var(--page-max)',
   marginLeft: 'auto',
@@ -19,6 +22,19 @@ const frame: React.CSSProperties = {
 
 type NowEntry = { id: number; date: string; body: string }
 type NowCurrently = { id: number; key: string; value: string; sort_order: number }
+
+// the big italic headline derives from the latest entry, but full entries got
+// long; cut to the first clause (before ':' or '.') and hard-cap on a word break.
+function toHeadline(body: string): string {
+  const clauseEnd = body.search(/[:.]/)
+  let head = clauseEnd > 0 ? body.slice(0, clauseEnd) : body
+  if (head.length > 90) {
+    head = head.slice(0, 90)
+    const lastSpace = head.lastIndexOf(' ')
+    head = (lastSpace > 0 ? head.slice(0, lastSpace) : head) + '…'
+  }
+  return head
+}
 
 export default async function NowPage() {
   const supabase = createServerClient()
@@ -55,7 +71,7 @@ export default async function NowPage() {
 
         {/* big italic status headline, derives from latest entry */}
         <NowHeadline>
-          {nowEntries[0]?.body ?? 'building things.'}
+          {nowEntries[0] ? toHeadline(nowEntries[0].body) : 'building things.'}
         </NowHeadline>
 
         {/* two columns: currently (sidebar) + dated feed */}

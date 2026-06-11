@@ -25,7 +25,7 @@ interface HubApp {
 // case study. Outreach OS + Vault of Frights launch externally. FinOS is locked.
 const APPS: HubApp[] = [
   { id: 'pos', name: 'Personal OS', file: 'personal-os.app', blurb: 'the wiki + bot that runs my life', status: 'live', href: '/projects/personal-os', x: '4%', y: 24, w: 300 },
-  { id: 'vof', name: 'Vault of Frights', file: 'vault-of-frights.app', blurb: 'auto horror-shorts channel', status: 'live', href: 'https://youtube.com/@VaultOfFrights', external: true, x: '40%', y: 96, w: 300 },
+  { id: 'vof', name: 'Vault of Frights', file: 'vault-of-frights.app', blurb: 'auto horror-shorts channel', status: 'live', href: 'https://www.youtube.com/@VaultFrights', external: true, x: '40%', y: 96, w: 300 },
   { id: 'oos', name: 'Outreach OS', file: 'outreach-os.app', blurb: 'freelance outreach · private tooling', status: 'locked', x: '10%', y: 220, w: 290 },
   { id: 'und', name: 'Undangin', file: 'undangin.app', blurb: 'b2b wedding e-invites', status: 'live', href: '/projects/undangin', x: '46%', y: 286, w: 280 },
   { id: 'gwf', name: 'Greywater Falls', file: 'greywater-falls.app', blurb: 'a town that writes its own daily paper', status: 'live', href: 'https://greywater-falls.vercel.app', external: true, x: '52%', y: 386, w: 300 },

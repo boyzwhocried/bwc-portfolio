@@ -12,28 +12,79 @@ const BOOT = [
   '$ ready. type `help`.',
 ]
 
-const HELP = 'commands: help · about · ls · whoami · projects · clear · exit'
+const HELP = [
+  'commands:',
+  '  help · about · whoami · neofetch',
+  '  ls · open <room>        rooms: projects blog music photography now hub cv',
+  '  play <game>             games: darkroom · pipeline',
+  '  guestbook · clear · exit',
+]
 
-function run(cmd: string): string[] {
+const NEOFETCH = [
+  '       ▄▄▄▄        guest@bwc.os',
+  '   ▄▄█▀▀▀▀█▄▄      -------------',
+  '  ██  bwc   ██     os: bwc.os (paper edition)',
+  '  ██▄      ▄██     host: a corner of the internet, jakarta',
+  '   ▀▀█▄▄▄▄█▀▀      uptime: since 2024, with naps',
+  '       ▀▀▀▀        shell: this one',
+  '                   theme: ink / paper / vermilion',
+  '                   cpu: one data engineer, mostly caffeinated',
+]
+
+const ROOMS = ['projects', 'blog', 'music', 'photography', 'now', 'hub', 'cv', 'about', 'contact']
+
+type RunResult = { lines: string[]; nav?: string; launch?: 'darkroom' | 'pipeline' | 'guestbook' }
+
+function run(cmd: string): RunResult {
   const c = cmd.trim().toLowerCase()
-  if (!c) return []
-  switch (c) {
-    case 'help': return [HELP]
-    case 'about': return ['boyzwhocried. data engineer in jakarta.', 'you found the terminal. nicely done.']
-    case 'ls': return ['projects/   blog/   music/   about/   secrets/']
-    case 'whoami': return ['guest@bwc.os']
-    case 'projects': return ['personal-os   vault-of-frights   outreach-os   undangin   dwh-ssot']
-    case 'cd secrets':
-    case 'ls secrets':
-    case 'cat secrets': return ['nice try.']
-    case 'sudo': return ['this incident will be reported.']
-    case 'clear': return ['__CLEAR__']
-    case 'exit': return ['__EXIT__']
-    default: return [`command not found: ${c}. try \`help\`.`]
+  if (!c) return { lines: [] }
+  const [head, ...rest] = c.split(/\s+/)
+  const arg = rest.join(' ')
+
+  switch (head) {
+    case 'help': return { lines: HELP }
+    case 'about': return { lines: ['boyzwhocried. data engineer in jakarta.', 'you found the terminal. nicely done.'] }
+    case 'ls': {
+      if (arg === 'secrets' || arg === 'secrets/') return { lines: ['nice try.'] }
+      return { lines: ['projects/   blog/   music/   photography/   now/   hub/   cv/   secrets/'] }
+    }
+    case 'whoami': return { lines: ['guest@bwc.os'] }
+    case 'neofetch': return { lines: NEOFETCH }
+    case 'projects': return { lines: ['personal-os   vault-of-frights   strata   pulse   greywater-falls   undangin   dwh-ssot'] }
+    case 'open':
+    case 'cd': {
+      if (!arg) return { lines: ['open what? rooms: ' + ROOMS.join(' ')] }
+      if (arg === 'secrets' || arg === 'secrets/') return { lines: ['nice try.'] }
+      const room = arg.replace(/\/$/, '')
+      if (ROOMS.includes(room)) return { lines: [`opening /${room} …`], nav: `/${room}` }
+      return { lines: [`no such room: ${room}`] }
+    }
+    case 'play': {
+      if (arg === 'darkroom') return { lines: ['turning off the lights …'], launch: 'darkroom' }
+      if (arg === 'pipeline' || arg === 'pipeline-panic') return { lines: ['spinning up the batch …'], launch: 'pipeline' }
+      return { lines: ['games: darkroom · pipeline'] }
+    }
+    case 'guestbook': return { lines: ['fetching the wall …'], launch: 'guestbook' }
+    case 'cat': {
+      if (arg.includes('secret')) return { lines: ['nice try.'] }
+      return { lines: [`cat: ${arg || 'what?'}: no such file`] }
+    }
+    case 'sudo': return { lines: ['this incident will be reported.'] }
+    case 'rm': return { lines: ['absolutely not.'] }
+    case 'vim': return { lines: ['you may never leave. (kidding. we only have this shell.)'] }
+    case 'clear': return { lines: ['__CLEAR__'] }
+    case 'exit': return { lines: ['__EXIT__'] }
+    default: return { lines: [`command not found: ${c}. try \`help\`.`] }
   }
 }
 
-export default function CrtTerminal({ onClose }: { onClose: () => void }) {
+export default function CrtTerminal({
+  onClose,
+  onLaunch,
+}: {
+  onClose: () => void
+  onLaunch?: (game: 'darkroom' | 'pipeline' | 'guestbook') => void
+}) {
   const reduce = useReducedMotion()
   const [lines, setLines] = useState<string[]>([])
   const [input, setInput] = useState('')
@@ -72,10 +123,16 @@ export default function CrtTerminal({ onClose }: { onClose: () => void }) {
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const out = run(input)
-    if (out[0] === '__EXIT__') { onClose(); return }
-    if (out[0] === '__CLEAR__') { setLines([]); setInput(''); return }
-    setLines((prev) => [...prev, `> ${input}`, ...out])
+    if (out.lines[0] === '__EXIT__') { onClose(); return }
+    if (out.lines[0] === '__CLEAR__') { setLines([]); setInput(''); return }
+    setLines((prev) => [...prev, `> ${input}`, ...out.lines])
     setInput('')
+    if (out.nav) {
+      setTimeout(() => { window.location.assign(out.nav!) }, 450)
+    }
+    if (out.launch && onLaunch) {
+      setTimeout(() => onLaunch(out.launch!), 450)
+    }
   }
 
   return (

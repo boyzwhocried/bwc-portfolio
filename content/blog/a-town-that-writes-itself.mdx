@@ -1,0 +1,44 @@
+---
+title: "A Town That Writes Its Own Newspaper"
+date: "2026-06-12"
+tags: ["greywater-falls", "ai", "building", "creative"]
+summary: "I gave an AI full creative control for one evening and it built a fictional town that publishes its own daily paper. Nobody writes it. It just keeps happening."
+published: true
+---
+
+In early June I ran an experiment I had been curious about for a while: what happens if I delegate everything? Not "write me a function." Everything. The concept, the world, the characters, the stack. I told Claude to build something it wanted to build, and I would just review and ship it.
+
+One evening later, [Greywater Falls](https://greywater-falls.vercel.app) existed.
+
+---
+
+## What it is
+
+A small lake town, somewhere cold and quiet, with something slightly wrong underneath. Every morning the town advances one in-world day and publishes a front page of its local paper, The Greywater Gazette. Town news, classifieds, letters to the editor, a weather line that is sometimes a little too specific.
+
+Nobody writes it. There is no admin panel, no content calendar, no me. A scheduled job wakes up at six in the morning, the town lives one more day, and the edition goes up.
+
+The strangeness never arrives all at once. It seeps in through the small print. A welcome sign that keeps changing its population count. A cat that comes home wet and humming. The town never flees from any of it; a vigil becomes a bake sale, a standing terror becomes a weekly column. That tone, cozy on the surface and wrong in the corners, is the whole point.
+
+---
+
+## How it works
+
+The architecture came out simpler than anything I would have designed myself:
+
+- **No database.** The entire town is versioned JSON in a git repo. The world, the residents, every published day. Every morning is a commit. The commit author is "the lake."
+- **One model call per day.** A scheduled GitHub Action makes a single structured Claude call that advances the town one day and writes the edition. Bounded memory per resident keeps the cost flat: a few cents a day, forever.
+- **A critic.** A second, cheaper model audits each day for drift and repetition before it publishes. If the day reads like slop, it gets one rewrite.
+- **Seasons that end.** A pure-code arc engine pushes every storyline through setup, rising, cresting, resolving, coda, then reseeds a fresh strangeness. Nothing overstays. The town persists; the stories do not.
+
+That last one is my favourite part, because it answers the question every generative project eventually faces: does it know when to stop? This one does. Endings are not left to the model's taste. They are scheduled by code.
+
+---
+
+## What I actually learned
+
+The interesting result was not technical. It was that full delegation produced something I would never have specced. My instinct would have been a game, or a feed, or something with users and metrics. What came back was closer to an art object: a thing whose entire value is that it exists and keeps going without anyone watching.
+
+I check it most mornings anyway. Not because I have to. Because I genuinely do not know what the town did yesterday, and there is exactly one way to find out.
+
+That feeling, opening a URL to find out what your own software decided to do, is worth the few cents a day on its own.

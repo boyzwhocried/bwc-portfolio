@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: 'the guy who automates things nobody asked him to. a profile of verrel, data engineer in jakarta.',
 }
 
+// hourly ISR: currently-line edits appear without a redeploy
+export const revalidate = 3600
+
 type NowCurrently = { id: number; key: string; value: string; sort_order: number }
 
 export default async function AboutPage() {

@@ -2,16 +2,19 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://boyzwhocried.vercel.app'),
+  metadataBase: new URL('https://boyzwhocried.xyz'),
   title: {
     default: 'boyzwhocried',
     template: '%s | boyzwhocried',
   },
   description: 'data engineer in jakarta. a playground and workshop. i build things & break a few.',
+  alternates: {
+    types: { 'application/rss+xml': '/feed.xml' },
+  },
   openGraph: {
     title: 'boyzwhocried',
     description: 'data engineer in jakarta. i build things & break a few.',
-    url: 'https://boyzwhocried.vercel.app',
+    url: 'https://boyzwhocried.xyz',
     siteName: 'boyzwhocried',
     locale: 'en_US',
     type: 'website',
