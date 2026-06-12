@@ -1,5 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
-import type { MusicData } from '@/types'
+import type { CachedTrack, MusicData } from '@/types'
 
 const EMPTY: MusicData = {
   topTracks: null,
@@ -35,4 +35,24 @@ export async function getMusicData(): Promise<MusicData> {
     ofInsta: payload('playlist_of_insta'),
     updatedAt,
   }
+}
+
+// Dated top-track snapshots from spotify_history (public read), oldest first.
+// Feeds the obsession log; empty (graceful) until history accumulates.
+export async function getMusicHistory(): Promise<{ date: string; tracks: CachedTrack[] }[]> {
+  const supabase = createServerClient()
+  const { data, error } = await supabase
+    .from('spotify_history')
+    .select('snapshot_date, payload')
+    .eq('key', 'top_tracks')
+    .order('snapshot_date', { ascending: true })
+    .limit(366)
+
+  if (error || !data) return []
+  return data
+    .map((r) => ({
+      date: r.snapshot_date as string,
+      tracks: ((r.payload as Record<string, CachedTrack[]>)?.short_term ?? []) as CachedTrack[],
+    }))
+    .filter((s) => s.tracks.length > 0)
 }

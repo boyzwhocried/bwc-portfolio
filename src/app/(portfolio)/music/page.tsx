@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import MusicPlayer from '@/components/sections/MusicPlayer'
-import { getMusicData } from '@/lib/music'
+import { getMusicData, getMusicHistory } from '@/lib/music'
 
 export const metadata: Metadata = {
   title: 'music',
@@ -11,6 +11,6 @@ export const metadata: Metadata = {
 export const revalidate = 300
 
 export default async function MusicPage() {
-  const music = await getMusicData()
-  return <MusicPlayer music={music} />
+  const [music, history] = await Promise.all([getMusicData(), getMusicHistory()])
+  return <MusicPlayer music={music} history={history} />
 }
