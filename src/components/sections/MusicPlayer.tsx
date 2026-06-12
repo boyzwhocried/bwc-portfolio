@@ -254,9 +254,6 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
           </p>
         )}
 
-        {/* THE READ: deterministic obsession narrative (src/lib/music/obsession.ts) */}
-        <MusicObsession music={music} />
-
         {/* THE OBSESSION LOG: month timeline from spotify_history; self-activates at 2+ months */}
         <ObsessionLog history={history} />
 
@@ -352,6 +349,10 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
             </div>
           </motion.div>
         )}
+
+        {/* THE READ: deterministic obsession narrative (src/lib/music/obsession.ts). Sits after the
+            listening data so it reads as the synthesis/payoff, not the opening statement. */}
+        <MusicObsession music={music} />
 
         {/* THE TWO PLAYLISTS I LIVE IN: this month + of insta paired in one full-bleed beat (the one break per room) */}
         {(music.thisMonth || music.ofInsta) && (

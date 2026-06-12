@@ -44,11 +44,11 @@ export default function MusicObsession({ music }: { music: MusicData }) {
         style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 700,
-          fontSize: 'clamp(1.8rem, 4.5vw, 3rem)',
-          lineHeight: 0.95,
-          letterSpacing: '-0.02em',
+          fontSize: 'clamp(1.35rem, 2.8vw, 1.9rem)',
+          lineHeight: 1.05,
+          letterSpacing: '-0.015em',
           color: 'var(--fg)',
-          maxWidth: '24ch',
+          maxWidth: '30ch',
         }}
       >
         {report.headline}
@@ -58,22 +58,22 @@ export default function MusicObsession({ music }: { music: MusicData }) {
       <p
         style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 12,
-          lineHeight: 1.9,
+          fontSize: 11.5,
+          lineHeight: 1.8,
           color: 'var(--accent-text)',
           letterSpacing: '0.02em',
-          marginTop: '1.25rem',
+          marginTop: '1rem',
           maxWidth: '72ch',
         }}
       >
         {report.placard.join(' · ')}
       </p>
 
-      <div style={{ marginTop: '1.5rem', maxWidth: '62ch' }}>
+      <div style={{ marginTop: '1.25rem', maxWidth: '62ch' }}>
         {report.paragraphs.map((p, i) => (
           <p
             key={i}
-            style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--fg)', marginTop: i === 0 ? 0 : '0.9rem' }}
+            style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--fg)', marginTop: i === 0 ? 0 : '0.8rem' }}
           >
             {p}
           </p>
