@@ -16,9 +16,15 @@ you can edit and where.
 Everything except the shelf is automatic. The shelf is the one thing you curate.
 
 The sync also appends each day's snapshot (top tracks/artists, recently played,
-both featured playlists) into `spotify_history` (one row per key per UTC day,
-last sync of the day wins). Nothing reads it on the page yet; it accumulates so
-future over-time views (obsession log, mood curve) have real history to draw.
+both featured playlists, obsession themes) into `spotify_history` (one row per
+key per UTC day, last sync of the day wins). The obsession log on the page and
+the private music-signal pipeline both read this history.
+
+When one album dominates the short-term top tracks, the sync also distills
+**obsession themes**: lyrics fetched from LRCLIB (free, keyless community DB),
+3-6 abstract theme tags via Haiku, cached as `obsession_themes`. Tags only;
+lyric text is discarded in-function and never stored or rendered. Weekly TTL
+per subject, so steady-state cost is ~1 Haiku call + ~5 LRCLIB hits a week.
 
 ---
 
