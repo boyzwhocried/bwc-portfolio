@@ -57,6 +57,10 @@ export default function CustomCursor() {
         pointerEvents: 'none',
         zIndex: 9999,
         willChange: 'transform',
+        // difference blend XORs the white crosshair against whatever surface is
+        // actually under the pointer, so it stays visible on dark modals (CRT,
+        // darkroom) where the page-level --fg would otherwise vanish into them.
+        mixBlendMode: 'difference',
       }}
     >
       <style>{`
@@ -73,7 +77,7 @@ export default function CustomCursor() {
         .cursor-inner::after {
           content: '';
           position: absolute;
-          background: var(--fg);
+          background: #fff;
           transition: all 0.15s ease;
         }
         .cursor-inner::before {
