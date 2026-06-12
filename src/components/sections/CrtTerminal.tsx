@@ -14,10 +14,22 @@ const BOOT = [
 
 const HELP = [
   'commands:',
-  '  help · about · whoami · neofetch',
-  '  ls · open <room>        rooms: projects blog music photography now hub cv',
-  '  play <game>             games: darkroom · pipeline',
-  '  guestbook · clear · exit',
+  '  help · about · whoami · neofetch · games',
+  '  ls · open <room>   rooms: projects blog music photography now hub cv',
+  '  play <game>        games: terrarium orrery tone daily rig parry darkroom pipeline',
+  '  guestbook · coffee · clear · exit',
+]
+
+const GAMES = [
+  'on the shelf — `play <name>`:',
+  '  terrarium   reactive falling-sand: lava, acid, gunpowder, ice',
+  '  orrery      full-screen gravity: fling worlds, make a supernova',
+  '  tone        paint a pentatonic loop',
+  '  daily       crack the daily code (one a day)',
+  '  rig         calibration trainer (beat your error)',
+  '  parry       8-bit arcade · global leaderboard',
+  '  darkroom    develop a real film frame',
+  '  pipeline    you are the staging layer',
 ]
 
 const NEOFETCH = [
@@ -28,12 +40,27 @@ const NEOFETCH = [
   '   ▀▀█▄▄▄▄█▀▀      uptime: since 2024, with naps',
   '       ▀▀▀▀        shell: this one',
   '                   theme: ink / paper / vermilion',
+  '                   toys: 12 on the shelf, all playable',
   '                   cpu: one data engineer, mostly caffeinated',
 ]
 
 const ROOMS = ['projects', 'blog', 'music', 'photography', 'now', 'hub', 'cv', 'about', 'contact']
 
-type RunResult = { lines: string[]; nav?: string; launch?: 'darkroom' | 'pipeline' | 'guestbook' }
+type LaunchApp = 'darkroom' | 'pipeline' | 'guestbook' | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry'
+
+// game aliases -> the app key the shelf mounts
+const PLAY: Record<string, LaunchApp> = {
+  terrarium: 'sand', sand: 'sand', falling: 'sand',
+  orrery: 'gravity', gravity: 'gravity', orbit: 'gravity', space: 'gravity',
+  tone: 'tone', tonegarden: 'tone', synth: 'tone', music: 'tone',
+  daily: 'daily', code: 'daily',
+  rig: 'rig', calibrate: 'rig',
+  parry: 'parry', arcade: 'parry',
+  darkroom: 'darkroom',
+  pipeline: 'pipeline', 'pipeline-panic': 'pipeline',
+}
+
+type RunResult = { lines: string[]; nav?: string; launch?: LaunchApp }
 
 function run(cmd: string): RunResult {
   const c = cmd.trim().toLowerCase()
@@ -59,11 +86,21 @@ function run(cmd: string): RunResult {
       if (ROOMS.includes(room)) return { lines: [`opening /${room} …`], nav: `/${room}` }
       return { lines: [`no such room: ${room}`] }
     }
+    case 'games': return { lines: GAMES }
     case 'play': {
-      if (arg === 'darkroom') return { lines: ['turning off the lights …'], launch: 'darkroom' }
-      if (arg === 'pipeline' || arg === 'pipeline-panic') return { lines: ['spinning up the batch …'], launch: 'pipeline' }
-      return { lines: ['games: darkroom · pipeline'] }
+      if (!arg) return { lines: GAMES }
+      const app = PLAY[arg]
+      if (app) {
+        const flavor: Record<LaunchApp, string> = {
+          sand: 'opening the terrarium …', gravity: 'spinning up the orrery …', tone: 'warming the oscillators …',
+          daily: 'fetching today’s code …', rig: 'powering the rig …', parry: 'insert coin …',
+          darkroom: 'turning off the lights …', pipeline: 'spinning up the batch …', guestbook: 'fetching the wall …',
+        }
+        return { lines: [flavor[app]], launch: app }
+      }
+      return { lines: [`no game: ${arg}`, ...GAMES] }
     }
+    case 'coffee': return { lines: ['brewing … ☕  (critical subsystem restored)'] }
     case 'guestbook': return { lines: ['fetching the wall …'], launch: 'guestbook' }
     case 'cat': {
       if (arg.includes('secret')) return { lines: ['nice try.'] }
@@ -83,7 +120,7 @@ export default function CrtTerminal({
   onLaunch,
 }: {
   onClose: () => void
-  onLaunch?: (game: 'darkroom' | 'pipeline' | 'guestbook') => void
+  onLaunch?: (game: LaunchApp) => void
 }) {
   const reduce = useReducedMotion()
   const [lines, setLines] = useState<string[]>([])

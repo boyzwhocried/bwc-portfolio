@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { createSim, step, idx, EMPTY, SAND, WATER, WALL, FIRE, PLANT, LAVA, GUNPOWDER, STEAM, FIRE_LIFE, STEAM_LIFE } from './sand'
+import { createSim, step, idx, EMPTY, SAND, WATER, WALL, FIRE, PLANT, LAVA, GUNPOWDER, STEAM, ACID, OIL, ICE, FIRE_LIFE, STEAM_LIFE } from './sand'
 
 // helper: build a sim from a string map.
-// '.'=empty s=sand w=water #=wall f=fire p=plant l=lava g=gunpowder T=steam
+// '.'=empty s=sand w=water #=wall f=fire p=plant l=lava g=gunpowder T=steam a=acid o=oil I=ice
 function make(rows: string[]) {
   const h = rows.length
   const w = rows[0].length
   const sim = createSim(w, h)
-  const m: Record<string, number> = { '.': EMPTY, s: SAND, w: WATER, '#': WALL, f: FIRE, p: PLANT, l: LAVA, g: GUNPOWDER, T: STEAM }
+  const m: Record<string, number> = { '.': EMPTY, s: SAND, w: WATER, '#': WALL, f: FIRE, p: PLANT, l: LAVA, g: GUNPOWDER, T: STEAM, a: ACID, o: OIL, I: ICE }
   rows.forEach((row, y) => [...row].forEach((ch, x) => { sim.cells[idx(x, y, w)] = m[ch] }))
   return sim
 }
@@ -116,5 +116,45 @@ describe('falling-sand cellular automaton', () => {
     const s = make(['g', '.'])
     const next = step(s, RNG0)
     expect(next.cells[idx(0, 1, 1)]).toBe(GUNPOWDER)
+  })
+
+  // ---- depth pass: acid / oil / ice ----
+
+  it('acid dissolves solids it touches', () => {
+    const s = make(['a', 's']) // acid above sand
+    const next = step(s, RNG0)
+    expect(next.cells[idx(0, 1, 1)]).toBe(EMPTY) // sand eaten
+  })
+
+  it('oil is lighter than water and floats up through it', () => {
+    const s = make(['w', 'o']) // water above oil -> they swap, oil rises
+    const next = step(s, RNG0)
+    expect(next.cells[idx(0, 0, 1)]).toBe(OIL)
+    expect(next.cells[idx(0, 1, 1)]).toBe(WATER)
+  })
+
+  it('oil catches fire', () => {
+    const s = make(['fo'])
+    const next = step(s, RNG0)
+    expect(next.cells[idx(1, 0, 2)]).toBe(FIRE)
+  })
+
+  it('ice melts to water next to fire', () => {
+    const s = make(['fI'])
+    const next = step(s, RNG0)
+    expect(next.cells[idx(1, 0, 2)]).toBe(WATER)
+  })
+
+  it('ice freezes adjacent water', () => {
+    const s = make(['Iw'])
+    const next = step(s, RNG0)
+    expect(next.cells[idx(1, 0, 2)]).toBe(ICE)
+  })
+
+  it('lava melts ice (cooling itself to stone)', () => {
+    const s = make(['lI'])
+    const next = step(s, RNG0)
+    expect(next.cells[idx(0, 0, 2)]).toBe(WALL) // lava cooled
+    expect(next.cells[idx(1, 0, 2)]).not.toBe(ICE) // ice gone (melted)
   })
 })

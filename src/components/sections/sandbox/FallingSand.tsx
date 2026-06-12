@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import {
-  createSim, step, idx, EMPTY, SAND, WATER, WALL, FIRE, PLANT, LAVA, GUNPOWDER, STEAM, FIRE_LIFE, type Sim,
+  createSim, step, idx, EMPTY, SAND, WATER, WALL, FIRE, PLANT, LAVA, GUNPOWDER, STEAM, ACID, OIL, ICE, FIRE_LIFE, type Sim,
 } from '@/lib/sandbox/sand'
 
 const W = 150
@@ -31,6 +31,9 @@ function colorOf(v: number, ageVal: number): RGB {
     case FIRE: return lerp(FIRE_HOT, FIRE_COLD, Math.min(1, ageVal / FIRE_LIFE))
     case LAVA: return [236, 92, 24]
     case STEAM: return [150, 156, 162]
+    case ACID: return [150, 230, 50]
+    case OIL: return [58, 44, 30]
+    case ICE: return [180, 220, 240]
     default: return [18, 15, 12]
   }
 }
@@ -45,13 +48,28 @@ type Tool = { v: number; label: string; swatch: string }
 const TOOLS: Tool[] = [
   { v: SAND, label: 'sand', swatch: 'rgb(216,162,74)' },
   { v: WATER, label: 'water', swatch: 'rgb(54,116,132)' },
-  { v: STEAM, label: 'steam', swatch: 'rgb(150,156,162)' },
+  { v: OIL, label: 'oil', swatch: 'rgb(58,44,30)' },
+  { v: ACID, label: 'acid', swatch: 'rgb(150,230,50)' },
+  { v: ICE, label: 'ice', swatch: 'rgb(180,220,240)' },
   { v: PLANT, label: 'plant', swatch: 'rgb(86,150,58)' },
   { v: WALL, label: 'stone', swatch: 'rgb(108,100,88)' },
   { v: LAVA, label: 'lava', swatch: 'rgb(236,92,24)' },
   { v: GUNPOWDER, label: 'powder', swatch: 'rgb(70,66,58)' },
   { v: FIRE, label: 'fire', swatch: 'rgb(255,150,60)' },
+  { v: STEAM, label: 'steam', swatch: 'rgb(150,156,162)' },
   { v: EMPTY, label: 'erase', swatch: '#120f0c' },
+]
+
+// the reaction codex — what mixes with what
+const RECIPES = [
+  'lava + water → stone + steam',
+  'lava + ice → stone + water',
+  'fire + oil / plant → it spreads',
+  'fire / lava + gunpowder → blast',
+  'acid + sand / stone / plant → dissolves',
+  'ice + water → freezes outward',
+  'fire / lava + ice → melts to water',
+  'oil floats on water · plant drinks + grows',
 ]
 
 export default function FallingSand({ onClose }: { onClose: () => void }) {
@@ -62,6 +80,7 @@ export default function FallingSand({ onClose }: { onClose: () => void }) {
   const [tool, setTool] = useState(LAVA)
   const [brush, setBrush] = useState(4)
   const [running, setRunning] = useState(true)
+  const [showCodex, setShowCodex] = useState(false)
   const toolRef = useRef(tool)
   const brushRef = useRef(brush)
   const runRef = useRef(running)
@@ -180,10 +199,25 @@ export default function FallingSand({ onClose }: { onClose: () => void }) {
           </label>
           <button onClick={() => setRunning((r) => !r)} style={btn}>{running ? 'pause' : 'run'}</button>
           <button onClick={() => { simRef.current = createSim(W, H) }} style={btn}>clear</button>
+          <button onClick={() => setShowCodex((s) => !s)} style={{ ...btn, background: showCodex ? '#e84c28' : '#2a251e', color: showCodex ? '#0c0a08' : '#cfc7b8', border: '1px solid #3a352d' }}>
+            reactions {showCodex ? '▴' : '▾'}
+          </button>
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: '#6f685d', marginTop: 10, lineHeight: 1.5 }}>
-          lava + water = stone + steam. fire spreads, water douses it. gunpowder chain-detonates. plants drink water and grow. try lava on a powder trail.
-        </p>
+
+        {showCodex ? (
+          <div style={{ marginTop: 10, padding: '10px 12px', background: '#161310', border: '1px solid #2a2620', borderRadius: 2 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#8a8276', letterSpacing: '0.1em', marginBottom: 6 }}>WHAT MIXES WITH WHAT</div>
+            <div style={{ display: 'grid', gap: 4 }}>
+              {RECIPES.map((r) => (
+                <div key={r} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#bdb6a7' }}>{r}</div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: '#6f685d', marginTop: 10, lineHeight: 1.5 }}>
+            11 elements, all reactive. drip lava onto a powder trail, or pour acid over stone. hit <span style={{ color: '#e84c28' }}>reactions</span> for the recipe list.
+          </p>
+        )}
       </div>
     </SandboxModal>
   )

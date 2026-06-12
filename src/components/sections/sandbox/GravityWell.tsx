@@ -29,6 +29,9 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
   const [trails, setTrails] = useState(true)
   const trailsRef = useRef(trails)
   useEffect(() => { trailsRef.current = trails })
+  const [paused, setPaused] = useState(false)
+  const pausedRef = useRef(paused)
+  useEffect(() => { pausedRef.current = paused })
   const [hud, setHud] = useState({ bodies: 0, charge: 0 })
 
   function view(clientX: number, clientY: number) {
@@ -74,27 +77,28 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
     function frame() {
       const { w, h } = sizeRef.current
       const before = bodiesRef.current
-      const after = step(before, DT)
-
-      // collision spectacle: a body that just got absorbed flashes at its last spot
-      for (let i = 0; i < before.length; i++) {
-        if (before[i].alive && !after[i].alive) {
-          addFlash(after[i].x, after[i].y, 14 + before[i].radius * 1.5)
-          shakeRef.current = Math.max(shakeRef.current, 4)
+      let bodies = before
+      if (!pausedRef.current) {
+        const after = step(before, DT)
+        // collision spectacle: a body that just got absorbed flashes at its last spot
+        for (let i = 0; i < before.length; i++) {
+          if (before[i].alive && !after[i].alive) {
+            addFlash(after[i].x, after[i].y, 14 + before[i].radius * 1.5)
+            shakeRef.current = Math.max(shakeRef.current, 4)
+          }
         }
+        bodies = after
+        // supernova when the star is over-fed
+        if (bodies[0] && bodies[0].mass >= SUPERNOVA_MASS) {
+          const dead = bodies[0]
+          addFlash(dead.x, dead.y, 120)
+          shakeRef.current = 16
+          bodies = [freshStar(dead.x, dead.y), ...supernova(dead, 16, 7), ...bodies.slice(1).filter((b) => b.alive)]
+        }
+        // recycle bodies that drift far off-screen (always keep the star at index 0)
+        bodies = bodies.filter((b, i) => i === 0 || (b.alive && b.x > -260 && b.x < w + 260 && b.y > -260 && b.y < h + 260))
       }
-
-      // supernova when the star is over-fed
-      let bodies = after
-      if (bodies[0] && bodies[0].mass >= SUPERNOVA_MASS) {
-        const dead = bodies[0]
-        addFlash(dead.x, dead.y, 120)
-        shakeRef.current = 16
-        bodies = [freshStar(dead.x, dead.y), ...supernova(dead, 16, 7), ...bodies.slice(1).filter((b) => b.alive)]
-      }
-
-      // recycle bodies that drift far off-screen (always keep the star at index 0)
-      bodiesRef.current = bodies.filter((b, i) => i === 0 || (b.alive && b.x > -260 && b.x < w + 260 && b.y > -260 && b.y < h + 260))
+      bodiesRef.current = bodies
 
       // ---- render ----
       ctx.save()
@@ -213,13 +217,25 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
           {hud.charge > 0.8 && <div style={{ color: '#ff5a2a', marginTop: 3 }}>about to blow</div>}
         </div>
 
-        {/* controls */}
-        <div style={{ position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '92vw' }}>
-          <button onClick={spawnSystem} style={{ ...gbtn, background: '#e84c28', color: '#0a0a12', borderColor: '#e84c28' }}>+ system</button>
-          <button onClick={() => setTrails((t) => !t)} style={gbtn}>trails {trails ? 'on' : 'off'}</button>
-          <button onClick={reset} style={gbtn}>reset</button>
-          <button onClick={() => { const s = bodiesRef.current[0]; bodiesRef.current = s ? [s] : [] }} style={gbtn}>clear</button>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: '#6e7280', marginLeft: 4 }}>drag to fling · the dotted line shows where it goes · feed the star to detonate it</span>
+        {/* paused banner */}
+        {paused && (
+          <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffb24a', background: 'rgba(7,7,13,0.8)', border: '1px solid #3a3a4a', padding: '4px 12px', borderRadius: 3, pointerEvents: 'none' }}>
+            ❚❚ PAUSED — place bodies, then press play
+          </div>
+        )}
+
+        {/* solid control bar */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 12px calc(10px + env(safe-area-inset-bottom))', background: 'linear-gradient(to top, rgba(7,7,13,0.96), rgba(7,7,13,0))' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '96vw' }}>
+            <button onClick={() => setPaused((p) => !p)} style={{ ...gbtn, background: paused ? '#7CFC9A' : '#ffb24a', color: '#0a0a12', borderColor: paused ? '#7CFC9A' : '#ffb24a', minWidth: 78 }}>
+              {paused ? '► play' : '❚❚ pause'}
+            </button>
+            <button onClick={spawnSystem} style={{ ...gbtn, background: '#e84c28', color: '#0a0a12', borderColor: '#e84c28' }}>+ system</button>
+            <button onClick={() => setTrails((t) => !t)} style={gbtn}>trails {trails ? 'on' : 'off'}</button>
+            <button onClick={reset} style={gbtn}>reset</button>
+            <button onClick={() => { const s = bodiesRef.current[0]; bodiesRef.current = s ? [s] : [] }} style={gbtn}>clear</button>
+          </div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: '#6e7280', textAlign: 'center' }}>drag to fling · dotted line shows the path · pause to compose a system · feed the star to detonate it</span>
         </div>
       </div>
     </SandboxModal>
