@@ -10,6 +10,7 @@ import {
   moodShift,
   detectGrazing,
   buildObsessionReport,
+  themesFor,
 } from './obsession'
 
 // ---- fixture helpers --------------------------------------------------------
@@ -91,6 +92,7 @@ function fixture(): MusicData {
     shelf: null,
     thisMonth: null,
     ofInsta: null,
+    obsessionThemes: null,
     updatedAt: '2026-06-12T12:00:00Z',
   }
 }
@@ -279,6 +281,7 @@ describe('buildObsessionReport', () => {
       shelf: null,
       thisMonth: null,
       ofInsta: null,
+      obsessionThemes: null,
       updatedAt: null,
     }
     expect(buildObsessionReport(empty)).toBeNull()
@@ -333,5 +336,35 @@ describe('buildObsessionReport', () => {
     const text = r.paragraphs.join(' ')
     expect(text).toMatch(/\bhe\b|\bhis\b/)
     expect(text).not.toMatch(/\byou\b|\byour\b/)
+  })
+})
+
+// ---- themesFor ----------------------------------------------------------------
+
+describe('themesFor', () => {
+  const themes = { subject: 'Injury Episode', artist: 'Static Dress', themes: ['grief', 'dissociation', 'nostalgia'] }
+
+  it('returns tags when the cached subject matches the live detection', () => {
+    const r = buildObsessionReport(fixture())!
+    expect(themesFor(r, themes)).toEqual(['grief', 'dissociation', 'nostalgia'])
+  })
+
+  it('returns null when the cached subject is stale (obsession moved on)', () => {
+    const r = buildObsessionReport(fixture())!
+    expect(themesFor(r, { ...themes, subject: 'Tsunami Sea' })).toBeNull()
+  })
+
+  it('returns null without a report or without cached themes', () => {
+    expect(themesFor(null, themes)).toBeNull()
+    expect(themesFor(buildObsessionReport(fixture()), null)).toBeNull()
+  })
+
+  it('returns null for a none-kind report', () => {
+    const m = fixture()
+    m.topTracks!.short_term = [
+      track('a', 'A', 'A1'), track('b', 'B', 'B1'), track('c', 'C', 'C1'),
+      track('d', 'D', 'D1'), track('e', 'E', 'E1'), track('f', 'F', 'F1'),
+    ]
+    expect(themesFor(buildObsessionReport(m), themes)).toBeNull()
   })
 })

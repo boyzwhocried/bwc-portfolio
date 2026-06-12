@@ -13,6 +13,10 @@
 //   6. keep-last-good: only overwrite a cache key when its fetch succeeded
 //   7. append a dated snapshot per key into public.spotify_history (one row per
 //      UTC day, last sync wins) so obsession/mood views can read change over time
+//   8. obsession themes: when one album dominates the short-term tracks, fetch
+//      lyrics from LRCLIB (free, keyless community DB), distill 3-6 abstract
+//      theme tags via Haiku, cache as obsession_themes (tags only; lyric text
+//      discarded, never stored or shown). Weekly TTL per subject.
 //
 // Secrets (Deno.env, set as Supabase function secrets, never committed):
 //   SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN,
@@ -152,6 +156,98 @@ async function resolveThisMonth(token: string): Promise<string | null> {
   return null
 }
 
+// ---- obsession themes (LRCLIB + Haiku), best-effort ---------------------------
+// Derived theme TAGS only. Lyrics come from LRCLIB (lrclib.net), the open
+// community lyrics database: free, keyless, public API. We distill abstract
+// tags with Haiku and DISCARD the text: lyric lines are never stored, cached,
+// or displayed anywhere. TTL keeps steady-state API usage near zero.
+
+const THEME_TTL_MS = 7 * 86_400_000 // refresh weekly per subject
+const THEME_TRACKS = 5
+const LRCLIB = 'https://lrclib.net/api'
+const LRCLIB_UA = 'bwc-portfolio spotify-sync (https://boyzwhocried.xyz)'
+
+// dominant album in the short-term top tracks (same thresholds as the site's
+// obsession engine: >= 4 tracks and >= 35% share)
+function topAlbum(shortTracks: any[] | undefined): { album: string; artist: string; tracks: any[] } | null {
+  const list = shortTracks ?? []
+  if (list.length === 0) return null
+  const by = new Map<string, any[]>()
+  for (const t of list) {
+    const key = `${t.album}|${String(t.artist ?? '').split(',')[0].trim()}`
+    if (!by.has(key)) by.set(key, [])
+    by.get(key)!.push(t)
+  }
+  let best: any[] | null = null
+  for (const v of by.values()) if (!best || v.length > best.length) best = v
+  if (!best || !best[0]?.album || best.length < 4 || best.length / list.length < 0.35) return null
+  return { album: best[0].album, artist: String(best[0].artist ?? '').split(',')[0].trim(), tracks: best }
+}
+
+// exact get first (artist+track+album), then search fallback (album versions
+// differ). Returns plain lyric text for in-memory distillation only.
+async function lyricText(track: string, artist: string, album: string): Promise<string | null> {
+  const headers = { 'User-Agent': LRCLIB_UA }
+  try {
+    const exact = await fetch(
+      `${LRCLIB}/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}&album_name=${encodeURIComponent(album)}`,
+      { headers },
+    )
+    if (exact.ok) {
+      const j = await exact.json()
+      const body = (j?.plainLyrics as string | undefined)?.trim()
+      if (body) return body
+    }
+    const search = await fetch(
+      `${LRCLIB}/search?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}`,
+      { headers },
+    )
+    if (!search.ok) return null
+    const list = (await search.json()) as any[]
+    const hit = (list ?? []).find((r) => (r?.plainLyrics as string | undefined)?.trim())
+    return ((hit?.plainLyrics as string | undefined)?.trim()) || null
+  } catch {
+    return null
+  }
+}
+
+async function distillThemes(snippets: string[]): Promise<string[] | null> {
+  const key = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!key || snippets.length === 0) return null
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 120,
+        system:
+          'You distill song lyrics into abstract theme tags. Output ONLY a JSON array of 3 to 6 ' +
+          'short kebab-case theme tags, e.g. ["grief","nostalgia","self-erasure"]. ' +
+          'Hard rules: tags name abstract themes or emotions; never quote lyric words, lines, or ' +
+          'phrases; no artist, song, or album names; no em-dashes; all lowercase; JSON array only.',
+        messages: [{
+          role: 'user',
+          content: `lyric excerpts from one album (partial snippets):\n\n${snippets.join('\n\n---\n\n').slice(0, 6000)}\n\noutput the theme tag array:`,
+        }],
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const raw = (data.content?.[0]?.text ?? '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
+    const arr = JSON.parse(raw)
+    if (!Array.isArray(arr)) return null
+    const tags = arr
+      .filter((x: unknown) => typeof x === 'string')
+      .map((x: string) => x.trim().toLowerCase())
+      .filter((x: string) => /^[a-z][a-z0-9-]{1,30}$/.test(x))
+      .slice(0, 6)
+    return tags.length >= 3 ? tags : null
+  } catch {
+    return null
+  }
+}
+
 // ---- AI description (Claude Haiku), best-effort ------------------------------
 
 // First-person, in the owner's casual voice. Context = playlist name + the owner's
@@ -261,6 +357,39 @@ Deno.serve(async (req) => {
     return { ...meta, description: null, tracks }
   })
 
+  // obsession themes: derived tags for the dominant album (lyric text discarded)
+  await keep('obsession_themes', async () => {
+    const tt = upserts.find((u) => u.key === 'top_tracks')?.payload
+    const top = topAlbum(tt?.short_term)
+    if (!top) throw new Error('no dominant album this window (skip)')
+
+    // TTL reuse: same subject within a week = keep the existing tags untouched
+    const { data: prior } = await supabase
+      .from('spotify_cache')
+      .select('payload, updated_at')
+      .eq('key', 'obsession_themes')
+      .maybeSingle()
+    if (
+      prior?.payload?.subject === top.album &&
+      Date.now() - new Date(prior.updated_at).getTime() < THEME_TTL_MS
+    ) {
+      return prior.payload
+    }
+
+    const texts: string[] = []
+    for (const t of top.tracks.slice(0, THEME_TRACKS)) {
+      const s = await lyricText(t.name, top.artist, top.album)
+      if (s) texts.push(s)
+      await sleep(150)
+    }
+    if (texts.length === 0) throw new Error('no lyrics resolved on lrclib (skip)')
+
+    const themes = await distillThemes(texts)
+    if (!themes) throw new Error('theme distillation failed (skip)')
+
+    return { subject: top.album, artist: top.artist, themes }
+  })
+
   // the shelf, from the config table
   await keep('playlists_shelf', async () => {
     const { data: rows, error } = await supabase
@@ -326,6 +455,7 @@ Deno.serve(async (req) => {
     'recently_played',
     'playlist_this_month',
     'playlist_of_insta',
+    'obsession_themes',
   ])
   const snapshotDate = new Date().toISOString().slice(0, 10)
   for (const u of upserts) {

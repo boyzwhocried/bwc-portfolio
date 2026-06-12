@@ -82,6 +82,14 @@ export interface PlaylistFeature {
   tracks: CachedTrack[]
 }
 
+// Derived theme tags for the dominant album (spotify-sync obsession_themes key;
+// tags only, lyric text is never cached or shipped).
+export interface ObsessionThemesPayload {
+  subject: string
+  artist: string
+  themes: string[]
+}
+
 export interface MusicData {
   topTracks: Record<TopRange, CachedTrack[]> | null
   topArtists: Record<TopRange, CachedArtist[]> | null
@@ -89,6 +97,7 @@ export interface MusicData {
   shelf: PlaylistCard[] | null
   thisMonth: PlaylistFeature | null
   ofInsta: PlaylistFeature | null
+  obsessionThemes: ObsessionThemesPayload | null
   updatedAt: string | null
 }
 

@@ -8,6 +8,7 @@ const EMPTY: MusicData = {
   shelf: null,
   thisMonth: null,
   ofInsta: null,
+  obsessionThemes: null,
   updatedAt: null,
 }
 
@@ -33,6 +34,7 @@ export async function getMusicData(): Promise<MusicData> {
     shelf: payload('playlists_shelf'),
     thisMonth: payload('playlist_this_month'),
     ofInsta: payload('playlist_of_insta'),
+    obsessionThemes: payload('obsession_themes'),
     updatedAt,
   }
 }

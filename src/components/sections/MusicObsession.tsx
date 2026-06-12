@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import type { MusicData } from '@/types'
-import { buildObsessionReport } from '@/lib/music/obsession'
+import { buildObsessionReport, themesFor } from '@/lib/music/obsession'
 import { useFadeUp } from '@/lib/motion'
 
 // "the read": a deterministic narrative about the listener, assembled by
@@ -22,6 +22,7 @@ const labelStyle: React.CSSProperties = {
 export default function MusicObsession({ music }: { music: MusicData }) {
   const fade = useFadeUp()
   const report = useMemo(() => buildObsessionReport(music), [music])
+  const themes = useMemo(() => themesFor(report, music.obsessionThemes), [report, music.obsessionThemes])
   if (!report) return null
 
   return (
@@ -92,6 +93,24 @@ export default function MusicObsession({ music }: { music: MusicData }) {
         >
           <span style={{ ...labelStyle, fontStyle: 'normal', marginRight: 10 }}>the titles alone</span>
           {report.titles.join(' · ')}
+        </p>
+      )}
+
+      {/* lyric themes: abstract tags distilled from the record (lrclib + haiku); no lyric text is ever shown */}
+      {themes && (
+        <p
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            lineHeight: 1.8,
+            color: 'var(--accent-text)',
+            letterSpacing: '0.02em',
+            marginTop: '0.75rem',
+            maxWidth: '70ch',
+          }}
+        >
+          <span style={{ ...labelStyle, marginRight: 10 }}>the themes underneath</span>
+          {themes.join(' · ')}
         </p>
       )}
     </motion.div>

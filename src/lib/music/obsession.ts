@@ -289,6 +289,26 @@ function buildHeadline(d: Detection): string {
   return 'no single obsession right now.'
 }
 
+// ---- themes (from the obsession_themes cache key) -------------------------------
+
+export interface ObsessionThemes {
+  subject: string
+  artist: string
+  themes: string[]
+}
+
+// Tags render only when the cached subject matches the live detection: a stale
+// cache (obsession moved on, sync not caught up) shows nothing rather than the
+// wrong record's themes.
+export function themesFor(
+  report: ObsessionReport | null,
+  cached: ObsessionThemes | null | undefined,
+): string[] | null {
+  if (!report || !cached || report.kind === 'none' || !report.subject) return null
+  if (cached.subject !== report.subject) return null
+  return cached.themes.length > 0 ? cached.themes : null
+}
+
 // ---- the report -----------------------------------------------------------------
 
 export function buildObsessionReport(music: MusicData): ObsessionReport | null {
