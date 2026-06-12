@@ -41,7 +41,7 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
   const dragRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
   const [trails, setTrails] = useState(true)
   const trailsRef = useRef(trails)
-  trailsRef.current = trails
+  useEffect(() => { trailsRef.current = trails }) // rAF render reads the latest toggle via this ref
   const [count, setCount] = useState(4)
 
   function toView(clientX: number, clientY: number) {

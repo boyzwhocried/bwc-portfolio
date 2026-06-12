@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import {
   CODE_LEN, MAX_GUESSES, dayIndex, dailyCode, scoreGuess, updateStreak,
@@ -51,20 +51,21 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
   })
   const [input, setInput] = useState<number[]>([])
   const [copied, setCopied] = useState(false)
-  const [, force] = useState(0)
+  const [nowMs, setNowMs] = useState(0) // wall clock for the countdown, fed by the locked-state interval
 
   // persist
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) } catch {}
   }, [state])
 
-  // countdown tick once locked
+  // countdown clock once locked. setState only from callbacks (rAF seed + interval),
+  // never synchronously in the effect body, and Date.now() never runs during render.
   const locked = state.status !== 'playing'
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
     if (!locked) return
-    tickRef.current = setInterval(() => force((n) => n + 1), 1000)
-    return () => { if (tickRef.current) clearInterval(tickRef.current) }
+    const seed = requestAnimationFrame(() => setNowMs(Date.now()))
+    const id = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => { cancelAnimationFrame(seed); clearInterval(id) }
   }, [locked])
 
   function submit() {
@@ -86,7 +87,8 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
   }
 
   function countdown() {
-    const ms = (today + 1) * 86_400_000 - Date.now()
+    if (nowMs === 0) return '…'
+    const ms = (today + 1) * 86_400_000 - nowMs
     const h = Math.floor(ms / 3.6e6)
     const m = Math.floor((ms % 3.6e6) / 6e4)
     const s = Math.floor((ms % 6e4) / 1000)

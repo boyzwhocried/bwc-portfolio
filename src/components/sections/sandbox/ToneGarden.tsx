@@ -16,7 +16,7 @@ export default function ToneGarden({ onClose }: { onClose: () => void }) {
   const [bpm, setBpm] = useState(108)
   const [col, setCol] = useState(0)
   const gridRef = useRef(grid)
-  gridRef.current = grid
+  useEffect(() => { gridRef.current = grid }) // the sequencer interval reads the latest grid via this ref
   const acRef = useRef<AudioContext | null>(null)
   const masterRef = useRef<GainNode | null>(null)
 

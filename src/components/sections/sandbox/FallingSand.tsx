@@ -38,9 +38,8 @@ export default function FallingSand({ onClose }: { onClose: () => void }) {
   const toolRef = useRef(tool)
   const brushRef = useRef(brush)
   const runRef = useRef(running)
-  toolRef.current = tool
-  brushRef.current = brush
-  runRef.current = running
+  // mirror live controls into refs the rAF loop / pointer handlers read
+  useEffect(() => { toolRef.current = tool; brushRef.current = brush; runRef.current = running })
 
   // seed a little starter scene so it is never an empty void on open
   useEffect(() => {

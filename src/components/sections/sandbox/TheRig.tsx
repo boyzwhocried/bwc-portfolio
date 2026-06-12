@@ -23,7 +23,8 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   const [scores, setScores] = useState<number[]>([])
   const [revealed, setRevealed] = useState(false)
   const [roundScore, setRoundScore] = useState(0)
-  const [saved, setSaved] = useState<Saved>({ pb: 0, history: [] })
+  // lazy init: this modal only mounts client-side (on toy click), so localStorage is safe
+  const [saved, setSaved] = useState<Saved>(() => load())
 
   // round targets
   const [angleTarget, setAngleTarget] = useState(0)
@@ -36,17 +37,15 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   const sweepBarRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
 
-  useEffect(() => { setSaved(load()) }, [])
-
-  // start a round: randomize its target
+  // enter a round and randomize its target (called from event handlers, never an
+  // effect, so there is no set-state-in-effect churn). Phase 0 needs no target.
   function startRound(p: number) {
     setRevealed(false)
     setRoundScore(0)
+    if (p === 0) setBisectMark(null)
     if (p === 1) { setAngleTarget(15 + Math.floor(Math.random() * 330)); setNeedleDeg(180) }
     if (p === 2) { setSweepTarget(0.18 + Math.random() * 0.64); setSweepFrozen(null) }
-    if (p === 0) setBisectMark(null)
   }
-  useEffect(() => { if (phase < 3) startRound(phase) }, [phase])
 
   // sweep animation
   useEffect(() => {
@@ -75,7 +74,7 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   function nextRound() {
     const all = [...scores, roundScore]
     setScores(all)
-    if (phase < 2) setPhase(phase + 1)
+    if (phase < 2) { setPhase(phase + 1); startRound(phase + 1) }
     else {
       const agg = aggregate(all)
       const cur = load()
@@ -91,6 +90,7 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   function restart() {
     setScores([])
     setPhase(0)
+    startRound(0)
   }
 
   // ---- angle dial helpers ----
@@ -189,7 +189,7 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
             <p style={hint}>freeze the needle inside the lit band.</p>
             <div ref={sweepBarRef} style={{ position: 'relative', height: 46, marginTop: 18, background: '#15181a', border: `1px solid ${TICK}`, borderRadius: 2 }}>
               <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${(sweepTarget - 0.06) * 100}%`, width: '12%', background: 'rgba(108,240,154,0.18)', borderLeft: `1px solid ${PHOS}`, borderRight: `1px solid ${PHOS}` }} />
-              <div data-needle style={{ position: 'absolute', top: -4, left: `${(sweepFrozen ?? sweepPosRef.current) * 100}%`, width: 2, height: 54, background: NEEDLE, transform: 'translateX(-1px)' }} />
+              <div data-needle style={{ position: 'absolute', top: -4, left: `${(sweepFrozen ?? 0.5) * 100}%`, width: 2, height: 54, background: NEEDLE, transform: 'translateX(-1px)' }} />
             </div>
             {!revealed && (
               <button
