@@ -198,7 +198,14 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
       <div
         ref={wrapRef}
         style={{ position: 'relative', width: '100%', height: '100%', touchAction: 'none', cursor: 'crosshair', overflow: 'hidden' }}
-        onPointerDown={(e) => { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); const p = view(e.clientX, e.clientY); dragRef.current = { sx: p.x, sy: p.y, cx: p.x, cy: p.y } }}
+        onPointerDown={(e) => {
+          // only fling when the press lands on the canvas itself, never on an
+          // overlay control (buttons/meter/banner are children of this wrapper)
+          if (e.target !== canvasRef.current) return
+          ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+          const p = view(e.clientX, e.clientY)
+          dragRef.current = { sx: p.x, sy: p.y, cx: p.x, cy: p.y }
+        }}
         onPointerMove={(e) => { if (!dragRef.current) return; const p = view(e.clientX, e.clientY); dragRef.current.cx = p.x; dragRef.current.cy = p.y }}
         onPointerUp={() => {
           const d = dragRef.current
