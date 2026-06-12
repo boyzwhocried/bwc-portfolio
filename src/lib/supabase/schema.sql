@@ -18,6 +18,38 @@ alter table projects enable row level security;
 create policy "Public read" on projects
   for select using (true);
 
+-- ---------------------------------------------------------------------------
+-- Sandbox arcade leaderboard (PARRY). Public read; bounded anon insert. The
+-- score is recomputed server-side by replaying the deterministic core
+-- (src/actions/arcade.ts -> src/lib/sandbox/parry.replay), so the score column
+-- is the authoritative result of the submitted inputs, not a client claim. The
+-- CHECK constraints keep even a direct anon insert within sane bounds.
+-- ---------------------------------------------------------------------------
+create table if not exists arcade_scores (
+  id uuid primary key default gen_random_uuid(),
+  game text not null,
+  name text not null,
+  score integer not null,
+  created_at timestamptz default now(),
+  constraint arcade_scores_game_chk check (game in ('parry')),
+  constraint arcade_scores_name_chk check (char_length(name) between 1 and 3),
+  constraint arcade_scores_score_chk check (score >= 0 and score <= 99999)
+);
+
+alter table arcade_scores enable row level security;
+
+create policy "arcade_scores public read" on arcade_scores
+  for select using (true);
+
+create policy "arcade_scores bounded insert" on arcade_scores
+  for insert with check (
+    game in ('parry')
+    and char_length(name) between 1 and 3
+    and score >= 0 and score <= 99999
+  );
+
+create index if not exists arcade_scores_game_score_idx on arcade_scores (game, score desc);
+
 create table if not exists contact_messages (
   id uuid primary key default gen_random_uuid(),
   name text not null,
