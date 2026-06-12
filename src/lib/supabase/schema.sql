@@ -77,6 +77,21 @@ create policy "spotify_cache public read" on spotify_cache
   for select using (true);
 -- writes only via service role (the spotify-sync edge function), which bypasses RLS.
 
+-- Dated listening snapshots, appended by the sync once per day (last sync of
+-- the day wins). Powers over-time obsession/mood views. Same public-read
+-- posture as spotify_cache. Applied via the spotify_history migration.
+create table if not exists spotify_history (
+  snapshot_date date not null,
+  key           text not null,
+  payload       jsonb not null,
+  updated_at    timestamptz not null default now(),
+  primary key (snapshot_date, key)
+);
+alter table spotify_history enable row level security;
+create policy "spotify_history public read" on spotify_history
+  for select using (true);
+-- writes only via service role (the spotify-sync edge function), which bypasses RLS.
+
 -- Private config: the curated shelf allowlist. Add/remove a playlist = one row.
 -- Sync auto-fetches its cover/name/count and auto-writes an AI description once.
 create table if not exists spotify_playlists (

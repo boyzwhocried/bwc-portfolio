@@ -1,11 +1,15 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
-// Pure simulation/scoring cores live in src/lib/sandbox and are unit-tested
-// in a plain Node environment (no DOM). Canvas/audio/React shells are
-// manually verified via `npm run build`.
+// Pure cores (sandbox sims, the music obsession engine) live under src/lib
+// and are unit-tested in a plain Node environment (no DOM). Canvas/audio/React
+// shells are manually verified via `npm run build`.
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/lib/sandbox/**/*.test.ts'],
+    include: ['src/lib/**/*.test.ts'],
+  },
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
 })

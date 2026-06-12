@@ -12,6 +12,7 @@ import type {
   CachedTrack,
 } from '@/types'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import MusicObsession from '@/components/sections/MusicObsession'
 import { useFadeUp } from '@/lib/motion'
 
 const POLL_PLAYING = 30_000
@@ -250,6 +251,9 @@ export default function MusicPlayer({ music }: { music: MusicData }) {
             the rest of the room is syncing from spotify. check back shortly.
           </p>
         )}
+
+        {/* THE READ: deterministic obsession narrative (src/lib/music/obsession.ts) */}
+        <MusicObsession music={music} />
 
         {/* TOP TRACKS + ARTISTS, shared range toggle */}
         {(music.topTracks || music.topArtists) && (

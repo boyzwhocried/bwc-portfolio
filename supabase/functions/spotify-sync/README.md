@@ -11,8 +11,14 @@ you can edit and where.
 | "this month" diary | name-matched `#YYMM` playlist | ~2h | no, fully automatic |
 | "of insta" feature | fixed playlist id | ~2h | no, automatic |
 | **the shelf** | **`spotify_playlists` table (config) -> `spotify_cache`** | **~2h** | **YES, this is yours** |
+| "the read" (obsession narrative) | computed in-page from `spotify_cache` (`src/lib/music/obsession.ts`) | ~2h | no, deterministic |
 
 Everything except the shelf is automatic. The shelf is the one thing you curate.
+
+The sync also appends each day's snapshot (top tracks/artists, recently played,
+both featured playlists) into `spotify_history` (one row per key per UTC day,
+last sync of the day wins). Nothing reads it on the page yet; it accumulates so
+future over-time views (obsession log, mood curve) have real history to draw.
 
 ---
 

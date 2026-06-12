@@ -11,6 +11,8 @@
 //   5. any shelf playlist with a null description -> generate ONE vibe line via Claude Haiku,
 //      write it back to public.spotify_playlists (generated once, then reused)
 //   6. keep-last-good: only overwrite a cache key when its fetch succeeded
+//   7. append a dated snapshot per key into public.spotify_history (one row per
+//      UTC day, last sync wins) so obsession/mood views can read change over time
 //
 // Secrets (Deno.env, set as Supabase function secrets, never committed):
 //   SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN,
@@ -313,6 +315,34 @@ Deno.serve(async (req) => {
       .from('spotify_cache')
       .upsert({ key: u.key, payload: u.payload, updated_at: new Date().toISOString() })
     if (error) result[u.key] = `db-fail: ${error.message}`
+  }
+
+  // dated history append (spotify_history): one row per key per UTC day, last
+  // sync of the day wins. Powers the over-time obsession/mood views. Strictly
+  // best-effort: a history failure must never break the cache commit above.
+  const HISTORY_KEYS = new Set([
+    'top_tracks',
+    'top_artists',
+    'recently_played',
+    'playlist_this_month',
+    'playlist_of_insta',
+  ])
+  const snapshotDate = new Date().toISOString().slice(0, 10)
+  for (const u of upserts) {
+    if (!HISTORY_KEYS.has(u.key)) continue
+    try {
+      const { error } = await supabase
+        .from('spotify_history')
+        .upsert({
+          snapshot_date: snapshotDate,
+          key: u.key,
+          payload: u.payload,
+          updated_at: new Date().toISOString(),
+        })
+      result[`history:${u.key}`] = error ? `db-fail: ${error.message}` : 'ok'
+    } catch (e) {
+      result[`history:${u.key}`] = `skip: ${String(e).slice(0, 120)}`
+    }
   }
 
   return new Response(JSON.stringify({ synced: result }, null, 2), {
