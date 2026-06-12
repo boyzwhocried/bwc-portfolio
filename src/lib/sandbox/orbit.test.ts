@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { step, makeBody, radiusForMass, type Body } from './orbit'
+import { step, makeBody, radiusForMass, supernova, spawnRing, G, SUPERNOVA_MASS, type Body } from './orbit'
 
 const sum = (bodies: Body[], f: (b: Body) => number) =>
   bodies.reduce((a, b) => a + (b.alive ? f(b) : 0), 0)
@@ -47,5 +47,44 @@ describe('gravity-well n-body sim', () => {
     const snapshot = { ...a }
     step([a, makeBody({ x: 99, y: 99, mass: 100 })], 1)
     expect(a).toEqual(snapshot)
+  })
+
+  describe('supernova', () => {
+    it('shatters a star into an outward-flying debris ring', () => {
+      const star = makeBody({ x: 100, y: 100, mass: 5000, vx: 1, vy: 0 })
+      const debris = supernova(star, 12)
+      expect(debris).toHaveLength(12)
+      for (const d of debris) {
+        // each fragment sits off-centre and is moving
+        expect(Math.hypot(d.x - star.x, d.y - star.y)).toBeGreaterThan(0)
+        expect(Math.hypot(d.vx, d.vy)).toBeGreaterThan(0)
+      }
+    })
+
+    it('does not create mass out of nothing', () => {
+      const star = makeBody({ x: 0, y: 0, mass: 4000 })
+      const total = supernova(star, 10).reduce((a, b) => a + b.mass, 0)
+      expect(total).toBeGreaterThan(0)
+      expect(total).toBeLessThanOrEqual(star.mass)
+    })
+
+    it('exposes a sane detonation threshold', () => {
+      expect(SUPERNOVA_MASS).toBeGreaterThan(0)
+    })
+  })
+
+  describe('spawnRing', () => {
+    it('places bodies on a circle at circular-orbit speed, perpendicular to the radius', () => {
+      const ring = spawnRing(100, 100, 6, 120, 4000)
+      expect(ring).toHaveLength(6)
+      const vCirc = Math.sqrt((G * 4000) / 120)
+      for (const b of ring) {
+        expect(Math.hypot(b.x - 100, b.y - 100)).toBeCloseTo(120, 4)
+        expect(Math.hypot(b.vx, b.vy)).toBeCloseTo(vCirc, 4)
+        // velocity perpendicular to the radius => dot product ~ 0
+        const dot = (b.x - 100) * b.vx + (b.y - 100) * b.vy
+        expect(Math.abs(dot)).toBeLessThan(1e-6)
+      }
+    })
   })
 })

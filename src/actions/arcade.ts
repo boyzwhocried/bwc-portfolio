@@ -1,13 +1,15 @@
 'use server'
 
-import { createServerClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { replay, type Input } from '@/lib/sandbox/parry'
 
-// The leaderboard is authoritative: the client sends the seed + raw key presses,
-// and the server REPLAYS the deterministic core to derive the score itself. A
-// faked score field would be ignored; you have to send inputs that genuinely
-// produce the score. Insert path mirrors the guestbook (anon client + bounded
-// RLS check); score is additionally clamped here.
+// The leaderboard is authoritative AND cheat-resistant: the client sends the
+// seed + raw key presses; the server REPLAYS the deterministic core to derive
+// the score itself (a faked score field is ignored). The write goes through the
+// service-role client, and RLS denies anon inserts entirely, so this action is
+// the ONLY path that can write a row — you cannot forge a score by hitting the
+// table directly with the public anon key. Requires SUPABASE_SERVICE_ROLE_KEY;
+// without it the board still reads but submissions report "offline".
 
 const MAX_SCORE = 99_999
 const MAX_INPUTS = 4000
@@ -29,7 +31,8 @@ export async function submitScore(seed: number, rawInputs: unknown, rawName: str
   const res = replay(Math.trunc(seed), inputs)
   const score = Math.max(0, Math.min(MAX_SCORE, res.score))
 
-  const supabase = createServerClient()
+  const supabase = createServiceClient()
+  if (!supabase) return { ok: false, error: 'leaderboard offline' }
   const { error } = await supabase.from('arcade_scores').insert({ game: 'parry', name, score } as never)
   if (error) return { ok: false, error: 'leaderboard offline' }
   return { ok: true, score }

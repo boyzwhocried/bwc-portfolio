@@ -19,11 +19,12 @@ create policy "Public read" on projects
   for select using (true);
 
 -- ---------------------------------------------------------------------------
--- Sandbox arcade leaderboard (PARRY). Public read; bounded anon insert. The
--- score is recomputed server-side by replaying the deterministic core
--- (src/actions/arcade.ts -> src/lib/sandbox/parry.replay), so the score column
--- is the authoritative result of the submitted inputs, not a client claim. The
--- CHECK constraints keep even a direct anon insert within sane bounds.
+-- Sandbox arcade leaderboard (PARRY). Public read; writes ONLY via the
+-- service-role server action (src/actions/arcade.ts), which recomputes the
+-- score by replaying the deterministic core (src/lib/sandbox/parry.replay) from
+-- the submitted inputs. RLS has NO insert policy => anon cannot write the table
+-- at all, so a score cannot be forged with the public anon key. The CHECK
+-- constraints stay as defense-in-depth. Requires SUPABASE_SERVICE_ROLE_KEY.
 -- ---------------------------------------------------------------------------
 create table if not exists arcade_scores (
   id uuid primary key default gen_random_uuid(),
@@ -41,12 +42,8 @@ alter table arcade_scores enable row level security;
 create policy "arcade_scores public read" on arcade_scores
   for select using (true);
 
-create policy "arcade_scores bounded insert" on arcade_scores
-  for insert with check (
-    game in ('parry')
-    and char_length(name) between 1 and 3
-    and score >= 0 and score <= 99999
-  );
+-- No insert policy: anon/auth are RLS-denied. The service-role action bypasses
+-- RLS and is the sole writer.
 
 create index if not exists arcade_scores_game_score_idx on arcade_scores (game, score desc);
 

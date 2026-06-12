@@ -17,8 +17,60 @@ export type Body = {
 export const G = 6 // tuned for screen-space feel, not physical units
 const SOFTENING = 4 // px, keeps acceleration finite at close range
 
+/** Mass at which an over-fed star detonates into a supernova. */
+export const SUPERNOVA_MASS = 9000
+
 export function radiusForMass(mass: number): number {
   return Math.cbrt(mass) * 1.4
+}
+
+/**
+ * Shatter a star into `count` fragments on an outward-flying ring. ~40% of the
+ * mass is lost to radiation, so it never manufactures mass. Pure.
+ */
+export function supernova(star: Body, count = 14, speed = 7): Body[] {
+  const fragMass = (star.mass * 0.6) / count
+  const r = star.radius + 4
+  const out: Body[] = []
+  for (let k = 0; k < count; k++) {
+    const a = (k / count) * Math.PI * 2
+    const cos = Math.cos(a)
+    const sin = Math.sin(a)
+    out.push(
+      makeBody({
+        x: star.x + cos * r,
+        y: star.y + sin * r,
+        vx: cos * speed + star.vx,
+        vy: sin * speed + star.vy,
+        mass: fragMass,
+        color: '#ffd27a',
+      })
+    )
+  }
+  return out
+}
+
+/** Drop `n` bodies on a circle at the exact circular-orbit speed for `centerMass`. Pure. */
+export function spawnRing(cx: number, cy: number, n: number, dist: number, centerMass: number): Body[] {
+  const v = Math.sqrt((G * centerMass) / dist)
+  const palette = ['#ece7de', '#9aa0a6', '#e84c28', '#6ea2c4', '#d8a24a']
+  const out: Body[] = []
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2
+    const cos = Math.cos(a)
+    const sin = Math.sin(a)
+    out.push(
+      makeBody({
+        x: cx + cos * dist,
+        y: cy + sin * dist,
+        vx: -sin * v, // tangential => perpendicular to the radius
+        vy: cos * v,
+        mass: 50 + (k % 3) * 30,
+        color: palette[k % palette.length],
+      })
+    )
+  }
+  return out
 }
 
 export function makeBody(p: Partial<Body> & { x: number; y: number; mass: number }): Body {
@@ -69,7 +121,7 @@ export function step(input: Body[], dt: number): Body[] {
     b.x += b.vx * dt
     b.y += b.vy * dt
     b.trail.push({ x: b.x, y: b.y })
-    if (b.trail.length > 24) b.trail.shift()
+    if (b.trail.length > 40) b.trail.shift()
   }
 
   // merge overlapping pairs (inelastic: conserve mass + momentum)

@@ -17,6 +17,7 @@ export default function SandboxModal({
   borderColor = '#1a1a1a',
   titleFont = 'var(--font-display)',
   titleRight,
+  fullscreen = false,
 }: {
   title: React.ReactNode
   onClose: () => void
@@ -27,6 +28,7 @@ export default function SandboxModal({
   borderColor?: string
   titleFont?: string
   titleRight?: React.ReactNode
+  fullscreen?: boolean
 }) {
   const reduce = useReducedMotion()
 
@@ -53,24 +55,25 @@ export default function SandboxModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1rem',
+        padding: fullscreen ? 0 : '1rem',
       }}
       onClick={onClose}
     >
       <motion.div
         onClick={(e) => e.stopPropagation()}
-        initial={reduce ? false : { y: 14, opacity: 0 }}
+        initial={reduce ? false : { y: fullscreen ? 0 : 14, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: dur.quick, ease: ease.out }}
         style={{
-          width: `min(94vw, ${width}px)`,
-          maxHeight: '88vh',
+          width: fullscreen ? '100vw' : `min(94vw, ${width}px)`,
+          height: fullscreen ? '100vh' : undefined,
+          maxHeight: fullscreen ? '100vh' : '88vh',
           display: 'flex',
           flexDirection: 'column',
           background: panelBg,
           color: panelFg,
-          border: `1.5px solid ${borderColor}`,
-          boxShadow: `7px 7px 0 ${borderColor}`,
+          border: fullscreen ? 'none' : `1.5px solid ${borderColor}`,
+          boxShadow: fullscreen ? 'none' : `7px 7px 0 ${borderColor}`,
         }}
       >
         <div
@@ -91,7 +94,7 @@ export default function SandboxModal({
             </button>
           </div>
         </div>
-        <div style={{ overflow: 'auto' }}>{children}</div>
+        <div style={{ overflow: fullscreen ? 'hidden' : 'auto', flex: fullscreen ? 1 : undefined, minHeight: 0 }}>{children}</div>
       </motion.div>
     </motion.div>
   )
