@@ -24,6 +24,10 @@ export function scoreBisect(clickFrac: number): number {
   return scoreLinear(Math.abs(clickFrac - 0.5), TOL.bisect)
 }
 
+export function scoreThirds(clickFrac: number): number {
+  return scoreLinear(Math.abs(clickFrac - 1 / 3), TOL.bisect)
+}
+
 export function scoreAngle(targetDeg: number, gotDeg: number): number {
   return scoreLinear(circularDiffDeg(targetDeg, gotDeg), TOL.angle)
 }

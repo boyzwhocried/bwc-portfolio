@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  scoreLinear, circularDiffDeg, scoreBisect, scoreAngle, scorePosition,
+  scoreLinear, circularDiffDeg, scoreBisect, scoreThirds, scoreAngle, scorePosition,
   aggregate, isPersonalBest, TOL,
 } from './calib'
 
@@ -23,6 +23,13 @@ describe('calibration scoring core', () => {
     expect(scoreBisect(0.5 + TOL.bisect)).toBe(0)
     expect(scoreBisect(0.42)).toBeLessThan(100)
     expect(scoreBisect(0.42)).toBeGreaterThan(0)
+  })
+
+  it('thirds scores perfectly at the one-third mark', () => {
+    expect(scoreThirds(1 / 3)).toBe(100)
+    expect(scoreThirds(1 / 3 + TOL.bisect)).toBe(0)
+    expect(scoreThirds(1 / 3 + 0.06)).toBe(50) // half a tolerance off
+    expect(scoreThirds(0.5)).toBe(0) // a true midpoint is well outside tolerance
   })
 
   it('angle scores by circular distance to target', () => {

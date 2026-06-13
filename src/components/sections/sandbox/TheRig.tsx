@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import SandboxModal from './SandboxModal'
-import { scoreBisect, scoreAngle, scorePosition, aggregate, isPersonalBest } from '@/lib/sandbox/calib'
+import { scoreBisect, scoreThirds, scoreAngle, scorePosition, aggregate, isPersonalBest } from '@/lib/sandbox/calib'
 
 const STORAGE_KEY = 'bwc-rig-v1'
 const PHOS = '#6cf09a'
@@ -16,10 +16,11 @@ function load(): Saved {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '') as Saved } catch { return { pb: 0, history: [] } }
 }
 
-const ROUND_NAMES = ['BISECT', 'ANGLE', 'STOP']
+const ROUND_NAMES = ['BISECT', 'THIRDS', 'ANGLE', 'LEVEL', 'STOP']
+const ROUNDS = ROUND_NAMES.length
 
 export default function TheRig({ onClose }: { onClose: () => void }) {
-  const [phase, setPhase] = useState(0) // 0..2 rounds, 3 = done
+  const [phase, setPhase] = useState(0) // 0..ROUNDS-1 rounds, ROUNDS = done
   const [scores, setScores] = useState<number[]>([])
   const [revealed, setRevealed] = useState(false)
   const [roundScore, setRoundScore] = useState(0)
@@ -42,14 +43,15 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   function startRound(p: number) {
     setRevealed(false)
     setRoundScore(0)
-    if (p === 0) setBisectMark(null)
-    if (p === 1) { setAngleTarget(15 + Math.floor(Math.random() * 330)); setNeedleDeg(180) }
-    if (p === 2) { setSweepTarget(0.18 + Math.random() * 0.64); setSweepFrozen(null) }
+    if (p === 0 || p === 1) setBisectMark(null) // BISECT + THIRDS: clear the bar mark
+    if (p === 2) { setAngleTarget(15 + Math.floor(Math.random() * 330)); setNeedleDeg(180) } // ANGLE
+    if (p === 3) { setAngleTarget(0); setNeedleDeg(40 + Math.floor(Math.random() * 280)) } // LEVEL: drifted, null back to 0
+    if (p === 4) { setSweepTarget(0.18 + Math.random() * 0.64); setSweepFrozen(null) } // STOP
   }
 
   // sweep animation
   useEffect(() => {
-    if (phase !== 2 || revealed) return
+    if (phase !== 4 || revealed) return
     let raf = 0
     const t0 = performance.now()
     function frame(t: number) {
@@ -74,7 +76,7 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   function nextRound() {
     const all = [...scores, roundScore]
     setScores(all)
-    if (phase < 2) { setPhase(phase + 1); startRound(phase + 1) }
+    if (phase < ROUNDS - 1) { setPhase(phase + 1); startRound(phase + 1) }
     else {
       const agg = aggregate(all)
       const cur = load()
@@ -83,7 +85,7 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
       const next = { pb, history }
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
       setSaved(next)
-      setPhase(3)
+      setPhase(ROUNDS)
     }
   }
 
@@ -103,7 +105,8 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
   }
 
   const agg = aggregate(scores)
-  const isNewPB = phase === 3 && saved.history.length > 0 && agg >= saved.pb && agg > 0
+  const isNewPB = phase === ROUNDS && saved.history.length > 0 && agg >= saved.pb && agg > 0
+  const dialTargetDeg = phase === 3 ? 0 : angleTarget // LEVEL nulls back to the 0° origin
 
   return (
     <SandboxModal
@@ -118,10 +121,10 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
     >
       <div style={{ padding: 16 }}>
         {/* round readout */}
-        {phase < 3 && (
+        {phase < ROUNDS && (
           <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: PHOS, letterSpacing: '0.12em' }}>
-              {phase + 1}/3 · {ROUND_NAMES[phase]}
+              {phase + 1}/{ROUNDS} · {ROUND_NAMES[phase]}
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b746f' }}>calibrate by feel</span>
           </div>
@@ -154,37 +157,91 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* ROUND 1 — ANGLE */}
+        {/* ROUND 1 — THIRDS */}
         {phase === 1 && (
+          <div>
+            <p style={hint}>now click one third of the way along the bar. the left third, by eye alone.</p>
+            <div
+              onClick={(e) => {
+                if (revealed) return
+                const r = e.currentTarget.getBoundingClientRect()
+                const frac = (e.clientX - r.left) / r.width
+                setBisectMark(frac)
+                commitRound(scoreThirds(frac))
+              }}
+              style={{ position: 'relative', height: 54, marginTop: 16, cursor: revealed ? 'default' : 'crosshair' }}
+            >
+              <div style={{ position: 'absolute', top: 26, left: 0, right: 0, height: 2, background: TICK }} />
+              <div style={{ position: 'absolute', top: 16, left: 0, width: 2, height: 22, background: PHOS }} />
+              <div style={{ position: 'absolute', top: 16, right: 0, width: 2, height: 22, background: PHOS }} />
+              {bisectMark !== null && (
+                <div style={{ position: 'absolute', top: 8, left: `${bisectMark * 100}%`, width: 2, height: 38, background: NEEDLE, transform: 'translateX(-1px)' }} />
+              )}
+              {revealed && (
+                <div style={{ position: 'absolute', top: 8, left: `${(100 / 3).toFixed(3)}%`, width: 2, height: 38, background: PHOS, transform: 'translateX(-1px)', opacity: 0.7 }} />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ROUND 2 + 3 — ANGLE (hit a target) and LEVEL (null back to 0) share the dial */}
+        {(phase === 2 || phase === 3) && (
           <div style={{ textAlign: 'center' }}>
-            <p style={hint}>rotate the needle to <strong style={{ color: PHOS }}>{angleTarget}°</strong>. drag the dial.</p>
+            <p style={hint}>
+              {phase === 3
+                ? <>the dial drifted off zero. bring the needle back to <strong style={{ color: PHOS }}>0°</strong> (top, lit green). level it by eye.</>
+                : <>rotate the needle to <strong style={{ color: PHOS }}>{angleTarget}°</strong>. zero is at the top, clockwise.</>}
+            </p>
             <div
               ref={dialRef}
               onPointerDown={(e) => { if (revealed) return; draggingRef.current = true; e.currentTarget.setPointerCapture(e.pointerId); setNeedleDeg(dialAngle(e.clientX, e.clientY)) }}
               onPointerMove={(e) => { if (draggingRef.current && !revealed) setNeedleDeg(dialAngle(e.clientX, e.clientY)) }}
               onPointerUp={() => { draggingRef.current = false }}
-              style={{ position: 'relative', width: 170, height: 170, margin: '14px auto', borderRadius: '50%', border: `2px solid ${TICK}`, background: 'radial-gradient(circle, #23282b, #15181a)', touchAction: 'none', cursor: revealed ? 'default' : 'grab' }}
+              style={{ position: 'relative', width: 170, height: 170, margin: '22px auto 26px', borderRadius: '50%', border: `2px solid ${TICK}`, background: 'radial-gradient(circle, #23282b, #15181a)', touchAction: 'none', cursor: revealed ? 'default' : 'grab' }}
             >
               {/* tick ring */}
               {Array.from({ length: 24 }).map((_, i) => (
                 <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', width: 1, height: 8, background: TICK, transformOrigin: '50% 0', transform: `rotate(${i * 15}deg) translate(-50%, 75px)` }} />
               ))}
+              {/* degree origin: the starting-point reference at top (0°), matching needle-up */}
+              <div style={{ position: 'absolute', top: 3, left: '50%', width: 3, height: 13, background: PHOS, transform: 'translateX(-50%)', borderRadius: 1 }} />
+              {/* cardinal labels — fix the 0° start + clockwise direction */}
+              {[0, 90, 180, 270].map((d) => {
+                const rad = (d * Math.PI) / 180
+                const R = 99
+                return (
+                  <span
+                    key={d}
+                    style={{
+                      position: 'absolute',
+                      left: 85 + R * Math.sin(rad),
+                      top: 85 - R * Math.cos(rad),
+                      transform: 'translate(-50%, -50%)',
+                      fontFamily: 'var(--font-mono)', fontSize: 9, lineHeight: 1,
+                      color: d === 0 ? PHOS : '#6b746f',
+                      fontWeight: d === 0 ? 700 : 400,
+                    }}
+                  >
+                    {d}°
+                  </span>
+                )
+              })}
               {/* live needle */}
               <div style={{ position: 'absolute', top: '50%', left: '50%', width: 3, height: 70, background: NEEDLE, transformOrigin: '50% 100%', transform: `translate(-50%, -100%) rotate(${needleDeg}deg)`, borderRadius: 2 }} />
               {/* target reveal */}
               {revealed && (
-                <div style={{ position: 'absolute', top: '50%', left: '50%', width: 2, height: 70, background: PHOS, opacity: 0.7, transformOrigin: '50% 100%', transform: `translate(-50%, -100%) rotate(${angleTarget}deg)` }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', width: 2, height: 70, background: PHOS, opacity: 0.7, transformOrigin: '50% 100%', transform: `translate(-50%, -100%) rotate(${dialTargetDeg}deg)` }} />
               )}
               <div style={{ position: 'absolute', top: '50%', left: '50%', width: 10, height: 10, background: '#c4ccc8', borderRadius: '50%', transform: 'translate(-50%,-50%)' }} />
             </div>
             {!revealed && (
-              <button onClick={() => commitRound(scoreAngle(angleTarget, needleDeg))} style={rigBtn}>lock</button>
+              <button onClick={() => commitRound(scoreAngle(dialTargetDeg, needleDeg))} style={rigBtn}>lock</button>
             )}
           </div>
         )}
 
-        {/* ROUND 2 — STOP THE SWEEP */}
-        {phase === 2 && (
+        {/* ROUND 4 — STOP THE SWEEP */}
+        {phase === 4 && (
           <div>
             <p style={hint}>freeze the needle inside the lit band.</p>
             <div ref={sweepBarRef} style={{ position: 'relative', height: 46, marginTop: 18, background: '#15181a', border: `1px solid ${TICK}`, borderRadius: 2 }}>
@@ -203,20 +260,20 @@ export default function TheRig({ onClose }: { onClose: () => void }) {
         )}
 
         {/* per-round feedback */}
-        {phase < 3 && revealed && (
+        {phase < ROUNDS && revealed && (
           <div style={{ marginTop: 18, textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: PHOS }}>+{roundScore}</div>
-            <button onClick={nextRound} style={{ ...rigBtn, marginTop: 10 }}>{phase < 2 ? 'next →' : 'finish'}</button>
+            <button onClick={nextRound} style={{ ...rigBtn, marginTop: 10 }}>{phase < ROUNDS - 1 ? 'next →' : 'finish'}</button>
           </div>
         )}
 
         {/* DONE */}
-        {phase === 3 && (
+        {phase === ROUNDS && (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#6b746f', letterSpacing: '0.12em' }}>CALIBRATION SCORE</div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 52, color: PHOS, lineHeight: 1.1 }}>{agg}</div>
             {isNewPB && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: NEEDLE }}>★ new personal best</div>}
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: '#8a938e', marginTop: 6 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: '#8a938e', marginTop: 6 }}>
               {scores.map((s, i) => <span key={i}>{ROUND_NAMES[i]} {s}</span>)}
             </div>
             {/* sparkline of last runs */}

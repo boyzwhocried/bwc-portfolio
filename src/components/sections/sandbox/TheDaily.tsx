@@ -22,6 +22,12 @@ const PEGS = [
 const INK = '#1a1a1a'
 const PAPER = '#efe9dd'
 
+// wordle-style feedback tiles. positionless by design: exacts are grouped first,
+// never mapped to a spot, so the Mastermind deduction stays intact.
+const FB_EXACT = '#3a7d3a'   // green — right peg, right spot
+const FB_PRESENT = '#e0a32a' // amber — right peg, wrong spot
+const FB_MISS = '#e3ddd0'    // pale — no match
+
 type Saved = {
   day: number
   guesses: number[][]
@@ -108,8 +114,10 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
       titleRight={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d' }}>NO.{puzzleNo} · {dateLabel}</span>}
     >
       <div style={{ padding: '16px 18px' }}>
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 13, color: '#4a443a', lineHeight: 1.5, marginBottom: 14 }}>
-          crack the four-peg code in six tries. <strong style={{ color: INK }}>●</strong> right peg, right spot · <span style={{ color: '#b83612' }}>○</span> right peg, wrong spot. one puzzle a day.
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 13, color: '#4a443a', lineHeight: 1.7, marginBottom: 14 }}>
+          crack the four-peg code in six tries. the tiles beside each guess score it:{' '}
+          <span style={legendSwatch(FB_EXACT)}>✓</span> right peg &amp; spot ·{' '}
+          <span style={legendSwatch(FB_PRESENT)}>•</span> right peg, wrong spot. one puzzle a day.
         </p>
 
         {/* board */}
@@ -141,16 +149,28 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
                     )
                   })}
                 </div>
-                {/* feedback pegs 2x2 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, width: 18 }}>
+                {/* feedback — wordle-style result tiles (positionless: exacts first) */}
+                <div style={{ display: 'flex', gap: 3 }}>
                   {Array.from({ length: CODE_LEN }).map((__, k) => {
-                    let bg = 'transparent'
+                    let bg = FB_MISS
                     let bd = '#cfc7b8'
+                    let glyph = ''
                     if (fb) {
-                      if (k < fb.exact) { bg = INK; bd = INK }
-                      else if (k < fb.exact + fb.present) { bg = '#e84c28'; bd = '#b83612' }
+                      if (k < fb.exact) { bg = FB_EXACT; bd = '#2f6630'; glyph = '✓' }
+                      else if (k < fb.exact + fb.present) { bg = FB_PRESENT; bd = '#b3801c'; glyph = '•' }
                     }
-                    return <span key={k} style={{ width: 7, height: 7, background: bg, border: `1px solid ${bd}`, borderRadius: '50%' }} />
+                    return (
+                      <span
+                        key={k}
+                        style={{
+                          width: 16, height: 16, background: bg, border: `1px solid ${bd}`,
+                          borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 10, lineHeight: 1, color: '#f4efe4', fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        {glyph}
+                      </span>
+                    )
                   })}
                 </div>
               </div>
@@ -211,4 +231,14 @@ const ctrlBtn: React.CSSProperties = {
   fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: INK,
   background: '#fff', border: `1.5px solid ${INK}`, padding: '8px 14px',
   cursor: 'pointer', borderRadius: 2,
+}
+
+// inline legend chip mirroring the feedback tiles, so the key matches the board
+function legendSwatch(bg: string): React.CSSProperties {
+  return {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: 15, height: 15, background: bg, border: `1px solid ${INK}`,
+    borderRadius: 2, color: '#f4efe4', fontSize: 9, lineHeight: 1,
+    verticalAlign: 'text-bottom', marginRight: 1,
+  }
 }
