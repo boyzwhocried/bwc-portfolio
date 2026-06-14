@@ -30,27 +30,31 @@ export function dailyCode(date: Date): number[] {
   return Array.from({ length: CODE_LEN }, () => Math.floor(rng() * PALETTE_SIZE))
 }
 
-export type Feedback = { exact: number; present: number }
+export type Mark = 'hit' | 'present' | 'miss'
 
-/** Mastermind scoring with correct duplicate handling. */
-export function scoreGuess(guess: number[], code: number[]): Feedback {
-  let exact = 0
-  const codeCount = new Array(PALETTE_SIZE).fill(0)
-  const guessCount = new Array(PALETTE_SIZE).fill(0)
+/** Wordle-style PER-POSITION scoring with correct duplicate handling: an exact
+ *  match is a `hit`; a guessed colour that exists elsewhere in the (not-yet-
+ *  consumed) code is `present`; otherwise `miss`. Each code peg is matched at
+ *  most once, so two guessed reds against one code red yield one present + one
+ *  miss. The returned array lines up 1:1 with the guess by position. */
+export function markGuess(guess: number[], code: number[]): Mark[] {
+  const marks: Mark[] = new Array(code.length).fill('miss')
+  const pool = new Array(PALETTE_SIZE).fill(0)
+  // first pass: lock exact hits, pool every non-hit code peg
   for (let i = 0; i < code.length; i++) {
-    if (guess[i] === code[i]) exact++
-    else {
-      codeCount[code[i]]++
-      guessCount[guess[i]]++
-    }
+    if (guess[i] === code[i]) marks[i] = 'hit'
+    else pool[code[i]]++
   }
-  let present = 0
-  for (let c = 0; c < PALETTE_SIZE; c++) present += Math.min(codeCount[c], guessCount[c])
-  return { exact, present }
+  // second pass: right colour, wrong spot, drawing from the remaining pool
+  for (let i = 0; i < code.length; i++) {
+    if (marks[i] === 'hit') continue
+    if (pool[guess[i]] > 0) { marks[i] = 'present'; pool[guess[i]]-- }
+  }
+  return marks
 }
 
-export function isWin(fb: Feedback): boolean {
-  return fb.exact === CODE_LEN
+export function isWin(marks: Mark[]): boolean {
+  return marks.length === CODE_LEN && marks.every((m) => m === 'hit')
 }
 
 export type StreakState = { lastDay: number; streak: number; best: number }
@@ -64,14 +68,10 @@ export function updateStreak(prev: StreakState | null, today: number, won: boole
   return { lastDay: today, streak, best }
 }
 
-/** Spoiler-free emoji result grid for sharing. */
-export function buildShareGrid(dayIdx: number, rows: Feedback[], solved: boolean): string {
+/** Spoiler-free emoji result grid for sharing (positional, Wordle-style). */
+export function buildShareGrid(dayIdx: number, rows: Mark[][], solved: boolean): string {
   const head = `BWC Daily #${dayIdx} ${solved ? `${rows.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`}`
-  const body = rows
-    .map((r) => {
-      const miss = CODE_LEN - r.exact - r.present
-      return '🟥'.repeat(r.exact) + '🟨'.repeat(r.present) + '⬜'.repeat(Math.max(0, miss))
-    })
-    .join('\n')
+  const glyph: Record<Mark, string> = { hit: '🟩', present: '🟨', miss: '⬜' }
+  const body = rows.map((r) => r.map((m) => glyph[m]).join('')).join('\n')
   return `${head}\n${body}`
 }

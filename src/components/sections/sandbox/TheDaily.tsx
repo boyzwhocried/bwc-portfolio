@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import {
-  CODE_LEN, MAX_GUESSES, dayIndex, dailyCode, scoreGuess, updateStreak,
-  buildShareGrid, isWin, type Feedback, type StreakState,
+  CODE_LEN, MAX_GUESSES, dayIndex, dailyCode, markGuess, updateStreak,
+  buildShareGrid, isWin, type Mark, type StreakState,
 } from '@/lib/sandbox/daily'
 
-const STORAGE_KEY = 'bwc-daily-v1'
+const STORAGE_KEY = 'bwc-daily-v2'
 const LAUNCH_DAY = Math.floor(Date.parse('2026-06-12T00:00:00Z') / 86_400_000)
 
 // letterpress palette: colour + a redundant glyph (colour-blind safe)
@@ -22,16 +22,19 @@ const PEGS = [
 const INK = '#1a1a1a'
 const PAPER = '#efe9dd'
 
-// wordle-style feedback tiles. positionless by design: exacts are grouped first,
-// never mapped to a spot, so the Mastermind deduction stays intact.
+// wordle-style verdict, PER PEG (positional): each guess peg gets its own mark
+// in the slot directly beneath it, so the tile lines up 1:1 with the peg above.
 const FB_EXACT = '#3a7d3a'   // green — right peg, right spot
 const FB_PRESENT = '#e0a32a' // amber — right peg, wrong spot
-const FB_MISS = '#e3ddd0'    // pale — no match
+const FB_MISS = '#e3ddd0'    // pale — not in the code
+const MARK_BG: Record<Mark, string> = { hit: FB_EXACT, present: FB_PRESENT, miss: FB_MISS }
+const MARK_BD: Record<Mark, string> = { hit: '#2f6630', present: '#b3801c', miss: '#cfc7b8' }
+const MARK_GLYPH: Record<Mark, string> = { hit: '✓', present: '•', miss: '' }
 
 type Saved = {
   day: number
   guesses: number[][]
-  feedback: Feedback[]
+  feedback: Mark[][]
   status: 'playing' | 'won' | 'lost'
   streak: StreakState | null
 }
@@ -76,7 +79,7 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
 
   function submit() {
     if (locked || input.length !== CODE_LEN) return
-    const fb = scoreGuess(input, code)
+    const fb = markGuess(input, code)
     const guesses = [...state.guesses, input]
     const feedback = [...state.feedback, fb]
     let status: Saved['status'] = 'playing'
@@ -115,64 +118,53 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
     >
       <div style={{ padding: '16px 18px' }}>
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 13, color: '#4a443a', lineHeight: 1.7, marginBottom: 14 }}>
-          crack the four-peg code in six tries. the tiles beside each guess score it:{' '}
+          crack the four-peg code in six tries. each peg is marked right below it:{' '}
           <span style={legendSwatch(FB_EXACT)}>✓</span> right peg &amp; spot ·{' '}
-          <span style={legendSwatch(FB_PRESENT)}>•</span> right peg, wrong spot. one puzzle a day.
+          <span style={legendSwatch(FB_PRESENT)}>•</span> right peg, wrong spot ·{' '}
+          <span style={legendSwatch(FB_MISS)}> </span> not in the code. one puzzle a day.
         </p>
 
-        {/* board */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {/* board — each column is a peg with its positional verdict directly beneath */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {rows.map((_, ri) => {
             const past = ri < state.guesses.length
             const cur = ri === state.guesses.length && !locked
             const pegs = past ? state.guesses[ri] : cur ? input : []
-            const fb = past ? state.feedback[ri] : null
+            const marks = past ? state.feedback[ri] : null
             return (
-              <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {Array.from({ length: CODE_LEN }).map((__, ci) => {
-                    const p = pegs[ci]
-                    const filled = p !== undefined
-                    return (
+              <div key={ri} style={{ display: 'flex', gap: 6 }}>
+                {Array.from({ length: CODE_LEN }).map((__, ci) => {
+                  const p = pegs[ci]
+                  const filled = p !== undefined
+                  const m = marks ? marks[ci] : null
+                  return (
+                    <div key={ci} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <div
-                        key={ci}
                         style={{
                           width: 34, height: 34, border: `1.5px solid ${INK}`,
                           background: filled ? PEGS[p].c : '#fff',
                           boxShadow: past ? 'none' : `2px 2px 0 ${filled ? INK : '#cfc7b8'}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 16, color: '#f4efe4', borderRadius: 2,
+                          opacity: m === 'miss' ? 0.5 : 1,
                         }}
                       >
                         {filled ? PEGS[p].g : ''}
                       </div>
-                    )
-                  })}
-                </div>
-                {/* feedback — wordle-style result tiles (positionless: exacts first) */}
-                <div style={{ display: 'flex', gap: 3 }}>
-                  {Array.from({ length: CODE_LEN }).map((__, k) => {
-                    let bg = FB_MISS
-                    let bd = '#cfc7b8'
-                    let glyph = ''
-                    if (fb) {
-                      if (k < fb.exact) { bg = FB_EXACT; bd = '#2f6630'; glyph = '✓' }
-                      else if (k < fb.exact + fb.present) { bg = FB_PRESENT; bd = '#b3801c'; glyph = '•' }
-                    }
-                    return (
-                      <span
-                        key={k}
+                      <div
                         style={{
-                          width: 16, height: 16, background: bg, border: `1px solid ${bd}`,
-                          borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 10, lineHeight: 1, color: '#f4efe4', fontFamily: 'var(--font-mono)',
+                          width: 34, height: 13, borderRadius: 2,
+                          background: m ? MARK_BG[m] : 'transparent',
+                          border: `1px solid ${m ? MARK_BD[m] : 'transparent'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 9, lineHeight: 1, color: '#f4efe4', fontFamily: 'var(--font-mono)',
                         }}
                       >
-                        {glyph}
-                      </span>
-                    )
-                  })}
-                </div>
+                        {m ? MARK_GLYPH[m] : ''}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )
           })}

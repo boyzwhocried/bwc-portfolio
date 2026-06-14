@@ -4,7 +4,8 @@ import {
   PALETTE_SIZE,
   dayIndex,
   dailyCode,
-  scoreGuess,
+  markGuess,
+  isWin,
   updateStreak,
   buildShareGrid,
 } from './daily'
@@ -36,19 +37,21 @@ describe('daily code-break core', () => {
     expect(a).not.toBe(b)
   })
 
-  it('scores exact hits', () => {
-    expect(scoreGuess([0, 1, 2, 3], [0, 1, 2, 3])).toEqual({ exact: 4, present: 0 })
+  it('marks every position as a hit on the exact code', () => {
+    expect(markGuess([0, 1, 2, 3], [0, 1, 2, 3])).toEqual(['hit', 'hit', 'hit', 'hit'])
+    expect(isWin(markGuess([0, 1, 2, 3], [0, 1, 2, 3]))).toBe(true)
   })
 
-  it('handles duplicate pegs correctly (the classic bug)', () => {
-    // code 0,0,1,2 vs guess 0,1,0,0 -> 1 exact, 2 present
-    expect(scoreGuess([0, 1, 0, 0], [0, 0, 1, 2])).toEqual({ exact: 1, present: 2 })
+  it('marks positionally with correct duplicate handling (the classic bug)', () => {
+    // guess 0,1,0,0 vs code 0,0,1,2: pos0 hits; the lone leftover 0 is present
+    // once (first non-hit slot), the 1 is present, the trailing 0 is a miss
+    expect(markGuess([0, 1, 0, 0], [0, 0, 1, 2])).toEqual(['hit', 'present', 'present', 'miss'])
   })
 
-  it('never double-counts a peg as both present and exact', () => {
-    const { exact, present } = scoreGuess([5, 5, 5, 5], [5, 0, 0, 0])
-    expect(exact).toBe(1)
-    expect(present).toBe(0)
+  it('never lends a code peg to two guess pegs', () => {
+    // one code red, four guessed reds -> exactly one hit, the rest miss
+    expect(markGuess([5, 5, 5, 5], [5, 0, 0, 0])).toEqual(['hit', 'miss', 'miss', 'miss'])
+    expect(isWin(markGuess([5, 5, 5, 5], [5, 0, 0, 0]))).toBe(false)
   })
 
   describe('streak transitions', () => {
@@ -69,13 +72,18 @@ describe('daily code-break core', () => {
     })
   })
 
-  it('builds a spoiler-free share grid with the right peg counts', () => {
-    const grid = buildShareGrid(42, [{ exact: 1, present: 2 }, { exact: 4, present: 0 }], true)
+  it('builds a spoiler-free positional share grid', () => {
+    const grid = buildShareGrid(
+      42,
+      [['hit', 'present', 'present', 'miss'], ['hit', 'hit', 'hit', 'hit']],
+      true
+    )
     expect(grid).toContain('#42')
     expect(grid).toContain('2/6')
-    // first row: 1 exact + 2 present + 1 miss
-    const firstRow = grid.split('\n').find((l) => l.includes('🟥'))!
-    expect([...firstRow].filter((c) => c === '🟥')).toHaveLength(1)
-    expect([...firstRow].filter((c) => c === '🟨')).toHaveLength(2)
+    // first row: 1 hit + 2 present + 1 miss, in order
+    const firstRow = grid.split('\n').find((l) => l.includes('🟨'))!
+    expect(firstRow).toBe('🟩🟨🟨⬜')
+    const lastRow = grid.trim().split('\n').pop()!
+    expect(lastRow).toBe('🟩🟩🟩🟩')
   })
 })
