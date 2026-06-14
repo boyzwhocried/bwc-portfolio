@@ -13,6 +13,7 @@ import ToneGarden from './sandbox/ToneGarden'
 import TheDaily from './sandbox/TheDaily'
 import TheRig from './sandbox/TheRig'
 import Parry from './sandbox/Parry'
+import ThePress from './sandbox/ThePress'
 
 const SHADOW = '4px 4px 0 #b3ada0'
 const SHADOW_INK = '4px 4px 0 var(--ink)'
@@ -32,7 +33,7 @@ const USELESS_MSGS = [
 
 export type SandboxApp =
   | 'terminal' | 'darkroom' | 'pipeline' | 'guestbook'
-  | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry'
+  | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press'
   | null
 
 function Caption({ children }: { children: React.ReactNode }) {
@@ -240,6 +241,24 @@ export default function ToyShelf() {
               <Caption>the rig <span style={TAG}>· train precision</span></Caption>
             </div>
 
+            {/* the press (letterpress block-fit) */}
+            <div style={{ transform: 'rotate(1.5deg)' }}>
+              <button
+                onClick={() => setApp('press')}
+                aria-label="play the press"
+                style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
+              >
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE PRESS</span>
+                <span style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 14px)', gap: 3, marginTop: 10, width: 'fit-content' }}>
+                  {[1, 2, 1, 0, 0, 1, 2, 1, 1, 1, 1, 1].map((v, i) => (
+                    <span key={i} style={{ width: 14, height: 14, borderRadius: 2, background: v === 0 ? 'transparent' : v === 1 ? 'var(--ink)' : '#e84c28', border: v === 0 ? '1px solid rgba(26,26,26,0.12)' : 'none' }} />
+                  ))}
+                </span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, color: '#6b665d', marginTop: 9 }}>set &amp; print</span>
+              </button>
+              <Caption>the press <span style={TAG}>· block-fit</span></Caption>
+            </div>
+
             {/* pipeline panic (medallion stack) */}
             <div style={{ transform: 'rotate(-2.5deg)' }}>
               <button
@@ -330,6 +349,7 @@ export default function ToyShelf() {
       {app === 'daily' && <TheDaily onClose={() => setApp(null)} />}
       {app === 'rig' && <TheRig onClose={() => setApp(null)} />}
       {app === 'parry' && <Parry onClose={() => setApp(null)} />}
+      {app === 'press' && <ThePress onClose={() => setApp(null)} />}
     </section>
   )
 }

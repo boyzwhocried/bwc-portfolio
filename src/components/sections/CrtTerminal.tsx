@@ -16,7 +16,7 @@ const HELP = [
   'commands:',
   '  help · about · whoami · neofetch · games',
   '  ls · open <room>   rooms: projects blog music photography now hub cv',
-  '  play <game>        games: terrarium orrery tone daily rig parry darkroom pipeline',
+  '  play <game>        games: terrarium orrery tone daily rig press parry darkroom pipeline',
   '  guestbook · coffee · clear · exit',
 ]
 
@@ -27,6 +27,7 @@ const GAMES = [
   '  tone        paint a pentatonic loop',
   '  daily       crack the daily code (one a day)',
   '  rig         calibration trainer (beat your error)',
+  '  press       letterpress block-fit: set sorts, print lines, clean pulls',
   '  parry       8-bit arcade · global leaderboard',
   '  darkroom    develop a real film frame',
   '  pipeline    you are the staging layer',
@@ -40,13 +41,13 @@ const NEOFETCH = [
   '   ▀▀█▄▄▄▄█▀▀      uptime: since 2024, with naps',
   '       ▀▀▀▀        shell: this one',
   '                   theme: ink / paper / vermilion',
-  '                   toys: 12 on the shelf, all playable',
+  '                   toys: 13 on the shelf, all playable',
   '                   cpu: one data engineer, mostly caffeinated',
 ]
 
 const ROOMS = ['projects', 'blog', 'music', 'photography', 'now', 'hub', 'cv', 'about', 'contact']
 
-type LaunchApp = 'darkroom' | 'pipeline' | 'guestbook' | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry'
+type LaunchApp = 'darkroom' | 'pipeline' | 'guestbook' | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press'
 
 // game aliases -> the app key the shelf mounts
 const PLAY: Record<string, LaunchApp> = {
@@ -55,6 +56,7 @@ const PLAY: Record<string, LaunchApp> = {
   tone: 'tone', tonegarden: 'tone', synth: 'tone', music: 'tone',
   daily: 'daily', code: 'daily',
   rig: 'rig', calibrate: 'rig',
+  press: 'press', blocks: 'press', forme: 'press', letterpress: 'press',
   parry: 'parry', arcade: 'parry',
   darkroom: 'darkroom',
   pipeline: 'pipeline', 'pipeline-panic': 'pipeline',
@@ -94,6 +96,7 @@ function run(cmd: string): RunResult {
         const flavor: Record<LaunchApp, string> = {
           sand: 'opening the terrarium …', gravity: 'spinning up the orrery …', tone: 'warming the oscillators …',
           daily: 'fetching today’s code …', rig: 'powering the rig …', parry: 'insert coin …',
+          press: 'inking the forme …',
           darkroom: 'turning off the lights …', pipeline: 'spinning up the batch …', guestbook: 'fetching the wall …',
         }
         return { lines: [flavor[app]], launch: app }
