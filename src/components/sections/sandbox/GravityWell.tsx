@@ -188,7 +188,7 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
     <SandboxModal
       title="the orrery"
       onClose={onClose}
-      fullscreen
+      width={900}
       panelBg="#07070d"
       panelFg="#cfd2dc"
       borderColor="#000"
@@ -197,7 +197,7 @@ export default function GravityWell({ onClose }: { onClose: () => void }) {
     >
       <div
         ref={wrapRef}
-        style={{ position: 'relative', width: '100%', height: '100%', touchAction: 'none', cursor: 'crosshair', overflow: 'hidden' }}
+        style={{ position: 'relative', width: '100%', height: 'min(68vh, 560px)', touchAction: 'none', cursor: 'crosshair', overflow: 'hidden' }}
         onPointerDown={(e) => {
           // only fling when the press lands on the canvas itself, never on an
           // overlay control (buttons/meter/banner are children of this wrapper)
