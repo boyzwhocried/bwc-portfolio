@@ -2,7 +2,7 @@
 // whole puzzle is reproducible from the date alone -> a fresh, identical-for-
 // everyone puzzle every day, forever, with zero content pipeline.
 
-export const CODE_LEN = 4
+export const CODE_LEN = 5
 export const PALETTE_SIZE = 6
 export const MAX_GUESSES = 6
 
@@ -57,6 +57,31 @@ export function isWin(marks: Mark[]): boolean {
   return marks.length === CODE_LEN && marks.every((m) => m === 'hit')
 }
 
+/** Wordle-style "hard mode": every clue you have already uncovered must be
+ *  honoured by the next guess. A locked `hit` has to stay in its position, and
+ *  any colour shown `hit`/`present` must reappear at least as many times as it
+ *  was revealed. Checked against the most recent guess+marks (sufficient and
+ *  the standard implementation). Returns a short reason for the first broken
+ *  rule, or null if the guess is legal. Empty history = anything goes. */
+export function hardModeViolation(guess: number[], lastGuess: number[], lastMarks: Mark[]): string | null {
+  if (lastMarks.length === 0) return null
+  // locked hits must stay put
+  for (let i = 0; i < lastMarks.length; i++) {
+    if (lastMarks[i] === 'hit' && guess[i] !== lastGuess[i]) return `peg ${i + 1} is locked`
+  }
+  // colours you have found must keep appearing
+  const need = new Array(PALETTE_SIZE).fill(0)
+  for (let i = 0; i < lastMarks.length; i++) {
+    if (lastMarks[i] === 'hit' || lastMarks[i] === 'present') need[lastGuess[i]]++
+  }
+  const have = new Array(PALETTE_SIZE).fill(0)
+  for (const g of guess) have[g]++
+  for (let c = 0; c < PALETTE_SIZE; c++) {
+    if (have[c] < need[c]) return 'use the clues you found'
+  }
+  return null
+}
+
 export type StreakState = { lastDay: number; streak: number; best: number }
 
 /** Pure streak transition. `today` is a dayIndex; `won` is the day's result. */
@@ -70,7 +95,7 @@ export function updateStreak(prev: StreakState | null, today: number, won: boole
 
 /** Spoiler-free emoji result grid for sharing (positional, Wordle-style). */
 export function buildShareGrid(dayIdx: number, rows: Mark[][], solved: boolean): string {
-  const head = `BWC Daily #${dayIdx} ${solved ? `${rows.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`}`
+  const head = `BWC Lockup #${dayIdx} ${solved ? `${rows.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`}`
   const glyph: Record<Mark, string> = { hit: '🟩', present: '🟨', miss: '⬜' }
   const body = rows.map((r) => r.map((m) => glyph[m]).join('')).join('\n')
   return `${head}\n${body}`

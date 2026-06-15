@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import {
   CODE_LEN, MAX_GUESSES, dayIndex, dailyCode, markGuess, updateStreak,
-  buildShareGrid, isWin, type Mark, type StreakState,
+  buildShareGrid, isWin, hardModeViolation, type Mark, type StreakState,
 } from '@/lib/sandbox/daily'
 
-const STORAGE_KEY = 'bwc-daily-v2'
-const LAUNCH_DAY = Math.floor(Date.parse('2026-06-12T00:00:00Z') / 86_400_000)
+const STORAGE_KEY = 'bwc-lockup-v1'
+const HARD_KEY = 'bwc-lockup-hard'
+const LAUNCH_DAY = Math.floor(Date.parse('2026-06-15T00:00:00Z') / 86_400_000)
 
 // letterpress palette: colour + a redundant glyph (colour-blind safe)
 const PEGS = [
@@ -44,6 +45,11 @@ function load(): Saved | null {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') } catch { return null }
 }
 
+function loadHard(): boolean {
+  if (typeof window === 'undefined') return false
+  try { return localStorage.getItem(HARD_KEY) === '1' } catch { return false }
+}
+
 export default function TheDaily({ onClose }: { onClose: () => void }) {
   const today = useMemo(() => dayIndex(new Date()), [])
   const code = useMemo(() => dailyCode(new Date()), [])
@@ -61,11 +67,18 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState<number[]>([])
   const [copied, setCopied] = useState(false)
   const [nowMs, setNowMs] = useState(0) // wall clock for the countdown, fed by the locked-state interval
+  const [hard, setHard] = useState<boolean>(() => loadHard()) // hard mode: clues must be reused
+  const [err, setErr] = useState('') // transient hard-mode rejection note
 
   // persist
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) } catch {}
   }, [state])
+
+  // persist the hard-mode preference across days
+  useEffect(() => {
+    try { localStorage.setItem(HARD_KEY, hard ? '1' : '0') } catch {}
+  }, [hard])
 
   // countdown clock once locked. setState only from callbacks (rAF seed + interval),
   // never synchronously in the effect body, and Date.now() never runs during render.
@@ -79,6 +92,10 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
 
   function submit() {
     if (locked || input.length !== CODE_LEN) return
+    if (hard && state.guesses.length > 0) {
+      const reason = hardModeViolation(input, state.guesses[state.guesses.length - 1], state.feedback[state.feedback.length - 1])
+      if (reason) { setErr(reason); window.setTimeout(() => setErr(''), 1700); return }
+    }
     const fb = markGuess(input, code)
     const guesses = [...state.guesses, input]
     const feedback = [...state.feedback, fb]
@@ -108,7 +125,7 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
 
   return (
     <SandboxModal
-      title="the daily"
+      title="the lockup"
       onClose={onClose}
       width={420}
       panelBg={PAPER}
@@ -117,12 +134,19 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
       titleRight={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d' }}>NO.{puzzleNo} · {dateLabel}</span>}
     >
       <div style={{ padding: '16px 18px' }}>
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 13, color: '#4a443a', lineHeight: 1.7, marginBottom: 14 }}>
-          crack the four-peg code in six tries. each peg is marked right below it:{' '}
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 13, color: '#4a443a', lineHeight: 1.7, marginBottom: 10 }}>
+          crack the five-peg lockup in six tries. each peg is marked right below it:{' '}
           <span style={legendSwatch(FB_EXACT)}>✓</span> right peg &amp; spot ·{' '}
           <span style={legendSwatch(FB_PRESENT)}>•</span> right peg, wrong spot ·{' '}
           <span style={legendSwatch(FB_MISS)}> </span> not in the code. one puzzle a day.
         </p>
+
+        {/* loss-aversion nudge: a live streak has something to lose. kept quiet. */}
+        {!locked && (state.streak?.streak ?? 0) > 0 && (
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#9a7b32', marginBottom: 12 }}>
+            streak of {state.streak!.streak} on the line today.
+          </p>
+        )}
 
         {/* board — each column is a peg with its positional verdict directly beneath */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -173,7 +197,11 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
         {/* controls */}
         {!locked ? (
           <>
-            <div style={{ display: 'flex', gap: 6, marginTop: 16, flexWrap: 'wrap' }}>
+            {/* hard-mode rejection note (transient) */}
+            <div style={{ minHeight: 14, marginTop: 12, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#b83612' }}>
+              {err && `✕ ${err}`}
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
               {PEGS.map((p, i) => (
                 <button
                   key={i}
@@ -198,6 +226,24 @@ export default function TheDaily({ onClose }: { onClose: () => void }) {
                 guess
               </button>
             </div>
+            {/* hard mode: optional self-imposed difficulty for the obsessed */}
+            <button
+              onClick={() => setHard((h) => !h)}
+              aria-pressed={hard}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7, marginTop: 12, padding: 0,
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-mono)', fontSize: 10, color: hard ? INK : '#8a8276',
+              }}
+            >
+              <span style={{
+                width: 14, height: 14, borderRadius: 2, border: `1.5px solid ${hard ? INK : '#b3ada0'}`,
+                background: hard ? INK : 'transparent', color: PAPER, display: 'flex',
+                alignItems: 'center', justifyContent: 'center', fontSize: 9, lineHeight: 1,
+              }}>{hard ? '✓' : ''}</span>
+              hard mode {state.guesses.length > 0 && hard && '· clues must be reused'}
+              {state.guesses.length === 0 && ' · every clue must be reused'}
+            </button>
           </>
         ) : (
           <div style={{ marginTop: 16, borderTop: `1px solid #d8d2c6`, paddingTop: 14 }}>

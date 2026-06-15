@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   scoreLinear, circularDiffDeg, scoreBisect, scoreThirds, scoreAngle, scorePosition,
+  scoreFraction, scoreQuarter, scoreGolden, GOLDEN,
   aggregate, isPersonalBest, TOL,
 } from './calib'
 
@@ -28,8 +29,17 @@ describe('calibration scoring core', () => {
   it('thirds scores perfectly at the one-third mark', () => {
     expect(scoreThirds(1 / 3)).toBe(100)
     expect(scoreThirds(1 / 3 + TOL.bisect)).toBe(0)
-    expect(scoreThirds(1 / 3 + 0.06)).toBe(50) // half a tolerance off
+    expect(scoreThirds(1 / 3 + TOL.bisect / 2)).toBe(50) // half a tolerance off
     expect(scoreThirds(0.5)).toBe(0) // a true midpoint is well outside tolerance
+  })
+
+  it('scores arbitrary fraction targets (quarter, golden) on the shared tolerance', () => {
+    expect(scoreFraction(0.5, 0.5)).toBe(100)
+    expect(scoreFraction(0.5 + TOL.bisect / 2, 0.5)).toBe(50)
+    expect(scoreQuarter(0.25)).toBe(100)
+    expect(scoreQuarter(0.25 + TOL.bisect)).toBe(0)
+    expect(scoreGolden(GOLDEN)).toBe(100)
+    expect(scoreGolden(0.5)).toBe(0) // 0.118 off, well past the tightened tolerance
   })
 
   it('angle scores by circular distance to target', () => {

@@ -43,6 +43,12 @@ export default function ThePress({ onClose }: { onClose: () => void }) {
   // lazy init: this modal only mounts client-side (on toy click), so localStorage is safe
   const [saved, setSaved] = useState<Saved>(() => load())
   const boardRef = useRef<HTMLDivElement>(null)
+  // drag state: a floating avatar follows the pointer while a sort is dragged
+  const [dragXY, setDragXY] = useState<{ x: number; y: number } | null>(null)
+  const draggingRef = useRef(false)
+  const movedRef = useRef(false)
+  const wasSelRef = useRef(false)
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null)
 
   // fill the first tray AFTER mount: Math.random in a deferred callback keeps it
   // out of render (this repo's react-hooks/purity rule bans random during render)
@@ -151,6 +157,51 @@ export default function ThePress({ onClose }: { onClose: () => void }) {
     const cell = cellFromEvent(e)
     if (!cell) return
     commit(anchorFor(cell, piece.shape))
+  }
+
+  // ---- drag a sort: pick up from the tray, drop onto the forme ----
+  function onSortPointerDown(e: React.PointerEvent, i: number) {
+    const piece = tray[i]
+    if (!piece || over) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    draggingRef.current = true
+    movedRef.current = false
+    wasSelRef.current = sel === i
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+    setSel(i)
+    setDragXY({ x: e.clientX, y: e.clientY })
+    const cell = cellFromEvent(e)
+    setHover(cell ? anchorFor(cell, piece.shape) : null)
+  }
+
+  function onSortPointerMove(e: React.PointerEvent, i: number) {
+    if (!draggingRef.current) return
+    const piece = tray[i]
+    if (!piece) return
+    const s = dragStartRef.current
+    if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) > 6) movedRef.current = true
+    setDragXY({ x: e.clientX, y: e.clientY })
+    const cell = cellFromEvent(e)
+    setHover(cell ? anchorFor(cell, piece.shape) : null)
+  }
+
+  function onSortPointerUp(e: React.PointerEvent, i: number) {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    setDragXY(null)
+    const piece = tray[i]
+    if (!piece) return
+    const cell = cellFromEvent(e)
+    const anchor = cell ? anchorFor(cell, piece.shape) : null
+    if (movedRef.current) {
+      // a real drag: drop on a valid cell, otherwise the held sort goes back
+      if (anchor && canPlace(board, piece.shape, anchor.r, anchor.c)) commit(anchor)
+      else { setSel(null); setHover(null) }
+    } else if (wasSelRef.current) {
+      // a tap on the already-held sort puts it down (tap-then-tap-forme path)
+      setSel(null); setHover(null)
+    }
+    // a tap on an unheld sort just leaves it selected (set on pointer-down)
   }
 
   function restart() {
@@ -263,16 +314,21 @@ export default function ThePress({ onClose }: { onClose: () => void }) {
             return (
               <button
                 key={i}
-                onClick={() => p && setSel(isSel ? null : i)}
+                onPointerDown={(e) => onSortPointerDown(e, i)}
+                onPointerMove={(e) => onSortPointerMove(e, i)}
+                onPointerUp={(e) => onSortPointerUp(e, i)}
+                onPointerCancel={() => { draggingRef.current = false; setDragXY(null) }}
                 aria-label={p ? `sort ${i + 1}` : `empty slot ${i + 1}`}
                 disabled={!p || over}
                 style={{
-                  border: 'none', padding: 6, cursor: p && !over ? 'pointer' : 'default',
+                  border: 'none', padding: 6, touchAction: 'none',
+                  cursor: p && !over ? (isSel && dragXY ? 'grabbing' : 'grab') : 'default',
                   outline: isSel ? `1.5px solid ${INK}` : '1.5px solid transparent',
                   boxShadow: isSel ? `2px 2px 0 ${INK}` : 'none',
                   background: isSel ? 'rgba(26,26,26,0.05)' : 'none',
+                  opacity: isSel && dragXY ? 0.35 : 1,
                   transform: isSel ? 'translateY(-2px)' : 'none',
-                  transition: 'transform 120ms ease',
+                  transition: 'transform 120ms ease, opacity 120ms ease',
                 }}
               >
                 {p ? <PieceMini piece={p} /> : <div style={{ width: 36, height: 36, border: `1px dashed ${GRID}` }} />}
@@ -282,9 +338,23 @@ export default function ThePress({ onClose }: { onClose: () => void }) {
         </div>
 
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 12, color: '#6b665d', lineHeight: 1.5, marginTop: 12, textAlign: 'center' }}>
-          tap a sort, then tap the forme to set it. fill a row or column to print it.
-          a single-ink line is a <strong style={{ color: VERM }}>clean pull</strong>.
+          drag a sort onto the forme to set it (or tap to pick up, then tap a cell).
+          fill a row or column to print it. a single-ink line is a <strong style={{ color: VERM }}>clean pull</strong>.
         </p>
+
+        {/* floating sort that tracks the pointer while dragging */}
+        {dragXY && selPiece && (
+          <div
+            aria-hidden
+            style={{
+              position: 'fixed', left: dragXY.x, top: dragXY.y,
+              transform: 'translate(-50%, -135%)', pointerEvents: 'none', zIndex: 400,
+              opacity: 0.95, filter: 'drop-shadow(2px 3px 0 rgba(0,0,0,0.28))',
+            }}
+          >
+            <PieceMini piece={selPiece} />
+          </div>
+        )}
 
         {/* game over */}
         {over && (

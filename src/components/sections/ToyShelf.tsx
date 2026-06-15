@@ -14,6 +14,8 @@ import TheDaily from './sandbox/TheDaily'
 import TheRig from './sandbox/TheRig'
 import Parry from './sandbox/Parry'
 import ThePress from './sandbox/ThePress'
+import TheProof from './sandbox/TheProof'
+import TheImpose from './sandbox/TheImpose'
 
 const SHADOW = '4px 4px 0 #b3ada0'
 const SHADOW_INK = '4px 4px 0 var(--ink)'
@@ -34,6 +36,7 @@ const USELESS_MSGS = [
 export type SandboxApp =
   | 'terminal' | 'darkroom' | 'pipeline' | 'guestbook'
   | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press'
+  | 'proof' | 'impose'
   | null
 
 function Caption({ children }: { children: React.ReactNode }) {
@@ -298,22 +301,58 @@ export default function ToyShelf() {
           </Section>
 
           <Section label="daily" note="come back tomorrow">
-            {/* the daily (code-break) */}
+            {/* the lockup (code-break) */}
             <div style={{ transform: 'rotate(-2deg)' }}>
               <button
                 onClick={() => setApp('daily')}
-                aria-label="play the daily"
+                aria-label="play the lockup"
                 style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
               >
-                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE DAILY</span>
-                <span style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-                  {['#e84c28', '#2f7d86', '#caa23a', '#5a8f4a'].map((c, i) => (
-                    <span key={i} style={{ width: 18, height: 18, background: c, border: '1.5px solid var(--ink)', borderRadius: 2 }} />
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE LOCKUP</span>
+                <span style={{ display: 'flex', gap: 4, marginTop: 12 }}>
+                  {['#e84c28', '#2f7d86', '#caa23a', '#5a8f4a', '#4b5e9e'].map((c, i) => (
+                    <span key={i} style={{ width: 16, height: 16, background: c, border: '1.5px solid var(--ink)', borderRadius: 2 }} />
                   ))}
                 </span>
-                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, color: '#6b665d', marginTop: 12 }}>crack the code</span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, color: '#6b665d', marginTop: 12 }}>crack the lockup</span>
               </button>
-              <Caption>the daily <span style={TAG}>· one a day</span></Caption>
+              <Caption>the lockup <span style={TAG}>· one a day</span></Caption>
+            </div>
+
+            {/* the proof (typo hunt) */}
+            <div style={{ transform: 'rotate(2deg)' }}>
+              <button
+                onClick={() => setApp('proof')}
+                aria-label="play the proof"
+                style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
+              >
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE PROOF</span>
+                <span style={{ display: 'block', marginTop: 13 }}>
+                  {['100%', '76%', '92%'].map((w, i) => (
+                    <span key={i} style={{ display: 'block', height: 4, width: w, background: i === 1 ? '#e84c28' : 'var(--ink)', opacity: i === 1 ? 0.9 : 0.7, marginBottom: 6, borderRadius: 1 }} />
+                  ))}
+                </span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, color: '#6b665d', marginTop: 7 }}>spot the slips</span>
+              </button>
+              <Caption>the proof <span style={TAG}>· hunt typos</span></Caption>
+            </div>
+
+            {/* the impose (picross) */}
+            <div style={{ transform: 'rotate(-1.5deg)' }}>
+              <button
+                onClick={() => setApp('impose')}
+                aria-label="play the impose"
+                style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
+              >
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE IMPOSE</span>
+                <span style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 11px)', gap: 2, marginTop: 12, width: 'fit-content' }}>
+                  {[1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1].map((v, i) => (
+                    <span key={i} style={{ width: 11, height: 11, background: v ? 'var(--ink)' : 'transparent', border: '1px solid rgba(26,26,26,0.18)', borderRadius: 1 }} />
+                  ))}
+                </span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, color: '#6b665d', marginTop: 9 }}>fill by counts</span>
+              </button>
+              <Caption>the impose <span style={TAG}>· picross</span></Caption>
             </div>
 
             {/* guestbook — real now */}
@@ -350,6 +389,8 @@ export default function ToyShelf() {
       {app === 'rig' && <TheRig onClose={() => setApp(null)} />}
       {app === 'parry' && <Parry onClose={() => setApp(null)} />}
       {app === 'press' && <ThePress onClose={() => setApp(null)} />}
+      {app === 'proof' && <TheProof onClose={() => setApp(null)} />}
+      {app === 'impose' && <TheImpose onClose={() => setApp(null)} />}
     </section>
   )
 }

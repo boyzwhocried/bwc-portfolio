@@ -8,6 +8,7 @@ import {
   isWin,
   updateStreak,
   buildShareGrid,
+  hardModeViolation,
 } from './daily'
 
 describe('daily code-break core', () => {
@@ -37,9 +38,14 @@ describe('daily code-break core', () => {
     expect(a).not.toBe(b)
   })
 
+  it('uses a 5-peg code (the harder relaunch)', () => {
+    expect(CODE_LEN).toBe(5)
+    expect(dailyCode(new Date('2026-06-15T00:00:00Z'))).toHaveLength(5)
+  })
+
   it('marks every position as a hit on the exact code', () => {
-    expect(markGuess([0, 1, 2, 3], [0, 1, 2, 3])).toEqual(['hit', 'hit', 'hit', 'hit'])
-    expect(isWin(markGuess([0, 1, 2, 3], [0, 1, 2, 3]))).toBe(true)
+    expect(markGuess([0, 1, 2, 3, 4], [0, 1, 2, 3, 4])).toEqual(['hit', 'hit', 'hit', 'hit', 'hit'])
+    expect(isWin(markGuess([0, 1, 2, 3, 4], [0, 1, 2, 3, 4]))).toBe(true)
   })
 
   it('marks positionally with correct duplicate handling (the classic bug)', () => {
@@ -69,6 +75,26 @@ describe('daily code-break core', () => {
     })
     it('raises the best when the streak passes it', () => {
       expect(updateStreak({ lastDay: 100, streak: 5, best: 5 }, 101, true).best).toBe(6)
+    })
+  })
+
+  describe('hard mode validation', () => {
+    it('allows any guess when nothing has been revealed yet', () => {
+      expect(hardModeViolation([0, 1, 2, 3, 4], [], [])).toBeNull()
+    })
+    it('passes a guess that keeps a known hit in place', () => {
+      // peg 0 was a hit on colour 5; the next guess keeps 5 there
+      expect(hardModeViolation([5, 0, 0, 0, 0], [5, 1, 1, 1, 1], ['hit', 'miss', 'miss', 'miss', 'miss'])).toBeNull()
+    })
+    it('rejects moving a locked hit off its position', () => {
+      expect(hardModeViolation([0, 5, 0, 0, 0], [5, 1, 1, 1, 1], ['hit', 'miss', 'miss', 'miss', 'miss'])).not.toBeNull()
+    })
+    it('rejects dropping a colour that was shown present', () => {
+      // colour 2 was present; a guess without any 2 is illegal
+      expect(hardModeViolation([0, 0, 0, 0, 0], [2, 1, 1, 1, 1], ['present', 'miss', 'miss', 'miss', 'miss'])).not.toBeNull()
+    })
+    it('accepts a guess that still includes a present colour somewhere', () => {
+      expect(hardModeViolation([1, 1, 1, 1, 2], [2, 1, 1, 1, 1], ['present', 'miss', 'miss', 'miss', 'miss'])).toBeNull()
     })
   })
 
