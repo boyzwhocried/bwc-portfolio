@@ -113,6 +113,27 @@ export default function TheImpose({ onClose }: { onClose: () => void }) {
           fill the forme to reveal the day&apos;s glyph. one a day.
         </p>
 
+        <details style={{ marginBottom: 10 }}>
+          <summary style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', cursor: 'pointer', listStyle: 'revert' }}>
+            how to play
+          </summary>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 12, color: '#4a443a', lineHeight: 1.7, marginTop: 6, borderLeft: `2px solid #d8d2c6`, paddingLeft: 10 }}>
+            <p style={{ marginBottom: 6 }}>
+              each number is the length of a solid run of ink in that line. several numbers means
+              several runs, in that order, with at least one blank between them.
+            </p>
+            <p style={{ marginBottom: 6 }}>
+              a row marked <strong>2 1</strong> reads: two inked cells together, a gap, then one more
+              (like <span style={{ fontFamily: 'var(--font-mono)' }}>█ █ · · █</span>).
+            </p>
+            <p style={{ marginBottom: 0 }}>
+              tap in <strong>fill</strong> to ink a cell, or <strong>cross</strong> to mark one you
+              know is blank. find a line that fits only one way, lock it, and the crossing counts
+              force the rest. then hit check.
+            </p>
+          </div>
+        </details>
+
         {!locked && (state.streak?.streak ?? 0) > 0 && (
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#9a7b32', marginBottom: 8 }}>
             streak of {state.streak!.streak} on the line today.
