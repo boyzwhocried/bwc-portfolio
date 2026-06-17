@@ -42,6 +42,13 @@ yarn-error.log*
 next-env.d.ts
 .superpowers/
 
+# "the verse" cryptogram: never commit lyric corpora or local song lists.
+# popular.json (titles+artists only) IS committed; everything else here is local.
+/scripts/verse/songs.seed.json
+/scripts/verse/*.local.*
+/scripts/verse/out*.json
+/scripts/verse/prog*.txt
+
 # local scratch (playwright shots, one-off auth helper, dev logs, motion protos)
 /shots/
 shot*.mjs

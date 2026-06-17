@@ -16,6 +16,7 @@ import Parry from './sandbox/Parry'
 import ThePress from './sandbox/ThePress'
 import TheProof from './sandbox/TheProof'
 import TheImpose from './sandbox/TheImpose'
+import TheVerse from './sandbox/TheVerse'
 
 const SHADOW = '4px 4px 0 #b3ada0'
 const SHADOW_INK = '4px 4px 0 var(--ink)'
@@ -36,7 +37,7 @@ const USELESS_MSGS = [
 export type SandboxApp =
   | 'terminal' | 'darkroom' | 'pipeline' | 'guestbook'
   | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press'
-  | 'proof' | 'impose'
+  | 'proof' | 'impose' | 'verse'
   | null
 
 function Caption({ children }: { children: React.ReactNode }) {
@@ -367,6 +368,27 @@ export default function ToyShelf() {
               <Caption>guestbook <span style={TAG}>· open</span></Caption>
             </div>
 
+            {/* the verse (lyric cryptogram) */}
+            <div style={{ transform: 'rotate(2.5deg)' }}>
+              <button
+                onClick={() => setApp('verse')}
+                aria-label="play the verse"
+                style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
+              >
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE VERSE</span>
+                <span style={{ display: 'flex', gap: 3, marginTop: 13 }}>
+                  {['X', 'Q', 'V', 'Z', 'K'].map((c, i) => (
+                    <span key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: i === 2 ? '#e84c28' : 'var(--ink)' }}>{c}</span>
+                      <span style={{ width: 12, height: 0, borderBottom: '2px solid #b8b0a2' }} />
+                    </span>
+                  ))}
+                </span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, color: '#6b665d', marginTop: 12 }}>decode the lyric</span>
+              </button>
+              <Caption>the verse <span style={TAG}>· cryptogram</span></Caption>
+            </div>
+
             {/* more soon (dashed square) */}
             <div style={{ transform: 'rotate(2deg)' }}>
               <div style={{ width: 96, height: 78, background: '#f1ede4', border: '1.5px dashed #b3ada0', boxShadow: '3px 3px 0 #b3ada0', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
@@ -391,6 +413,7 @@ export default function ToyShelf() {
       {app === 'press' && <ThePress onClose={() => setApp(null)} />}
       {app === 'proof' && <TheProof onClose={() => setApp(null)} />}
       {app === 'impose' && <TheImpose onClose={() => setApp(null)} />}
+      {app === 'verse' && <TheVerse onClose={() => setApp(null)} />}
     </section>
   )
 }

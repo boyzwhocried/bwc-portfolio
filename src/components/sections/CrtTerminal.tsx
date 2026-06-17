@@ -16,7 +16,7 @@ const HELP = [
   'commands:',
   '  help · about · whoami · neofetch · games',
   '  ls · open <room>   rooms: projects blog music photography now hub cv',
-  '  play <game>        games: terrarium orrery tone lockup proof impose rig press parry darkroom pipeline',
+  '  play <game>        games: terrarium orrery tone lockup proof impose verse rig press parry darkroom pipeline',
   '  guestbook · coffee · clear · exit',
 ]
 
@@ -28,6 +28,7 @@ const GAMES = [
   '  lockup      crack the daily lockup, five pegs (one a day)',
   '  proof       hunt the planted typos on the daily proof',
   '  impose      daily 5x5 picross: fill the forme by ink counts',
+  '  verse       daily cryptogram: decode a hidden line of song lyric',
   '  rig         calibration trainer (beat your error)',
   '  press       letterpress block-fit: set sorts, print lines, clean pulls',
   '  parry       8-bit arcade · global leaderboard',
@@ -43,13 +44,13 @@ const NEOFETCH = [
   '   ▀▀█▄▄▄▄█▀▀      uptime: since 2024, with naps',
   '       ▀▀▀▀        shell: this one',
   '                   theme: ink / paper / vermilion',
-  '                   toys: 15 on the shelf, all playable',
+  '                   toys: 16 on the shelf, all playable',
   '                   cpu: one data engineer, mostly caffeinated',
 ]
 
 const ROOMS = ['projects', 'blog', 'music', 'photography', 'now', 'hub', 'cv', 'about', 'contact']
 
-type LaunchApp = 'darkroom' | 'pipeline' | 'guestbook' | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press' | 'proof' | 'impose'
+type LaunchApp = 'darkroom' | 'pipeline' | 'guestbook' | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press' | 'proof' | 'impose' | 'verse'
 
 // game aliases -> the app key the shelf mounts
 const PLAY: Record<string, LaunchApp> = {
@@ -61,6 +62,7 @@ const PLAY: Record<string, LaunchApp> = {
   press: 'press', blocks: 'press', forme: 'press', letterpress: 'press',
   proof: 'proof', typo: 'proof', typos: 'proof', proofread: 'proof',
   impose: 'impose', picross: 'impose', nonogram: 'impose', impo: 'impose',
+  verse: 'verse', cipher: 'verse', cryptogram: 'verse', crypto: 'verse', decode: 'verse', lyric: 'verse', lyrics: 'verse',
   parry: 'parry', arcade: 'parry',
   darkroom: 'darkroom',
   pipeline: 'pipeline', 'pipeline-panic': 'pipeline',
@@ -101,6 +103,7 @@ function run(cmd: string): RunResult {
           sand: 'opening the terrarium …', gravity: 'spinning up the orrery …', tone: 'warming the oscillators …',
           daily: 'cracking today’s lockup …', rig: 'powering the rig …', parry: 'insert coin …',
           press: 'inking the forme …', proof: 'pulling a fresh proof …', impose: 'locking the forme …',
+          verse: 'intercepting the cipher …',
           darkroom: 'turning off the lights …', pipeline: 'spinning up the batch …', guestbook: 'fetching the wall …',
         }
         return { lines: [flavor[app]], launch: app }
