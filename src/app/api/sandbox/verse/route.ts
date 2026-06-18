@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { dailyVerse } from '@/actions/verse'
+import { createServiceClient } from '@/lib/supabase/service'
 
 // Read-only liveness probe for "the verse": exercises the full daily path (the
 // service-role bank read + the cipher build) and reports only safe metadata —
@@ -8,9 +9,29 @@ import { dailyVerse } from '@/actions/verse'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  // TEMP diagnostic: surface why the bank read might be empty (booleans + count
+  // + error string only; no secret values). Removed once the path is confirmed.
+  const diag: Record<string, unknown> = {
+    hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  }
+  try {
+    const sb = createServiceClient()
+    diag.clientNull = !sb
+    if (sb) {
+      const { count, error } = await sb
+        .from('sandbox_verse_bank')
+        .select('*', { count: 'exact', head: true })
+      diag.count = count ?? -1
+      diag.err = error?.message ?? null
+    }
+  } catch (e) {
+    diag.threw = String(e)
+  }
+
   try {
     const r = await dailyVerse()
-    if (!r.ok) return NextResponse.json({ ok: false, reason: r.error })
+    if (!r.ok) return NextResponse.json({ ok: false, reason: r.error, diag })
     const p = r.puzzle
     return NextResponse.json({
       ok: true,
@@ -18,8 +39,9 @@ export async function GET() {
       wordCount: p.wordCount,
       starters: p.starters.length,
       letters: p.cipherText.replace(/[^a-z]/g, '').length,
+      diag,
     })
   } catch {
-    return NextResponse.json({ ok: false, reason: 'error' })
+    return NextResponse.json({ ok: false, reason: 'error', diag })
   }
 }
