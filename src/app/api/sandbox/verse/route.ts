@@ -19,14 +19,33 @@ export async function GET() {
     const sb = createServiceClient()
     diag.clientNull = !sb
     if (sb) {
-      const { count, error } = await sb
+      const { data, error } = await sb
         .from('sandbox_verse_bank')
-        .select('*', { count: 'exact', head: true })
-      diag.count = count ?? -1
+        .select('id')
+        .limit(1)
+      diag.rows = data?.length ?? -1
       diag.err = error?.message ?? null
+      diag.code = (error as { code?: string } | null)?.code ?? null
     }
   } catch (e) {
     diag.threw = String(e)
+  }
+
+  // raw REST probe to capture the literal HTTP status of the service-role read
+  try {
+    const u = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const k = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (u && k) {
+      const resp = await fetch(`${u}/rest/v1/sandbox_verse_bank?select=id&limit=1`, {
+        headers: { apikey: k, Authorization: `Bearer ${k}` },
+        cache: 'no-store',
+      })
+      diag.restStatus = resp.status
+      diag.restBody = (await resp.text()).slice(0, 160)
+      diag.keyTail = k.slice(-4)
+    }
+  } catch (e) {
+    diag.restThrew = String(e)
   }
 
   try {
