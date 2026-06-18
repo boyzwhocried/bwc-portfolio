@@ -44,6 +44,10 @@ export type Hint =
   | { ok: true; kind: 'song'; song: string }
   | { ok: false; error: string }
 export type Difficulty = 'easy' | 'medium' | 'hard'
+// Free-play themed collections. `undefined` = the general/shuffle pool (pack NULL),
+// which is also the daily's pool. A named pack draws only from its own bank rows.
+export type Pack = 'taylor' | 'blink' | 'bwc'
+const PACKS: Pack[] = ['taylor', 'blink', 'bwc']
 
 type Row = { id: number; line: string; song: string; artist: string }
 
@@ -97,6 +101,17 @@ async function activeRows(): Promise<Row[] | null> {
   return fetchRows()
 }
 
+// A themed pack's rows, read through the token-gated verse_get_pack RPC (same
+// security model as verse_get). Returns null when the token is missing or the
+// pack is empty, so the caller can surface "come back soon".
+async function packRows(pack: Pack): Promise<Row[] | null> {
+  if (!VERSE_TOKEN) return null
+  const supabase = createServerClient()
+  const { data, error } = await supabase.rpc('verse_get_pack', { p_token: VERSE_TOKEN, p_pack: pack })
+  if (error || !data || (data as Row[]).length === 0) return null
+  return data as Row[]
+}
+
 async function rowById(id: number): Promise<Row | null> {
   const rows = await fetchRows(id)
   return rows && rows.length > 0 ? rows[0] : null
@@ -116,10 +131,16 @@ export async function dailyVerse(): Promise<PuzzleResult> {
 }
 
 /** A fresh random puzzle for free-play. Difficulty sets how many letters start
- *  revealed (scaled to the line). Not tied to the date and carries no streak. */
-export async function randomVerse(difficulty: Difficulty = 'medium'): Promise<PuzzleResult> {
-  const rows = await activeRows()
-  if (!rows) return { ok: false, error: 'the bank is empty right now. come back soon.' }
+ *  revealed (scaled to the line). An optional themed `pack` draws from that
+ *  collection only; omitted = the general shuffle pool. Carries no streak. */
+export async function randomVerse(difficulty: Difficulty = 'medium', pack?: Pack): Promise<PuzzleResult> {
+  const rows = pack && PACKS.includes(pack) ? await packRows(pack) : await activeRows()
+  if (!rows) {
+    return {
+      ok: false,
+      error: pack ? 'this collection is still being curated. try another.' : 'the bank is empty right now. come back soon.',
+    }
+  }
   const row = rows[Math.floor(Math.random() * rows.length)]
   const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0
   const r = REVEAL[difficulty]

@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import useIsTouch from '@/lib/useIsTouch'
 import { dayIndex, updateStreak, type StreakState } from '@/lib/sandbox/daily'
-import { decode, isSolved, letterFrequencies, buildVerseShare, ALPHA, MAX_HINTS, HINT_LADDER } from '@/lib/sandbox/cipher'
+import { decode, isSolved, letterFrequencies, buildVerseShare, ALPHA, MAX_HINTS, HINT_LADDER, lockedFromVerdict, evalCheckRate } from '@/lib/sandbox/cipher'
 import {
   dailyVerse, randomVerse, revealVerse, giveUpVerse, hintVerse, checkVerse,
-  type Puzzle, type Difficulty,
+  type Puzzle, type Difficulty, type Pack,
 } from '@/actions/verse'
 
 const STORAGE_KEY = 'bwc-verse-v1'
@@ -20,6 +20,7 @@ const FLASH = 'rgba(232,168,40,0.45)'
 const DIM = '#9a8f80'
 
 type Mode = 'daily' | 'free'
+type PackSel = Pack | 'shuffle'
 type Status = 'playing' | 'won' | 'revealed'
 type Reveal = { song: string; artist: string; line: string }
 type HintReveal = { kind: 'artist' | 'song'; text: string }
@@ -29,10 +30,19 @@ type Saved = {
   status: Status
   hints: number
   hintLocked: string[]
+  checkLocked: string[]
   hintReveals: HintReveal[]
   streak: StreakState | null
   reveal: Reveal | null
 }
+
+// free-play themed collections, in display order. 'shuffle' = the general pool.
+const PACK_TABS: Array<{ id: PackSel; label: string }> = [
+  { id: 'shuffle', label: 'shuffle' },
+  { id: 'taylor', label: 'taylor swift' },
+  { id: 'blink', label: 'blink-182' },
+  { id: 'bwc', label: 'bwc picks' },
+]
 
 function loadSaved(): Saved | null {
   if (typeof window === 'undefined') return null
@@ -53,6 +63,7 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
 
   const [mode, setMode] = useState<Mode>('daily')
   const [difficulty, setDifficulty] = useState<Difficulty>('medium')
+  const [pack, setPack] = useState<PackSel>('shuffle')
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -65,11 +76,19 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   const [hintLocked, setHintLocked] = useState<Set<string>>(new Set())
   const [hintReveals, setHintReveals] = useState<HintReveal[]>([])
   const [verdict, setVerdict] = useState<Record<string, boolean>>({})
+  // cipher letters a check graded correct: once green they lock and can't move
+  const [checkLocked, setCheckLocked] = useState<Set<string>>(new Set())
   const [flash, setFlash] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const [streak, setStreak] = useState<StreakState | null>(null)
   const [copied, setCopied] = useState(false)
   const [nowMs, setNowMs] = useState(0)
+  // anti-brute-force rate guard on the check button: too many checks in a short
+  // window trips a fixed lockout. checkTimes holds recent press times (within the
+  // window); lockUntil is the epoch ms the lock lifts; lockNow ticks the countdown.
+  const checkTimes = useRef<number[]>([])
+  const [lockUntil, setLockUntil] = useState(0)
+  const [lockNow, setLockNow] = useState(0)
 
   const streakRef = useRef<StreakState | null>(null)
   streakRef.current = streak
@@ -87,12 +106,23 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     () => (puzzle ? Object.fromEntries(puzzle.starters) : {}),
     [puzzle],
   )
-  // locked = server starters + letters uncovered by a hint (both correct, fixed)
+  // locked = server starters + letters uncovered by a hint + letters a check graded
+  // correct (green). All three are known-correct, so they are fixed and unselectable.
   const locked = useMemo(
-    () => new Set([...Object.keys(starterMap), ...hintLocked]),
-    [starterMap, hintLocked],
+    () => new Set([...Object.keys(starterMap), ...hintLocked, ...checkLocked]),
+    [starterMap, hintLocked, checkLocked],
   )
   const full = useMemo(() => ({ ...starterMap, ...userMap }), [starterMap, userMap])
+  // distinct cipher letters in reading order — used by render and several callbacks,
+  // so memoize it once per puzzle instead of re-splitting the ciphertext each call.
+  const order = useMemo(() => (puzzle ? cipherOrder(puzzle.cipherText) : []), [puzzle])
+  // the cipher slot (if any) that already holds each plain letter in a LOCKED slot;
+  // those plain letters can't be reassigned to another box.
+  const lockedPlainOwner = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const c of locked) { const p = full[c]; if (p) m[p] = c }
+    return m
+  }, [locked, full])
 
   // briefly highlight a box (e.g. a letter that just moved or was refused)
   const pulse = useCallback((c: string) => {
@@ -106,10 +136,13 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     setReveal(null)
     setHints(0)
     setHintLocked(new Set())
+    setCheckLocked(new Set())
     setHintReveals([])
     setVerdict({})
     setFlash(null)
     setStreak(carryStreak)
+    setLockUntil(0)
+    checkTimes.current = []
     finalized.current = false
     setSelected(cipherOrder(p.cipherText).find((c) => !p.starters.some(([sc]) => sc === c)) ?? null)
   }, [])
@@ -123,8 +156,11 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     if (saved && saved.day === today) {
       setUserMap(saved.mapping); setStatus(saved.status); setHints(saved.hints)
       setHintLocked(new Set(saved.hintLocked ?? []))
+      setCheckLocked(new Set(saved.checkLocked ?? []))
       setHintReveals(saved.hintReveals ?? [])
       setVerdict({})
+      setLockUntil(0)
+      checkTimes.current = []
       setStreak(saved.streak); setReveal(saved.reveal)
       finalized.current = saved.status !== 'playing'
       setSelected(cipherOrder(r.puzzle.cipherText).find((c) => !r.puzzle.starters.some(([sc]) => sc === c) && !saved.mapping[c]) ?? null)
@@ -134,9 +170,9 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     setLoading(false)
   }, [today, resetBoard])
 
-  const loadFree = useCallback(async (diff: Difficulty) => {
+  const loadFree = useCallback(async (diff: Difficulty, packSel: PackSel) => {
     setLoading(true); setErr(null)
-    const r = await randomVerse(diff)
+    const r = await randomVerse(diff, packSel === 'shuffle' ? undefined : packSel)
     if (!r.ok) { setErr(r.error); setPuzzle(null); setLoading(false); return }
     setPuzzle(r.puzzle)
     resetBoard(r.puzzle, null)
@@ -151,10 +187,10 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     if (mode !== 'daily' || !puzzle) return
     const s: Saved = {
       day: today, mapping: userMap, status, hints,
-      hintLocked: Array.from(hintLocked), hintReveals, streak, reveal,
+      hintLocked: Array.from(hintLocked), checkLocked: Array.from(checkLocked), hintReveals, streak, reveal,
     }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)) } catch {}
-  }, [mode, puzzle, today, userMap, status, hints, hintLocked, hintReveals, streak, reveal])
+  }, [mode, puzzle, today, userMap, status, hints, hintLocked, checkLocked, hintReveals, streak, reveal])
 
   // win detection — fires once when the board first decodes to the solution
   useEffect(() => {
@@ -175,21 +211,31 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     return () => { cancelAnimationFrame(seed); clearInterval(id) }
   }, [mode, status])
 
+  // tick the brute-force lockout countdown and lift it the moment it expires
+  useEffect(() => {
+    if (lockUntil <= 0) return
+    setLockNow(Date.now())
+    const id = setInterval(() => {
+      const t = Date.now()
+      setLockNow(t)
+      if (t >= lockUntil) { setLockUntil(0); clearInterval(id) }
+    }, 250)
+    return () => clearInterval(id)
+  }, [lockUntil])
+
   // move the selection to the next/prev editable box (skips locked letters)
   const moveSel = useCallback((dir: 1 | -1) => {
-    if (!puzzle) return
-    const order = cipherOrder(puzzle.cipherText).filter((c) => !locked.has(c))
-    if (order.length === 0) return
-    const cur = selected ? order.indexOf(selected) : -1
-    const ni = cur === -1 ? (dir === 1 ? 0 : order.length - 1) : (cur + dir + order.length) % order.length
-    setSelected(order[ni])
-  }, [puzzle, locked, selected])
+    const editable = order.filter((c) => !locked.has(c))
+    if (editable.length === 0) return
+    const cur = selected ? editable.indexOf(selected) : -1
+    const ni = cur === -1 ? (dir === 1 ? 0 : editable.length - 1) : (cur + dir + editable.length) % editable.length
+    setSelected(editable[ni])
+  }, [order, locked, selected])
 
   const assign = useCallback((plain: string) => {
     if (status !== 'playing' || !selected || locked.has(selected)) return
     // refuse stealing a letter already held by a locked (correct) slot
-    const lockedOwner = Object.keys(starterMap).find((k) => starterMap[k] === plain)
-      ?? Array.from(hintLocked).find((k) => userMap[k] === plain)
+    const lockedOwner = lockedPlainOwner[plain]
     if (lockedOwner && lockedOwner !== selected) { pulse(lockedOwner); return }
 
     const next = { ...userMap }
@@ -205,11 +251,10 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     setVerdict((v) => { const n = { ...v }; delete n[selected]; if (moved) delete n[moved]; return n })
 
     // auto-advance to the next unassigned editable box
-    const order = cipherOrder(puzzle!.cipherText)
     const from = order.indexOf(selected)
     const nextC = order.slice(from + 1).concat(order.slice(0, from)).find((c) => !locked.has(c) && !next[c] && c !== selected)
     setSelected(nextC ?? selected)
-  }, [status, selected, locked, starterMap, hintLocked, userMap, puzzle, pulse])
+  }, [status, selected, locked, lockedPlainOwner, userMap, order, pulse])
 
   const clearSel = useCallback(() => {
     if (status !== 'playing' || !selected || locked.has(selected)) return
@@ -218,30 +263,40 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   }, [status, selected, locked])
 
   // clear every letter the player typed, but keep the board's given letters —
-  // server starters and any hint-revealed (locked) letters stay put.
+  // server starters, hint-revealed letters, and green-locked (verified) letters stay.
   const resetEntries = useCallback(() => {
-    if (status !== 'playing' || !puzzle) return
+    if (status !== 'playing') return
     setUserMap((prev) => {
       const n: Record<string, string> = {}
-      for (const k of Object.keys(prev)) if (hintLocked.has(k)) n[k] = prev[k]
+      for (const k of Object.keys(prev)) if (hintLocked.has(k) || checkLocked.has(k)) n[k] = prev[k]
       return n
     })
     setVerdict({})
-    setSelected(cipherOrder(puzzle.cipherText).find((c) => !locked.has(c)) ?? null)
-  }, [status, puzzle, hintLocked, locked])
+    setSelected(order.find((c) => !locked.has(c)) ?? null)
+  }, [status, hintLocked, checkLocked, locked, order])
 
   const hasEntries = useMemo(
-    () => Object.keys(userMap).some((k) => !hintLocked.has(k)),
-    [userMap, hintLocked],
+    () => Object.keys(userMap).some((k) => !hintLocked.has(k) && !checkLocked.has(k)),
+    [userMap, hintLocked, checkLocked],
   )
 
   const check = useCallback(async () => {
     if (!puzzle || status !== 'playing' || checking) return
+    // rate guard: too many checks in a short window trips a lockout (anti brute force)
+    const rl = evalCheckRate(checkTimes.current, lockUntil, Date.now())
+    checkTimes.current = rl.recent
+    setLockUntil(rl.lockUntil)
+    if (!rl.allowed) return // locked out, or this press just tripped the lock
     setChecking(true)
     const r = await checkVerse(puzzle.ref, full)
     setChecking(false)
-    if (r.ok) setVerdict(r.verdict)
-  }, [puzzle, status, checking, full])
+    if (r.ok) {
+      setVerdict(r.verdict)
+      // a green letter is verified correct: lock it so it can't be swapped or cleared
+      const greens = lockedFromVerdict(r.verdict)
+      if (greens.length) setCheckLocked((prev) => new Set([...prev, ...greens]))
+    }
+  }, [puzzle, status, checking, full, lockUntil])
 
   // keyboard: letters assign, backspace clears, enter checks, arrows navigate.
   // The off-screen touch input handles its own keys, so skip when it's focused
@@ -313,13 +368,21 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     if (m === mode) return
     setMode(m)
     if (m === 'daily') loadDaily()
-    else loadFree(difficulty)
+    else loadFree(difficulty, pack)
+  }
+
+  function pickPack(p: PackSel) {
+    if (p === pack && mode === 'free') return
+    setPack(p)
+    setMode('free')
+    loadFree(difficulty, p)
   }
 
   const usedPlain = useMemo(() => new Set(Object.values(full)), [full])
   const freqs = useMemo(() => (puzzle ? letterFrequencies(puzzle.cipherText) : []), [puzzle])
   const finished = status !== 'playing'
   const nextHintLabel = HINT_LADDER[hints] ?? null
+  const lockSecs = lockUntil > 0 ? Math.max(0, Math.ceil((lockUntil - lockNow) / 1000)) : 0
 
   function inkFor(ch: string): string {
     if (locked.has(ch)) return GOOD
@@ -351,11 +414,20 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
           {mode === 'free' && (
             <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
               {(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => (
-                <Seg key={d} small label={d} on={difficulty === d} onClick={() => { setDifficulty(d); loadFree(d) }} />
+                <Seg key={d} small label={d} on={difficulty === d} onClick={() => { setDifficulty(d); loadFree(d, pack) }} />
               ))}
             </div>
           )}
         </div>
+
+        {/* themed free-play collections — a second axis next to difficulty */}
+        {mode === 'free' && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+            {PACK_TABS.map((t) => (
+              <Seg key={t.id} small label={t.label} on={pack === t.id} onClick={() => pickPack(t.id)} />
+            ))}
+          </div>
+        )}
 
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 12.5, color: '#4a443a', lineHeight: 1.6, marginBottom: 10 }}>
           a line of song lyric, enciphered. every letter is swapped for another, the same
@@ -381,7 +453,27 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                     {word.split('').map((ch, ci) => {
                       const isLetter = ch >= 'a' && ch <= 'z'
                       if (!isLetter) {
-                        return <span key={ci} style={{ alignSelf: 'flex-end', fontFamily: 'var(--font-mono)', fontSize: 17, color: INK, paddingBottom: 2 }}>{ch}</span>
+                        // an apostrophe rides HIGH (near the letter caps) and a comma sits
+                        // LOW (on the baseline), so the two never read as the same mark.
+                        const isApos = ch === "'" || ch === '’'
+                        return (
+                          <span
+                            key={ci}
+                            aria-hidden="true"
+                            style={{
+                              alignSelf: isApos ? 'flex-start' : 'flex-end',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: isApos ? 22 : 17,
+                              fontWeight: isApos ? 700 : 400,
+                              lineHeight: 1,
+                              color: INK,
+                              paddingTop: isApos ? 1 : 0,
+                              paddingBottom: isApos ? 0 : 2,
+                            }}
+                          >
+                            {ch}
+                          </span>
+                        )
                       }
                       const plain = full[ch]
                       const isSel = selected === ch
@@ -432,7 +524,7 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
               <ResultCard
                 reveal={reveal} outcome={status === 'won' ? 'won' : 'revealed'} mode={mode}
                 streak={streak} hints={hints} copied={copied} onShare={share}
-                countdown={countdown()} onNext={() => loadFree(difficulty)}
+                countdown={countdown()} onNext={() => loadFree(difficulty, pack)}
               />
             ) : (
               <>
@@ -499,8 +591,8 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button onClick={check} disabled={checking} style={{ ...ctrlBtn, background: INK, color: PAPER, opacity: checking ? 0.6 : 1 }}>
-                    {checking ? 'checking…' : 'check'}
+                  <button onClick={check} disabled={checking || lockSecs > 0} style={{ ...ctrlBtn, background: INK, color: PAPER, opacity: checking || lockSecs > 0 ? 0.6 : 1 }}>
+                    {lockSecs > 0 ? `locked ${lockSecs}s` : checking ? 'checking…' : 'check'}
                   </button>
                   <button onClick={clearSel} disabled={!selected || locked.has(selected ?? '')} style={ctrlBtn}>⌫ clear</button>
                   <button onClick={resetEntries} disabled={!hasEntries} style={{ ...ctrlBtn, opacity: hasEntries ? 1 : 0.5 }}>↺ reset</button>
@@ -509,8 +601,13 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                   </button>
                   <button onClick={giveUp} style={{ ...ctrlBtn, border: `1.5px solid ${BAD}`, color: BAD }}>give up</button>
                 </div>
+                {lockSecs > 0 && (
+                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: BAD, marginTop: 8 }}>
+                    easy there — too many checks at once. the check button is paused for {lockSecs}s.
+                  </p>
+                )}
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', marginTop: 8 }}>
-                  {isTouch ? 'tap a box, then type · enter checks' : 'click a box (or ←/→), then type · enter checks'} · reset clears your letters
+                  {isTouch ? 'tap a box, then type · enter checks' : 'click a box (or ←/→), then type · enter checks'} · reset clears your letters · green letters lock
                 </p>
               </>
             )}

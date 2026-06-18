@@ -19,6 +19,11 @@ import {
   smartStarterPairs,
   nextHintLetter,
   gradeMapping,
+  lockedFromVerdict,
+  evalCheckRate,
+  RATE_WINDOW_MS,
+  RATE_MAX,
+  RATE_LOCK_MS,
 } from './cipher'
 
 describe('makeCipher', () => {
@@ -245,5 +250,59 @@ describe('buildVerseShare', () => {
     const failed = buildVerseShare(4, 4, false, 0)
     expect(failed).toContain('⬜')
     expect(failed).not.toContain('🟩')
+  })
+})
+
+describe('lockedFromVerdict', () => {
+  it('returns only the cipher letters graded correct', () => {
+    expect(lockedFromVerdict({ a: true, b: false, c: true }).sort()).toEqual(['a', 'c'])
+  })
+  it('is empty for an empty or all-wrong verdict', () => {
+    expect(lockedFromVerdict({})).toEqual([])
+    expect(lockedFromVerdict({ a: false, b: false })).toEqual([])
+  })
+})
+
+describe('evalCheckRate', () => {
+  it('allows presses up to the cap within the window', () => {
+    let recent: number[] = []
+    let lockUntil = 0
+    for (let i = 0; i < RATE_MAX; i++) {
+      const r = evalCheckRate(recent, lockUntil, 1000 + i) // all inside the window
+      expect(r.allowed).toBe(true)
+      recent = r.recent
+      lockUntil = r.lockUntil
+    }
+    expect(recent.length).toBe(RATE_MAX)
+    expect(lockUntil).toBe(0)
+  })
+
+  it('trips a lock when presses exceed the cap inside the window', () => {
+    // RATE_MAX presses already banked in the window, then one more
+    const recent = Array.from({ length: RATE_MAX }, (_, i) => 1000 + i)
+    const now = 1000 + RATE_MAX
+    const r = evalCheckRate(recent, 0, now)
+    expect(r.allowed).toBe(false)
+    expect(r.lockUntil).toBe(now + RATE_LOCK_MS)
+  })
+
+  it('blocks every press while the lock is active and leaves it unchanged', () => {
+    const lockUntil = 5000
+    const r = evalCheckRate([], lockUntil, 4000) // now < lockUntil
+    expect(r.allowed).toBe(false)
+    expect(r.lockUntil).toBe(lockUntil)
+  })
+
+  it('frees up once the lock has expired', () => {
+    const r = evalCheckRate([], 5000, 5001) // now just past lockUntil
+    expect(r.allowed).toBe(true)
+    expect(r.lockUntil).toBe(0)
+  })
+
+  it('prunes presses older than the window so spaced checks never trip', () => {
+    // one ancient press plus a fresh one -> only the fresh one counts
+    const r = evalCheckRate([10], 0, 10 + RATE_WINDOW_MS + 1)
+    expect(r.allowed).toBe(true)
+    expect(r.recent).toEqual([10 + RATE_WINDOW_MS + 1])
   })
 })

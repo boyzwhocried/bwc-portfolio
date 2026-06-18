@@ -94,8 +94,8 @@ export default function TheImpose({ onClose }: { onClose: () => void }) {
     return `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`
   }
 
-  const CELL = 34
-  const GUT = 46 // clue gutter
+  const CELL = 44 // bigger cells = easier tap targets (esp. on touch)
+  const GUT = 54 // clue gutter
 
   return (
     <SandboxModal
@@ -140,16 +140,19 @@ export default function TheImpose({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
-        {/* board with clue gutters */}
-        <div style={{ display: 'grid', gridTemplateColumns: `${GUT}px repeat(${PIC_SIZE}, ${CELL}px)`, margin: '12px auto 0', width: 'fit-content' }}>
-          {/* corner */}
+        {/* board with clue gutters. A matching empty gutter on the right balances the
+            left clue gutter so the inked 5x5 grid sits dead-centre in the panel. */}
+        <div style={{ display: 'grid', gridTemplateColumns: `${GUT}px repeat(${PIC_SIZE}, ${CELL}px) ${GUT}px`, margin: '12px auto 0', width: 'fit-content' }}>
+          {/* top-left corner */}
           <div style={{ width: GUT, height: GUT }} />
           {/* column clues */}
           {cClues.map((clue, c) => (
-            <div key={c} style={{ height: GUT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 3, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4a443a', lineHeight: 1.15 }}>
+            <div key={c} style={{ height: GUT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 3, fontFamily: 'var(--font-mono)', fontSize: 12, color: '#4a443a', lineHeight: 1.15 }}>
               {(clue.length ? clue : [0]).map((n, k) => <span key={k}>{n}</span>)}
             </div>
           ))}
+          {/* top-right corner (balancing gutter) */}
+          <div style={{ width: GUT, height: GUT }} />
           {/* rows */}
           {Array.from({ length: PIC_SIZE }).map((_, r) => (
             <Row
@@ -199,7 +202,7 @@ function Row({ r, clue, fill, cross, cell, gut, locked, onTap }: {
 }) {
   return (
     <>
-      <div style={{ width: gut, height: cell, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingRight: 7, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4a443a' }}>
+      <div style={{ width: gut, height: cell, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingRight: 7, fontFamily: 'var(--font-mono)', fontSize: 12, color: '#4a443a' }}>
         {clue.map((n, k) => <span key={k}>{n}</span>)}
       </div>
       {fill.map((on, c) => (
@@ -216,12 +219,14 @@ function Row({ r, clue, fill, cross, cell, gut, locked, onTap }: {
             background: on ? INK : '#fff',
             cursor: locked ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#b8b0a2', fontFamily: 'var(--font-mono)', fontSize: 13,
+            color: '#b8b0a2', fontFamily: 'var(--font-mono)', fontSize: 16,
           }}
         >
           {!on && cross[c] ? '✕' : ''}
         </button>
       ))}
+      {/* right balancing gutter */}
+      <div style={{ width: gut, height: cell }} />
     </>
   )
 }

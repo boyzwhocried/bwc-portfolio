@@ -219,6 +219,36 @@ export function gradeMapping(
   return out
 }
 
+/** The cipher letters a check graded correct (green). Once green, a slot is fixed:
+ *  the UI locks these so a correct letter can no longer be swapped or cleared. */
+export function lockedFromVerdict(verdict: Record<string, boolean>): string[] {
+  return Object.keys(verdict).filter((c) => verdict[c] === true)
+}
+
+// Rate guard for the "check" button: too many checks in a short window is brute
+// forcing the per-letter verdict, so we trip a fixed lockout. Pure + deterministic
+// so it can be unit-tested; the component owns the clock and the recent-press log.
+export const RATE_WINDOW_MS = 6000 // sliding window the presses are counted in
+export const RATE_MAX = 5 // checks allowed inside the window before it trips
+export const RATE_LOCK_MS = 30_000 // lockout once tripped
+
+/** Decide whether a check press is allowed right now, given the recent press
+ *  timestamps (within the window), the active lockUntil, and now. Returns the new
+ *  recent log + lockUntil. While locked, every press is refused and the lock is
+ *  untouched. Otherwise old presses are pruned; if appending `now` would exceed
+ *  RATE_MAX the lock trips (and the log resets); else the press is allowed. */
+export function evalCheckRate(
+  recent: number[],
+  lockUntil: number,
+  now: number,
+): { allowed: boolean; recent: number[]; lockUntil: number } {
+  if (now < lockUntil) return { allowed: false, recent, lockUntil }
+  const pruned = recent.filter((t) => t > now - RATE_WINDOW_MS)
+  const next = [...pruned, now]
+  if (next.length > RATE_MAX) return { allowed: false, recent: [], lockUntil: now + RATE_LOCK_MS }
+  return { allowed: true, recent: next, lockUntil: 0 }
+}
+
 /** Spoiler-free share line. Word count is not a spoiler, so we show one tile per
  *  word: all green when solved, all blank when not, with an optional hint note. */
 export function buildVerseShare(no: number, wordCount: number, solved: boolean, hints: number): string {

@@ -31,6 +31,11 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const EMIT = process.argv.includes('--emit')
 const songsFlag = process.argv.indexOf('--songs')
 const songsFile = songsFlag !== -1 ? process.argv[songsFlag + 1] : null
+// --pack <name> stamps every curated row with a themed-pack tag (free-play
+// collections like 'taylor' / 'blink' / 'bwc'). Omitted -> pack stays null, i.e.
+// the row joins the general daily + default free-play pool.
+const packFlag = process.argv.indexOf('--pack')
+const PACK = packFlag !== -1 ? process.argv[packFlag + 1] : null
 
 const REQ_DELAY_MS = 350 // be polite to LRCLIB
 
@@ -131,7 +136,7 @@ async function main() {
     const lyrics = await fetchLyrics(s.title, s.artist)
     const lines = pickLines(lyrics, s.title)
     for (const line of lines) {
-      rows.push({ line, song: s.title, artist: s.artist, source: s.source || 'popular', char_len: line.length })
+      rows.push({ line, song: s.title, artist: s.artist, source: s.source || 'popular', pack: PACK, char_len: line.length })
     }
     process.stderr.write(`${lines.length ? '+'.repeat(lines.length).padEnd(MAX_PER_SONG) : '.   '} ${s.artist} — ${s.title}\n`)
     await sleep(REQ_DELAY_MS)
