@@ -13,6 +13,12 @@ import {
   letterFrequencies,
   starterPairs,
   buildVerseShare,
+  distinctLetterCount,
+  starterCount,
+  rankLettersByUsefulness,
+  smartStarterPairs,
+  nextHintLetter,
+  gradeMapping,
 } from './cipher'
 
 describe('makeCipher', () => {
@@ -134,6 +140,95 @@ describe('starterPairs', () => {
     const rng = mulberry32(1)
     const pairs = starterPairs('aaa', cipher, 3, rng)
     expect(pairs).toHaveLength(1) // only 'a' is available
+  })
+})
+
+describe('distinctLetterCount', () => {
+  it('counts distinct a-z letters, ignoring case, spaces and punctuation', () => {
+    expect(distinctLetterCount('the theme')).toBe(4) // t, h, e, m
+    expect(distinctLetterCount('A, a! B?')).toBe(2) // a, b
+    expect(distinctLetterCount('')).toBe(0)
+  })
+})
+
+describe('starterCount', () => {
+  it('scales to the distinct-letter count by ratio, rounded', () => {
+    // 'the theme today' -> t h e m o d a y = 8 distinct
+    expect(starterCount('the theme today', 0.25, 1)).toBe(2) // round(8*0.25)
+    expect(starterCount('the theme today', 0.5, 1)).toBe(4)
+  })
+
+  it('never exceeds the distinct letters present', () => {
+    expect(starterCount('aaa', 0.9, 1)).toBe(1) // only one distinct letter
+  })
+
+  it('honours the minimum floor', () => {
+    expect(starterCount('the theme today', 0, 1)).toBe(1)
+    expect(starterCount('aaa', 0, 0)).toBe(0)
+  })
+})
+
+describe('rankLettersByUsefulness', () => {
+  it('puts the most frequent letter first', () => {
+    // e appears 3x, the rest fewer -> e is the best starter to reveal
+    expect(rankLettersByUsefulness('the theme')[0]).toBe('e')
+  })
+
+  it('is deterministic and returns every distinct letter once', () => {
+    const a = rankLettersByUsefulness('measure twice and cut once')
+    const b = rankLettersByUsefulness('measure twice and cut once')
+    expect(a).toEqual(b)
+    expect(new Set(a).size).toBe(a.length)
+    expect(a.length).toBe(distinctLetterCount('measure twice and cut once'))
+  })
+})
+
+describe('smartStarterPairs', () => {
+  it('reveals the top-n useful letters as [cipher, plain], deterministically', () => {
+    const cipher = makeCipher(5)
+    const line = 'the theme today'
+    const pairs = smartStarterPairs(line, cipher, 2)
+    const rank = rankLettersByUsefulness(line)
+    expect(pairs).toHaveLength(2)
+    expect(pairs.map((p) => p[1])).toEqual(rank.slice(0, 2)) // the two most useful
+    for (const [c, p] of pairs) expect(cipher[p]).toBe(c) // cipher letter matches mapping
+    expect(smartStarterPairs(line, cipher, 2)).toEqual(pairs) // deterministic
+  })
+
+  it('never asks for more pairs than there are distinct letters', () => {
+    const cipher = makeCipher(5)
+    expect(smartStarterPairs('aaa', cipher, 3)).toHaveLength(1)
+  })
+})
+
+describe('nextHintLetter', () => {
+  it('returns the most useful letter not yet known, then the next', () => {
+    const cipher = makeCipher(5)
+    const line = 'the theme today'
+    const rank = rankLettersByUsefulness(line)
+    expect(nextHintLetter(line, cipher, [])).toEqual([cipher[rank[0]], rank[0]])
+    // once the best cipher letter is known, the next-best is offered
+    expect(nextHintLetter(line, cipher, [cipher[rank[0]]])).toEqual([cipher[rank[1]], rank[1]])
+  })
+
+  it('returns null when every present letter is already known', () => {
+    const cipher = makeCipher(5)
+    const line = 'the theme today'
+    const allCipher = rankLettersByUsefulness(line).map((p) => cipher[p])
+    expect(nextHintLetter(line, cipher, allCipher)).toBeNull()
+  })
+})
+
+describe('gradeMapping', () => {
+  it('marks each assigned cipher letter correct or wrong against the true key', () => {
+    const cipher = makeCipher(5)
+    const trueKey = invert(cipher) // the correct cipher -> plain answer
+    const cE = cipher['e']
+    const cT = cipher['t']
+    const verdict = gradeMapping({ [cE]: 'e', [cT]: 'x' }, trueKey)
+    expect(verdict[cE]).toBe(true)
+    expect(verdict[cT]).toBe(false)
+    expect(Object.keys(verdict)).toHaveLength(2) // grades only what was assigned
   })
 })
 

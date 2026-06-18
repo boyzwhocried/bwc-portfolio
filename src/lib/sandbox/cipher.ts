@@ -131,6 +131,94 @@ export function starterPairs(
   return present.slice(0, Math.max(0, n)).map((p) => [cipher[p], p] as [string, string])
 }
 
+/** Distinct plaintext letters (a-z) present in a line, case-insensitive. */
+export function distinctLetterCount(line: string): number {
+  return new Set(normalize(line).split('')).size
+}
+
+/** How many letters to reveal as starters for a line: `ratio` of the distinct
+ *  letters present, rounded, clamped to [min, distinct]. Scaling to the line's
+ *  own letter set keeps short and long lines feeling comparable. */
+export function starterCount(line: string, ratio: number, min: number): number {
+  const d = distinctLetterCount(line)
+  return Math.max(min, Math.min(d, Math.round(d * ratio)))
+}
+
+/** Rank a line's distinct plaintext letters best-first as starter/hint reveals.
+ *  A revealed high-frequency letter fills the most boxes, so frequency leads;
+ *  ties break toward letters inside the shortest word (the strongest foothold),
+ *  then alphabetically so the order is fully deterministic. */
+export function rankLettersByUsefulness(line: string): string[] {
+  const norm = normalize(line)
+  const freq: Record<string, number> = {}
+  for (const ch of norm) freq[ch] = (freq[ch] ?? 0) + 1
+
+  const minWordLen: Record<string, number> = {}
+  for (const w of line.toLowerCase().split(/\s+/)) {
+    const letters = w.replace(/[^a-z]/g, '')
+    if (!letters) continue
+    for (const ch of new Set(letters.split(''))) {
+      minWordLen[ch] = Math.min(minWordLen[ch] ?? Infinity, letters.length)
+    }
+  }
+
+  return Object.keys(freq).sort((a, b) => {
+    if (freq[b] !== freq[a]) return freq[b] - freq[a]
+    const wa = minWordLen[a] ?? Infinity
+    const wb = minWordLen[b] ?? Infinity
+    if (wa !== wb) return wa - wb
+    return a < b ? -1 : 1
+  })
+}
+
+/** The `n` most useful starter letters, as [cipherLetter, plainLetter] pairs the
+ *  UI can lock. Deterministic (no rng), capped at the distinct letters present. */
+export function smartStarterPairs(
+  line: string,
+  cipher: Record<string, string>,
+  n: number,
+): Array<[string, string]> {
+  return rankLettersByUsefulness(line)
+    .slice(0, Math.max(0, n))
+    .map((p) => [cipher[p], p] as [string, string])
+}
+
+/** The next letter to give as a hint: the most useful plaintext letter whose
+ *  cipher letter the player has not yet uncovered, as [cipher, plain], or null
+ *  when every present letter is already known. Ordered, never random. */
+export function nextHintLetter(
+  line: string,
+  cipher: Record<string, string>,
+  known: string[],
+): [string, string] | null {
+  const knownSet = new Set(known)
+  for (const plain of rankLettersByUsefulness(line)) {
+    const c = cipher[plain]
+    if (!knownSet.has(c)) return [c, plain]
+  }
+  return null
+}
+
+/** The fixed hint ladder: cheap info first, capped. Shared by the server (which
+ *  honours the order) and the client (which labels the next hint). Lives here in
+ *  the pure module so both the 'use server' actions and the client can import it
+ *  (a 'use server' file may only export async functions). */
+export const HINT_LADDER = ['letter', 'letter', 'artist', 'song'] as const
+export const MAX_HINTS = HINT_LADDER.length
+
+/** Grade a player's guesses (cipher->plain) against the true key (cipher->plain).
+ *  Returns, for each cipher letter the player actually assigned, whether it is
+ *  correct. Server-side only: the booleans reveal correctness without ever
+ *  shipping the plaintext line. */
+export function gradeMapping(
+  mapping: Record<string, string>,
+  trueKey: Record<string, string>,
+): Record<string, boolean> {
+  const out: Record<string, boolean> = {}
+  for (const c of Object.keys(mapping)) out[c] = mapping[c] === trueKey[c]
+  return out
+}
+
 /** Spoiler-free share line. Word count is not a spoiler, so we show one tile per
  *  word: all green when solved, all blank when not, with an optional hint note. */
 export function buildVerseShare(no: number, wordCount: number, solved: boolean, hints: number): string {

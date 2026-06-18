@@ -4,23 +4,32 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import useIsTouch from '@/lib/useIsTouch'
 import { dayIndex, updateStreak, type StreakState } from '@/lib/sandbox/daily'
-import { decode, isSolved, letterFrequencies, buildVerseShare, ALPHA } from '@/lib/sandbox/cipher'
-import { dailyVerse, randomVerse, revealVerse, hintVerse, type Puzzle, type Difficulty } from '@/actions/verse'
+import { decode, isSolved, letterFrequencies, buildVerseShare, ALPHA, MAX_HINTS, HINT_LADDER } from '@/lib/sandbox/cipher'
+import {
+  dailyVerse, randomVerse, revealVerse, giveUpVerse, hintVerse, checkVerse,
+  type Puzzle, type Difficulty,
+} from '@/actions/verse'
 
 const STORAGE_KEY = 'bwc-verse-v1'
 const PAPER = '#efe9dd'
 const INK = '#1a1a1a'
 const ACCENT = '#e84c28'
 const GOOD = '#3a7d3a'
+const BAD = '#b83612'
+const FLASH = 'rgba(232,168,40,0.45)'
 const DIM = '#9a8f80'
 
 type Mode = 'daily' | 'free'
+type Status = 'playing' | 'won' | 'revealed'
 type Reveal = { song: string; artist: string; line: string }
+type HintReveal = { kind: 'artist' | 'song'; text: string }
 type Saved = {
   day: number
   mapping: Record<string, string>
-  status: 'playing' | 'won'
+  status: Status
   hints: number
+  hintLocked: string[]
+  hintReveals: HintReveal[]
   streak: StreakState | null
   reveal: Reveal | null
 }
@@ -50,9 +59,14 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
 
   const [userMap, setUserMap] = useState<Record<string, string>>({})
   const [selected, setSelected] = useState<string | null>(null)
-  const [status, setStatus] = useState<'playing' | 'won'>('playing')
+  const [status, setStatus] = useState<Status>('playing')
   const [reveal, setReveal] = useState<Reveal | null>(null)
   const [hints, setHints] = useState(0)
+  const [hintLocked, setHintLocked] = useState<Set<string>>(new Set())
+  const [hintReveals, setHintReveals] = useState<HintReveal[]>([])
+  const [verdict, setVerdict] = useState<Record<string, boolean>>({})
+  const [flash, setFlash] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
   const [streak, setStreak] = useState<StreakState | null>(null)
   const [copied, setCopied] = useState(false)
   const [nowMs, setNowMs] = useState(0)
@@ -66,14 +80,28 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     () => (puzzle ? Object.fromEntries(puzzle.starters) : {}),
     [puzzle],
   )
-  const locked = useMemo(() => new Set(Object.keys(starterMap)), [starterMap])
+  // locked = server starters + letters uncovered by a hint (both correct, fixed)
+  const locked = useMemo(
+    () => new Set([...Object.keys(starterMap), ...hintLocked]),
+    [starterMap, hintLocked],
+  )
   const full = useMemo(() => ({ ...starterMap, ...userMap }), [starterMap, userMap])
+
+  // briefly highlight a box (e.g. a letter that just moved or was refused)
+  const pulse = useCallback((c: string) => {
+    setFlash(c)
+    window.setTimeout(() => setFlash((f) => (f === c ? null : f)), 600)
+  }, [])
 
   const resetBoard = useCallback((p: Puzzle, carryStreak: StreakState | null) => {
     setUserMap({})
     setStatus('playing')
     setReveal(null)
     setHints(0)
+    setHintLocked(new Set())
+    setHintReveals([])
+    setVerdict({})
+    setFlash(null)
     setStreak(carryStreak)
     finalized.current = false
     setSelected(cipherOrder(p.cipherText).find((c) => !p.starters.some(([sc]) => sc === c)) ?? null)
@@ -87,8 +115,11 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     const saved = loadSaved()
     if (saved && saved.day === today) {
       setUserMap(saved.mapping); setStatus(saved.status); setHints(saved.hints)
+      setHintLocked(new Set(saved.hintLocked ?? []))
+      setHintReveals(saved.hintReveals ?? [])
+      setVerdict({})
       setStreak(saved.streak); setReveal(saved.reveal)
-      finalized.current = saved.status === 'won'
+      finalized.current = saved.status !== 'playing'
       setSelected(cipherOrder(r.puzzle.cipherText).find((c) => !r.puzzle.starters.some(([sc]) => sc === c) && !saved.mapping[c]) ?? null)
     } else {
       resetBoard(r.puzzle, saved?.streak ?? null)
@@ -111,9 +142,12 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   // persist the daily across reloads
   useEffect(() => {
     if (mode !== 'daily' || !puzzle) return
-    const s: Saved = { day: today, mapping: userMap, status, hints, streak, reveal }
+    const s: Saved = {
+      day: today, mapping: userMap, status, hints,
+      hintLocked: Array.from(hintLocked), hintReveals, streak, reveal,
+    }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)) } catch {}
-  }, [mode, puzzle, today, userMap, status, hints, streak, reveal])
+  }, [mode, puzzle, today, userMap, status, hints, hintLocked, hintReveals, streak, reveal])
 
   // win detection — fires once when the board first decodes to the solution
   useEffect(() => {
@@ -126,59 +160,109 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     revealVerse(puzzle.ref, decode(puzzle.cipherText, full)).then((r) => { if (r.ok) setReveal(r) })
   }, [full, puzzle, status, mode, today])
 
-  // live countdown ticker once the daily is solved
+  // live countdown ticker once the daily is finished (won or revealed)
   useEffect(() => {
-    if (mode !== 'daily' || status !== 'won') return
+    if (mode !== 'daily' || status === 'playing') return
     const seed = requestAnimationFrame(() => setNowMs(Date.now()))
     const id = setInterval(() => setNowMs(Date.now()), 1000)
     return () => { cancelAnimationFrame(seed); clearInterval(id) }
   }, [mode, status])
 
+  // move the selection to the next/prev editable box (skips locked letters)
+  const moveSel = useCallback((dir: 1 | -1) => {
+    if (!puzzle) return
+    const order = cipherOrder(puzzle.cipherText).filter((c) => !locked.has(c))
+    if (order.length === 0) return
+    const cur = selected ? order.indexOf(selected) : -1
+    const ni = cur === -1 ? (dir === 1 ? 0 : order.length - 1) : (cur + dir + order.length) % order.length
+    setSelected(order[ni])
+  }, [puzzle, locked, selected])
+
   const assign = useCallback((plain: string) => {
     if (status !== 'playing' || !selected || locked.has(selected)) return
-    setUserMap((prev) => {
-      const next = { ...prev }
-      // a plain letter is used once: clear any other (non-locked) cipher holding it
-      for (const k of Object.keys(next)) if (next[k] === plain && k !== selected) delete next[k]
-      if (plain) next[selected] = plain
-      return next
-    })
-    if (puzzle) {
-      const order = cipherOrder(puzzle.cipherText)
-      const from = order.indexOf(selected)
-      const nextC = order.slice(from + 1).concat(order.slice(0, from)).find((c) => !locked.has(c) && !userMap[c] && c !== selected)
-      setSelected(nextC ?? selected)
+    // refuse stealing a letter already held by a locked (correct) slot
+    const lockedOwner = Object.keys(starterMap).find((k) => starterMap[k] === plain)
+      ?? Array.from(hintLocked).find((k) => userMap[k] === plain)
+    if (lockedOwner && lockedOwner !== selected) { pulse(lockedOwner); return }
+
+    const next = { ...userMap }
+    let moved: string | null = null
+    // a plain letter is used once: free it from any other (non-locked) cipher slot
+    for (const k of Object.keys(next)) {
+      if (next[k] === plain && k !== selected && !locked.has(k)) { delete next[k]; moved = k }
     }
-  }, [status, selected, locked, puzzle, userMap])
+    next[selected] = plain
+    setUserMap(next)
+    if (moved) pulse(moved)
+    // the changed letters' prior verdicts are stale
+    setVerdict((v) => { const n = { ...v }; delete n[selected]; if (moved) delete n[moved]; return n })
+
+    // auto-advance to the next unassigned editable box
+    const order = cipherOrder(puzzle!.cipherText)
+    const from = order.indexOf(selected)
+    const nextC = order.slice(from + 1).concat(order.slice(0, from)).find((c) => !locked.has(c) && !next[c] && c !== selected)
+    setSelected(nextC ?? selected)
+  }, [status, selected, locked, starterMap, hintLocked, userMap, puzzle, pulse])
 
   const clearSel = useCallback(() => {
     if (status !== 'playing' || !selected || locked.has(selected)) return
     setUserMap((prev) => { const n = { ...prev }; delete n[selected]; return n })
+    setVerdict((v) => { const n = { ...v }; delete n[selected]; return n })
   }, [status, selected, locked])
 
-  // keyboard input (desktop): letters assign, backspace clears
+  // keyboard: letters assign, backspace clears, arrows navigate boxes
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (status !== 'playing') return
       const k = e.key.toLowerCase()
       if (k >= 'a' && k <= 'z' && k.length === 1) { e.preventDefault(); assign(k) }
       else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); clearSel() }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); moveSel(1) }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); moveSel(-1) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [assign, clearSel, status])
+  }, [assign, clearSel, moveSel, status])
+
+  async function check() {
+    if (!puzzle || status !== 'playing' || checking) return
+    setChecking(true)
+    const r = await checkVerse(puzzle.ref, full)
+    setChecking(false)
+    if (r.ok) setVerdict(r.verdict)
+  }
 
   async function takeHint() {
-    if (!puzzle || status !== 'playing') return
-    const r = await hintVerse(puzzle.ref, Object.keys(full))
+    if (!puzzle || status !== 'playing' || hints >= MAX_HINTS) return
+    const r = await hintVerse(puzzle.ref, hints, Object.keys(full))
     if (!r.ok) return
-    setUserMap((prev) => {
-      const next = { ...prev }
-      for (const k of Object.keys(next)) if (next[k] === r.plain && k !== r.cipher) delete next[k]
+    if (r.kind === 'letter') {
+      const next = { ...userMap }
+      let moved: string | null = null
+      for (const k of Object.keys(next)) {
+        if (next[k] === r.plain && k !== r.cipher && !locked.has(k)) { delete next[k]; moved = k }
+      }
       next[r.cipher] = r.plain
-      return next
-    })
+      setUserMap(next)
+      setHintLocked((s) => new Set(s).add(r.cipher))
+      if (moved) pulse(moved)
+      setVerdict((v) => { const n = { ...v }; n[r.cipher] = true; if (moved) delete n[moved]; return n })
+    } else if (r.kind === 'artist') {
+      setHintReveals((h) => [...h, { kind: 'artist', text: r.artist }])
+    } else {
+      setHintReveals((h) => [...h, { kind: 'song', text: r.song }])
+    }
     setHints((h) => h + 1)
+  }
+
+  async function giveUp() {
+    if (!puzzle || status !== 'playing') return
+    const r = await giveUpVerse(puzzle.ref)
+    if (mode === 'daily') setStreak(updateStreak(streakRef.current, today, false))
+    finalized.current = true
+    setStatus('revealed')
+    setSelected(null)
+    if (r.ok) setReveal(r)
   }
 
   function share() {
@@ -205,6 +289,16 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
 
   const usedPlain = useMemo(() => new Set(Object.values(full)), [full])
   const freqs = useMemo(() => (puzzle ? letterFrequencies(puzzle.cipherText) : []), [puzzle])
+  const finished = status !== 'playing'
+  const nextHintLabel = HINT_LADDER[hints] ?? null
+
+  function inkFor(ch: string): string {
+    if (locked.has(ch)) return GOOD
+    const v = verdict[ch]
+    if (v === true) return GOOD
+    if (v === false) return BAD
+    return INK
+  }
 
   return (
     <SandboxModal
@@ -263,26 +357,28 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                       const plain = full[ch]
                       const isSel = selected === ch
                       const isLock = locked.has(ch)
+                      const isFlash = flash === ch
+                      const underline = isSel ? ACCENT : verdict[ch] === false ? BAD : isLock || verdict[ch] === true ? GOOD : '#b8b0a2'
                       return (
                         <button
                           key={ci}
-                          onClick={() => setSelected(ch)}
+                          onClick={() => !finished && setSelected(ch)}
                           aria-label={`cipher ${ch}`}
                           style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                            background: isSel ? 'rgba(232,76,40,0.14)' : 'transparent',
-                            border: 'none', padding: '0 1px', cursor: status === 'playing' ? 'pointer' : 'default',
+                            background: isFlash ? FLASH : isSel ? 'rgba(232,76,40,0.14)' : 'transparent',
+                            border: 'none', padding: '2px 3px', minWidth: 22, borderRadius: 3,
+                            cursor: status === 'playing' && !isLock ? 'pointer' : 'default',
+                            transition: 'background 160ms',
                           }}
                         >
                           <span style={{
                             fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, lineHeight: 1,
-                            minWidth: 13, height: 20, color: isLock ? GOOD : INK,
+                            minWidth: 13, height: 20, color: inkFor(ch),
                           }}>
                             {plain ? plain.toUpperCase() : ''}
                           </span>
-                          <span style={{
-                            width: 15, height: 0, borderBottom: `2px solid ${isSel ? ACCENT : isLock ? GOOD : '#b8b0a2'}`,
-                          }} />
+                          <span style={{ width: 15, height: 0, borderBottom: `2px solid ${underline}` }} />
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: isSel ? ACCENT : DIM }}>{ch}</span>
                         </button>
                       )
@@ -292,11 +388,22 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
-            {status === 'won' ? (
-              <WinCard
-                reveal={reveal} mode={mode} streak={streak} hints={hints}
-                copied={copied} onShare={share} countdown={countdown()}
-                onNext={() => loadFree(difficulty)}
+            {/* revealed hints (artist / song) */}
+            {hintReveals.length > 0 && status === 'playing' && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                {hintReveals.map((h, i) => (
+                  <span key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', border: '1px dashed #c9c1b2', padding: '3px 7px', borderRadius: 2 }}>
+                    {h.kind}: <strong style={{ color: INK }}>{h.text}</strong>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {finished ? (
+              <ResultCard
+                reveal={reveal} outcome={status === 'won' ? 'won' : 'revealed'} mode={mode}
+                streak={streak} hints={hints} copied={copied} onShare={share}
+                countdown={countdown()} onNext={() => loadFree(difficulty)}
               />
             ) : (
               <>
@@ -337,13 +444,19 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button onClick={check} disabled={checking} style={{ ...ctrlBtn, background: INK, color: PAPER, opacity: checking ? 0.6 : 1 }}>
+                    {checking ? 'checking…' : 'check'}
+                  </button>
                   <button onClick={clearSel} disabled={!selected || locked.has(selected ?? '')} style={ctrlBtn}>⌫ clear</button>
-                  <button onClick={takeHint} style={ctrlBtn}>hint{hints > 0 ? ` · ${hints}` : ''}</button>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', marginLeft: 'auto' }}>
-                    {isTouch ? 'tap a slot, then a letter' : 'click a slot, then type'}
-                  </span>
+                  <button onClick={takeHint} disabled={hints >= MAX_HINTS} style={{ ...ctrlBtn, opacity: hints >= MAX_HINTS ? 0.5 : 1 }}>
+                    hint{hints > 0 ? ` ${hints}/${MAX_HINTS}` : ''}{nextHintLabel ? ` · ${nextHintLabel}` : ''}
+                  </button>
+                  <button onClick={giveUp} style={{ ...ctrlBtn, border: `1.5px solid ${BAD}`, color: BAD }}>give up</button>
                 </div>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', marginTop: 8 }}>
+                  {isTouch ? 'tap a box, then a letter' : 'click a box (or ←/→), then type'} · same letter fills its matches · check to verify
+                </p>
               </>
             )}
           </>
@@ -353,14 +466,15 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   )
 }
 
-function WinCard({ reveal, mode, streak, hints, copied, onShare, countdown, onNext }: {
-  reveal: Reveal | null; mode: Mode; streak: StreakState | null; hints: number
+function ResultCard({ reveal, outcome, mode, streak, hints, copied, onShare, countdown, onNext }: {
+  reveal: Reveal | null; outcome: 'won' | 'revealed'; mode: Mode; streak: StreakState | null; hints: number
   copied: boolean; onShare: () => void; countdown: string; onNext: () => void
 }) {
+  const won = outcome === 'won'
   return (
     <div style={{ borderTop: '1px solid #d8d2c6', paddingTop: 12 }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: GOOD }}>
-        cracked it{hints > 0 ? ` · ${hints} hint${hints > 1 ? 's' : ''}` : ' clean'}.
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: won ? GOOD : BAD }}>
+        {won ? `cracked it${hints > 0 ? ` · ${hints} hint${hints > 1 ? 's' : ''}` : ' clean'}.` : 'the answer —'}
       </div>
       {reveal ? (
         <div style={{ marginTop: 8 }}>
