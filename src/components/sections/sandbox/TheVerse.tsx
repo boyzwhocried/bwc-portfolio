@@ -75,6 +75,13 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   streakRef.current = streak
   const finalized = useRef(false)
 
+  // an off-screen input that raises the device's native keyboard on touch. Tapping
+  // a cipher box focuses it; what the player types is routed through `assign`.
+  const keyboardRef = useRef<HTMLInputElement>(null)
+  const focusKeyboard = useCallback(() => {
+    if (isTouch) keyboardRef.current?.focus()
+  }, [isTouch])
+
   // starters are server-revealed, locked letters
   const starterMap = useMemo<Record<string, string>>(
     () => (puzzle ? Object.fromEntries(puzzle.starters) : {}),
@@ -210,27 +217,49 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     setVerdict((v) => { const n = { ...v }; delete n[selected]; return n })
   }, [status, selected, locked])
 
-  // keyboard: letters assign, backspace clears, arrows navigate boxes
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (status !== 'playing') return
-      const k = e.key.toLowerCase()
-      if (k >= 'a' && k <= 'z' && k.length === 1) { e.preventDefault(); assign(k) }
-      else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); clearSel() }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); moveSel(1) }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); moveSel(-1) }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [assign, clearSel, moveSel, status])
+  // clear every letter the player typed, but keep the board's given letters —
+  // server starters and any hint-revealed (locked) letters stay put.
+  const resetEntries = useCallback(() => {
+    if (status !== 'playing' || !puzzle) return
+    setUserMap((prev) => {
+      const n: Record<string, string> = {}
+      for (const k of Object.keys(prev)) if (hintLocked.has(k)) n[k] = prev[k]
+      return n
+    })
+    setVerdict({})
+    setSelected(cipherOrder(puzzle.cipherText).find((c) => !locked.has(c)) ?? null)
+  }, [status, puzzle, hintLocked, locked])
 
-  async function check() {
+  const hasEntries = useMemo(
+    () => Object.keys(userMap).some((k) => !hintLocked.has(k)),
+    [userMap, hintLocked],
+  )
+
+  const check = useCallback(async () => {
     if (!puzzle || status !== 'playing' || checking) return
     setChecking(true)
     const r = await checkVerse(puzzle.ref, full)
     setChecking(false)
     if (r.ok) setVerdict(r.verdict)
-  }
+  }, [puzzle, status, checking, full])
+
+  // keyboard: letters assign, backspace clears, enter checks, arrows navigate.
+  // The off-screen touch input handles its own keys, so skip when it's focused
+  // (else a physical-keyboard event would be handled twice).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (status !== 'playing') return
+      if (document.activeElement === keyboardRef.current) return
+      const k = e.key.toLowerCase()
+      if (k >= 'a' && k <= 'z' && k.length === 1) { e.preventDefault(); assign(k) }
+      else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); clearSel() }
+      else if (e.key === 'Enter') { e.preventDefault(); check() }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); moveSel(1) }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); moveSel(-1) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [assign, clearSel, moveSel, check, status])
 
   async function takeHint() {
     if (!puzzle || status !== 'playing' || hints >= MAX_HINTS) return
@@ -329,8 +358,8 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
         </div>
 
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 12.5, color: '#4a443a', lineHeight: 1.6, marginBottom: 10 }}>
-          a line of song lyric, enciphered — every letter swapped for another. crack the code.
-          it favours the quiet verses over the hook, so the song stays hidden until you solve it.
+          a line of song lyric, enciphered. every letter is swapped for another, the same
+          swap throughout. crack the code to name the song.
         </p>
 
         {loading && <Status>decoding the wire…</Status>}
@@ -362,7 +391,7 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                       return (
                         <button
                           key={ci}
-                          onClick={() => !finished && setSelected(ch)}
+                          onClick={() => { if (!finished) { setSelected(ch); focusKeyboard() } }}
                           aria-label={`cipher ${ch}`}
                           style={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -407,12 +436,37 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
               />
             ) : (
               <>
+                {/* off-screen input: focusing it raises the native keyboard on touch.
+                    Typed letters route to assign; backspace/enter/arrows mirror desktop. */}
+                <input
+                  ref={keyboardRef}
+                  type="text"
+                  inputMode="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  value=""
+                  onChange={(e) => {
+                    const ch = e.target.value.slice(-1).toLowerCase()
+                    if (ch >= 'a' && ch <= 'z') assign(ch)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); check() }
+                    else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); clearSel() }
+                    else if (e.key === 'ArrowRight') { e.preventDefault(); moveSel(1) }
+                    else if (e.key === 'ArrowLeft') { e.preventDefault(); moveSel(-1) }
+                  }}
+                  style={{ position: 'absolute', width: 1, height: 1, padding: 0, border: 0, opacity: 0, left: -9999, top: 0 }}
+                />
                 {/* frequency strip — the solver's aid */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
                   {freqs.map((f) => (
                     <button
                       key={f.letter}
-                      onClick={() => setSelected(f.letter)}
+                      onClick={() => { setSelected(f.letter); focusKeyboard() }}
                       style={{
                         fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 5px', cursor: 'pointer',
                         border: `1px solid ${selected === f.letter ? ACCENT : '#d8d2c6'}`,
@@ -449,13 +503,14 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                     {checking ? 'checking…' : 'check'}
                   </button>
                   <button onClick={clearSel} disabled={!selected || locked.has(selected ?? '')} style={ctrlBtn}>⌫ clear</button>
+                  <button onClick={resetEntries} disabled={!hasEntries} style={{ ...ctrlBtn, opacity: hasEntries ? 1 : 0.5 }}>↺ reset</button>
                   <button onClick={takeHint} disabled={hints >= MAX_HINTS} style={{ ...ctrlBtn, opacity: hints >= MAX_HINTS ? 0.5 : 1 }}>
                     hint{hints > 0 ? ` ${hints}/${MAX_HINTS}` : ''}{nextHintLabel ? ` · ${nextHintLabel}` : ''}
                   </button>
                   <button onClick={giveUp} style={{ ...ctrlBtn, border: `1.5px solid ${BAD}`, color: BAD }}>give up</button>
                 </div>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', marginTop: 8 }}>
-                  {isTouch ? 'tap a box, then a letter' : 'click a box (or ←/→), then type'} · same letter fills its matches · check to verify
+                  {isTouch ? 'tap a box, then type · enter checks' : 'click a box (or ←/→), then type · enter checks'} · reset clears your letters
                 </p>
               </>
             )}

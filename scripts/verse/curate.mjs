@@ -4,8 +4,9 @@
 // WHY this exists: the daily cryptogram decodes a line of song lyrics. Real
 // lyrics are third-party copyright, and this repo is PUBLIC, so the corpus must
 // never be committed. This script pulls lyrics at refill time from LRCLIB (free,
-// keyless), keeps only decode-friendly NON-catchy lines, and writes them to the
-// private Supabase `sandbox_verse_bank` table. The site then serves only
+// keyless), keeps the decode-friendly CATCHY lines (chorus / title hooks first;
+// see pick.mjs), and writes them to the private Supabase `sandbox_verse_bank`
+// table. The site then serves only
 // ciphertext + a solve hash, so the plaintext only reaches a browser after a
 // player has actually solved the puzzle.
 //
@@ -24,16 +25,15 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { pickLines, MAX_PER_SONG } from './pick.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const EMIT = process.argv.includes('--emit')
 const songsFlag = process.argv.indexOf('--songs')
 const songsFile = songsFlag !== -1 ? process.argv[songsFlag + 1] : null
 
-const MAX_PER_SONG = 3
 const REQ_DELAY_MS = 350 // be polite to LRCLIB
 
-const norm = (s) => s.toLowerCase().replace(/[^a-z]/g, '')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 // load .env.local so service-role runs work without exporting vars by hand
@@ -46,37 +46,9 @@ function loadEnv() {
   }
 }
 
-/** Keep only lines that make a fair, non-catchy cryptogram:
- *  - no section markers / ad-libs / brackets / digits
- *  - plain ascii letters, spaces, apostrophes and commas only
- *  - 5-11 words, 22-58 letters, >= 9 distinct letters (enough cipher variety)
- *  - NOT a repeated line (a repeated line is the chorus / hook -> too catchy)
- *  - does not contain the song title (the title line is usually the hook) */
-function pickLines(plainLyrics, title) {
-  if (!plainLyrics) return []
-  const rawLines = plainLyrics.split('\n').map((s) => s.trim())
-  const counts = Object.create(null)
-  for (const l of rawLines) { const n = norm(l); if (n) counts[n] = (counts[n] || 0) + 1 }
-  const titleNorm = norm(title || '')
-  const seen = new Set()
-  const out = []
-  for (const l of rawLines) {
-    const n = norm(l)
-    if (!n || seen.has(n)) continue
-    if (/[[\]()]/.test(l) || /[0-9]/.test(l)) continue
-    if (!/^[a-zA-Z',\s]+$/.test(l)) continue
-    const words = l.split(/\s+/).filter(Boolean)
-    if (words.length < 5 || words.length > 11) continue
-    if (n.length < 22 || n.length > 58) continue
-    if (new Set(n.split('')).size < 9) continue
-    if (counts[n] > 1) continue
-    if (titleNorm && titleNorm.length >= 4 && n.includes(titleNorm)) continue
-    seen.add(n)
-    out.push(l.toLowerCase().replace(/\s+/g, ' ').replace(/[‘’‚]/g, "'"))
-    if (out.length >= MAX_PER_SONG) break
-  }
-  return out
-}
+// Line selection (pickLines) lives in ./pick.mjs (pure + unit-tested). It now
+// favours the CATCHY lines: the repeated chorus and title-stating hooks rank
+// first, with a clean-line fallback.
 
 async function fetchJson(url, ua) {
   // a per-request timeout so a slow/rate-limited LRCLIB call can never hang the run

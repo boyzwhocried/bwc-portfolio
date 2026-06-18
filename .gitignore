@@ -50,6 +50,7 @@ next-env.d.ts
 /scripts/verse/prog*.txt
 
 # local scratch (playwright shots, one-off auth helper, dev logs, motion protos)
+/working/
 /shots/
 shot*.mjs
 shot*.png

@@ -52,3 +52,17 @@ Pure logic stays in `src/lib/sandbox/cipher.ts` (TDD'd in `cipher.test.ts`); ser
 ## Testing
 
 RED→GREEN unit tests for every new pure helper. Full `vitest run` + `tsc` + `next build` green before deploy. `deploy-guard` gate, then ship to prod (master == redesign FF + push). No infra/schema changes.
+
+---
+
+## Addendum (2026-06-18, pass 2): catchy bank + input/UX
+
+Owner asks after the playability pass:
+
+1. **Native phone keyboard.** On touch, tapping a cipher box (or a frequency chip) focuses an off-screen `<input>` so the device keyboard rises; typed letters route to `assign`, Backspace/Enter/arrows mirror desktop. The window key listener now skips when that input is focused (no double-handling). The on-screen letter tray stays as a tap fallback.
+2. **Enter checks.** `check` is now a `useCallback`; Enter fires it from both the window listener and the touch input.
+3. **Reset button.** `resetEntries` clears every player-typed letter but keeps the board's given letters — server starters and hint-revealed (locked) letters stay. Disabled when there is nothing of the player's to clear.
+4. **Catchy bank.** The curator now favours the hook. `pickLines` moved to the pure, unit-tested `scripts/verse/pick.mjs`: lines are scored by chorus repetition (strongest) then title-stating, with a clean-line fallback, top-`MAX_PER_SONG` kept. `vitest.config.ts` include extended to `scripts/verse/**/*.test.mjs`. The in-game copy no longer claims it "favours the quiet verses."
+5. **Bigger, all-English bank.** `popular.json` grown 16 → 176 songs: the owner's English taste across all-time / 6-month / 4-week windows + the "of insta" playlist + a broad mainstream/viral block. New catchy lines are ADDED to the existing 221 (kept as-is) via the curator's `onConflict: line` upsert. Lyric text still never lands in the repo (Supabase only).
+
+Same security posture; no schema change (rows only).
