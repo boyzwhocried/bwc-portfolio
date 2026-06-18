@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SandboxModal from './SandboxModal'
 import useIsTouch from '@/lib/useIsTouch'
 import { dayIndex, updateStreak, type StreakState } from '@/lib/sandbox/daily'
-import { decode, isSolved, letterFrequencies, buildVerseShare, ALPHA, MAX_HINTS, HINT_LADDER, lockedFromVerdict, evalCheckRate } from '@/lib/sandbox/cipher'
+import { decode, isSolved, letterFrequencies, buildVerseShare, ALPHA, lockedFromVerdict, evalCheckRate, letterHintBudget, artistHintAvailable } from '@/lib/sandbox/cipher'
 import {
   dailyVerse, randomVerse, revealVerse, giveUpVerse, hintVerse, checkVerse,
   type Puzzle, type Difficulty, type Pack,
@@ -23,7 +23,7 @@ type Mode = 'daily' | 'free'
 type PackSel = Pack | 'shuffle'
 type Status = 'playing' | 'won' | 'revealed'
 type Reveal = { song: string; artist: string; line: string }
-type HintReveal = { kind: 'artist' | 'song'; text: string }
+type HintReveal = { kind: 'artist' | 'title' | 'date'; text: string }
 type Saved = {
   day: number
   mapping: Record<string, string>
@@ -316,26 +316,33 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [assign, clearSel, moveSel, check, status])
 
-  async function takeHint() {
-    if (!puzzle || status !== 'playing' || hints >= MAX_HINTS) return
-    const r = await hintVerse(puzzle.ref, hints, Object.keys(full))
-    if (!r.ok) return
-    if (r.kind === 'letter') {
-      const next = { ...userMap }
-      let moved: string | null = null
-      for (const k of Object.keys(next)) {
-        if (next[k] === r.plain && k !== r.cipher && !locked.has(k)) { delete next[k]; moved = k }
-      }
-      next[r.cipher] = r.plain
-      setUserMap(next)
-      setHintLocked((s) => new Set(s).add(r.cipher))
-      if (moved) pulse(moved)
-      setVerdict((v) => { const n = { ...v }; n[r.cipher] = true; if (moved) delete n[moved]; return n })
-    } else if (r.kind === 'artist') {
-      setHintReveals((h) => [...h, { kind: 'artist', text: r.artist }])
-    } else {
-      setHintReveals((h) => [...h, { kind: 'song', text: r.song }])
+  // a LETTER hint reveals + locks the next useful letter; capped by the board's budget
+  async function letterHint() {
+    if (!puzzle || status !== 'playing' || hintLocked.size >= letterBudget) return
+    const r = await hintVerse(puzzle.ref, 'letter', Object.keys(full))
+    if (!r.ok || r.kind !== 'letter') return
+    const next = { ...userMap }
+    let moved: string | null = null
+    for (const k of Object.keys(next)) {
+      if (next[k] === r.plain && k !== r.cipher && !locked.has(k)) { delete next[k]; moved = k }
     }
+    next[r.cipher] = r.plain
+    setUserMap(next)
+    setHintLocked((s) => new Set(s).add(r.cipher))
+    if (moved) pulse(moved)
+    setVerdict((v) => { const n = { ...v }; n[r.cipher] = true; if (moved) delete n[moved]; return n })
+    setHints((h) => h + 1)
+  }
+
+  // a META hint (artist / title / release year) reveals that field as a chip, once each
+  async function metaHint(kind: 'artist' | 'title' | 'date') {
+    if (!puzzle || status !== 'playing') return
+    if (hintReveals.some((h) => h.kind === kind)) return
+    const r = await hintVerse(puzzle.ref, kind, [])
+    if (!r.ok) return
+    if (r.kind === 'artist') setHintReveals((h) => [...h, { kind: 'artist', text: r.artist }])
+    else if (r.kind === 'title') setHintReveals((h) => [...h, { kind: 'title', text: r.song }])
+    else if (r.kind === 'date') setHintReveals((h) => [...h, { kind: 'date', text: r.year ? String(r.year) : 'not on file' }])
     setHints((h) => h + 1)
   }
 
@@ -381,8 +388,15 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   const usedPlain = useMemo(() => new Set(Object.values(full)), [full])
   const freqs = useMemo(() => (puzzle ? letterFrequencies(puzzle.cipherText) : []), [puzzle])
   const finished = status !== 'playing'
-  const nextHintLabel = HINT_LADDER[hints] ?? null
   const lockSecs = lockUntil > 0 ? Math.max(0, Math.ceil((lockUntil - lockNow) / 1000)) : 0
+  // hint budgets (letters scale with level; meta hints are once each). The daily is
+  // always the general pool, so its artist hint stays available.
+  const letterBudget = letterHintBudget(mode, difficulty, pack !== 'shuffle')
+  const lettersUsed = hintLocked.size
+  const artistOK = mode === 'daily' ? true : artistHintAvailable(pack)
+  const artistShown = hintReveals.some((h) => h.kind === 'artist')
+  const titleShown = hintReveals.some((h) => h.kind === 'title')
+  const dateShown = hintReveals.some((h) => h.kind === 'date')
 
   function inkFor(ch: string): string {
     if (locked.has(ch)) return GOOD
@@ -514,7 +528,7 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
                 {hintReveals.map((h, i) => (
                   <span key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d', border: '1px dashed #c9c1b2', padding: '3px 7px', borderRadius: 2 }}>
-                    {h.kind}: <strong style={{ color: INK }}>{h.text}</strong>
+                    {h.kind === 'date' ? 'year' : h.kind}: <strong style={{ color: INK }}>{h.text}</strong>
                   </span>
                 ))}
               </div>
@@ -596,10 +610,20 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
                   </button>
                   <button onClick={clearSel} disabled={!selected || locked.has(selected ?? '')} style={ctrlBtn}>⌫ clear</button>
                   <button onClick={resetEntries} disabled={!hasEntries} style={{ ...ctrlBtn, opacity: hasEntries ? 1 : 0.5 }}>↺ reset</button>
-                  <button onClick={takeHint} disabled={hints >= MAX_HINTS} style={{ ...ctrlBtn, opacity: hints >= MAX_HINTS ? 0.5 : 1 }}>
-                    hint{hints > 0 ? ` ${hints}/${MAX_HINTS}` : ''}{nextHintLabel ? ` · ${nextHintLabel}` : ''}
-                  </button>
                   <button onClick={giveUp} style={{ ...ctrlBtn, border: `1.5px solid ${BAD}`, color: BAD }}>give up</button>
+                </div>
+
+                {/* hints — a separate button per type, the player picks what to spend */}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#6b665d' }}>hint:</span>
+                  <button onClick={letterHint} disabled={lettersUsed >= letterBudget} style={{ ...hintBtn, opacity: lettersUsed >= letterBudget ? 0.5 : 1 }}>
+                    letter {lettersUsed}/{letterBudget}
+                  </button>
+                  {artistOK && (
+                    <button onClick={() => metaHint('artist')} disabled={artistShown} style={{ ...hintBtn, opacity: artistShown ? 0.5 : 1 }}>artist</button>
+                  )}
+                  <button onClick={() => metaHint('title')} disabled={titleShown} style={{ ...hintBtn, opacity: titleShown ? 0.5 : 1 }}>title</button>
+                  <button onClick={() => metaHint('date')} disabled={dateShown} style={{ ...hintBtn, opacity: dateShown ? 0.5 : 1 }}>year</button>
                 </div>
                 {lockSecs > 0 && (
                   <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: BAD, marginTop: 8 }}>
@@ -688,5 +712,11 @@ function Status({ children, tone }: { children: React.ReactNode; tone?: 'bad' })
 const ctrlBtn: React.CSSProperties = {
   fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: INK,
   background: '#fff', border: `1.5px solid ${INK}`, padding: '8px 13px',
+  cursor: 'pointer', borderRadius: 2,
+}
+
+const hintBtn: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: INK,
+  background: '#fff', border: `1.5px solid ${INK}`, padding: '6px 10px',
   cursor: 'pointer', borderRadius: 2,
 }

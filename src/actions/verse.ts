@@ -12,7 +12,6 @@ import {
   gradeMapping,
   nextHintLetter,
   mulberry32,
-  HINT_LADDER,
 } from '@/lib/sandbox/cipher'
 
 // "The Verse" server actions. The lyric bank (sandbox_verse_bank) is RLS-locked
@@ -38,10 +37,14 @@ export type Puzzle = {
 export type PuzzleResult = { ok: true; puzzle: Puzzle } | { ok: false; error: string }
 export type RevealResult = { ok: true; song: string; artist: string; line: string } | { ok: false; error: string }
 export type CheckResult = { ok: true; verdict: Record<string, boolean>; solved: boolean } | { ok: false; error: string }
+// Each hint type is its own request now (the UI gives them separate buttons), so a
+// hint is keyed by kind rather than walked along a fixed ladder.
+export type HintKind = 'letter' | 'artist' | 'title' | 'date'
 export type Hint =
   | { ok: true; kind: 'letter'; cipher: string; plain: string }
   | { ok: true; kind: 'artist'; artist: string }
-  | { ok: true; kind: 'song'; song: string }
+  | { ok: true; kind: 'title'; song: string }
+  | { ok: true; kind: 'date'; year: number | null }
   | { ok: false; error: string }
 export type Difficulty = 'easy' | 'medium' | 'hard'
 // Free-play themed collections. `undefined` = the general/shuffle pool (pack NULL),
@@ -49,7 +52,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard'
 export type Pack = 'taylor' | 'blink' | 'bwc'
 const PACKS: Pack[] = ['taylor', 'blink', 'bwc']
 
-type Row = { id: number; line: string; song: string; artist: string }
+type Row = { id: number; line: string; song: string; artist: string; year: number | null }
 
 // How many letters start revealed, as a fraction of the line's distinct letters
 // (scaled so short and long lines feel comparable), with a floor. The daily uses
@@ -59,10 +62,6 @@ const REVEAL: Record<Difficulty, { ratio: number; min: number }> = {
   medium: { ratio: 0.22, min: 1 },
   hard: { ratio: 0.1, min: 0 },
 }
-
-// Ordered hint ladder (HINT_LADDER, in the pure module) gives cheap info first,
-// capped: letter hints reveal the next useful letter; the last two give the
-// artist then the song title.
 
 function wordCountOf(line: string): number {
   return line.split(/\s+/).filter(Boolean).length
@@ -191,24 +190,23 @@ export async function checkVerse(ref: string, mapping: Record<string, string>): 
   return { ok: true, verdict, solved }
 }
 
-/** One hint along the fixed ladder (letter, letter, artist, song). `hintIndex`
- *  is the count of hints already taken. Letter hints reveal the next useful
- *  letter the player has not uncovered (re-derived from the seed, no server
- *  state); the cap is MAX_HINTS. */
-export async function hintVerse(ref: string, hintIndex: number, known: string[] = []): Promise<Hint> {
-  if (hintIndex < 0 || hintIndex >= HINT_LADDER.length) return { ok: false, error: 'no hints left' }
+/** A single hint of the requested `kind`. The client owns the per-type budgets
+ *  (how many letters, one each of artist/title/date) and which buttons to show;
+ *  the server just answers. A LETTER hint reveals the next most-useful letter the
+ *  player has not uncovered (re-derived from the seed, no server state); ARTIST /
+ *  TITLE / DATE reveal that field (date = release year, null when not on file). */
+export async function hintVerse(ref: string, kind: HintKind, known: string[] = []): Promise<Hint> {
   const [idStr, seedStr] = String(ref).split('.')
   const id = Number(idStr)
   const seed = Number(seedStr)
   if (!Number.isFinite(id) || !Number.isFinite(seed)) return { ok: false, error: 'bad ref' }
   const row = await rowById(id)
   if (!row) return { ok: false, error: 'not found' }
-  const kind = HINT_LADDER[hintIndex]
   if (kind === 'artist') return { ok: true, kind: 'artist', artist: row.artist }
-  if (kind === 'song') return { ok: true, kind: 'song', song: row.song }
+  if (kind === 'title') return { ok: true, kind: 'title', song: row.song }
+  if (kind === 'date') return { ok: true, kind: 'date', year: row.year ?? null }
   const cipher = makeCipher(seed)
   const pick = nextHintLetter(row.line, cipher, known)
-  // every letter already uncovered -> fall back to the artist, still useful
-  if (!pick) return { ok: true, kind: 'artist', artist: row.artist }
+  if (!pick) return { ok: false, error: 'no more letters to reveal' }
   return { ok: true, kind: 'letter', cipher: pick[0], plain: pick[1] }
 }

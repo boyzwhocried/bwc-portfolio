@@ -24,6 +24,8 @@ import {
   RATE_WINDOW_MS,
   RATE_MAX,
   RATE_LOCK_MS,
+  letterHintBudget,
+  artistHintAvailable,
 } from './cipher'
 
 describe('makeCipher', () => {
@@ -304,5 +306,33 @@ describe('evalCheckRate', () => {
     const r = evalCheckRate([10], 0, 10 + RATE_WINDOW_MS + 1)
     expect(r.allowed).toBe(true)
     expect(r.recent).toEqual([10 + RATE_WINDOW_MS + 1])
+  })
+})
+
+describe('letterHintBudget', () => {
+  it('gives the daily a fixed 2 regardless of difficulty or pack', () => {
+    expect(letterHintBudget('daily', 'easy', false)).toBe(2)
+    expect(letterHintBudget('daily', 'hard', true)).toBe(2)
+  })
+  it('scales free-play by difficulty when no pack is selected', () => {
+    expect(letterHintBudget('free', 'easy', false)).toBe(3)
+    expect(letterHintBudget('free', 'medium', false)).toBe(2)
+    expect(letterHintBudget('free', 'hard', false)).toBe(1)
+  })
+  it('fixes a themed pack at 2 letters regardless of difficulty', () => {
+    expect(letterHintBudget('free', 'easy', true)).toBe(2)
+    expect(letterHintBudget('free', 'hard', true)).toBe(2)
+  })
+})
+
+describe('artistHintAvailable', () => {
+  it('hides the artist hint for single-artist packs', () => {
+    expect(artistHintAvailable('taylor')).toBe(false)
+    expect(artistHintAvailable('blink')).toBe(false)
+  })
+  it('keeps it for mixed pools', () => {
+    expect(artistHintAvailable('bwc')).toBe(true)
+    expect(artistHintAvailable('shuffle')).toBe(true)
+    expect(artistHintAvailable(null)).toBe(true)
   })
 })

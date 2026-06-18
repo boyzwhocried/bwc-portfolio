@@ -199,12 +199,21 @@ export function nextHintLetter(
   return null
 }
 
-/** The fixed hint ladder: cheap info first, capped. Shared by the server (which
- *  honours the order) and the client (which labels the next hint). Lives here in
- *  the pure module so both the 'use server' actions and the client can import it
- *  (a 'use server' file may only export async functions). */
-export const HINT_LADDER = ['letter', 'letter', 'artist', 'song'] as const
-export const MAX_HINTS = HINT_LADDER.length
+/** How many LETTER hints a board offers, by where it is played. The daily is fixed
+ *  at 2; a themed pack is fixed at 2; otherwise free play scales with difficulty
+ *  (easy 3, medium 2, hard 1). `isPack` = a real themed collection is selected (not
+ *  the general shuffle). Pure so the UI and tests agree on the budget. */
+export function letterHintBudget(mode: 'daily' | 'free', difficulty: 'easy' | 'medium' | 'hard', isPack: boolean): number {
+  if (mode === 'daily') return 2
+  if (isPack) return 2
+  return difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2
+}
+
+/** Whether the artist hint is worth offering. In a single-artist pack the artist is
+ *  already known, so the hint is useless and hidden; every mixed pool keeps it. */
+export function artistHintAvailable(pack: string | null): boolean {
+  return pack !== 'taylor' && pack !== 'blink'
+}
 
 /** Grade a player's guesses (cipher->plain) against the true key (cipher->plain).
  *  Returns, for each cipher letter the player actually assigned, whether it is
