@@ -1,6 +1,6 @@
 'use server'
 
-import { createServiceClient } from '@/lib/supabase/service'
+import { createServerClient } from '@/lib/supabase/server'
 import { dayIndex } from '@/lib/sandbox/daily'
 import {
   makeCipher,
@@ -59,28 +59,27 @@ function buildPuzzle(row: Row, seed: number, starters: number, no: number): Puzz
   }
 }
 
-async function activeRows(): Promise<Row[] | null> {
-  const supabase = createServiceClient()
-  if (!supabase) return null
-  const { data, error } = await supabase
-    .from('sandbox_verse_bank')
-    .select('id,line,song,artist')
-    .eq('active', true)
-    .order('id', { ascending: true })
-  if (error || !data || data.length === 0) return null
+// The bank is RLS-locked. We read it through the token-gated `verse_get`
+// SECURITY DEFINER RPC using the anon key + a server-only token, so the lyric
+// text never reaches anon callers (no token -> empty) and the read does not
+// depend on the service-role key.
+const VERSE_TOKEN = process.env.VERSE_TOKEN
+
+async function fetchRows(id?: number): Promise<Row[] | null> {
+  if (!VERSE_TOKEN) return null
+  const supabase = createServerClient()
+  const { data, error } = await supabase.rpc('verse_get', { p_token: VERSE_TOKEN, p_id: id ?? null })
+  if (error || !data || (data as Row[]).length === 0) return null
   return data as Row[]
 }
 
+async function activeRows(): Promise<Row[] | null> {
+  return fetchRows()
+}
+
 async function rowById(id: number): Promise<Row | null> {
-  const supabase = createServiceClient()
-  if (!supabase) return null
-  const { data, error } = await supabase
-    .from('sandbox_verse_bank')
-    .select('id,line,song,artist')
-    .eq('id', id)
-    .maybeSingle()
-  if (error || !data) return null
-  return data as Row
+  const rows = await fetchRows(id)
+  return rows && rows.length > 0 ? rows[0] : null
 }
 
 /** Today's puzzle: one line chosen deterministically from the active bank by the
