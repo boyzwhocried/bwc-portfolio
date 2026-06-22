@@ -1,12 +1,19 @@
 'use client'
 
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ease, dur } from '@/lib/motion'
 
 // Shared overlay shell for the newer sandbox toys. Each toy themes its own panel
 // (letterpress paper, observatory black, 8-bit cabinet) via the chrome props, so
 // the toys stay visually distinct while sharing the open/close/ESC plumbing.
+//
+// Rendered through a portal to document.body so it escapes whatever page stacking
+// context it was invoked from (e.g. a section with its own z-index) and always
+// paints above the fixed site nav (z-50). Background scroll is locked while open,
+// and the panel is sized in dvh + padded to clear the nav, so on mobile the close
+// button never hides under the navbar and the page footer never bleeds over it.
 export default function SandboxModal({
   title,
   onClose,
@@ -40,7 +47,17 @@ export default function SandboxModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  // lock background scroll so the page (and its footer) cannot scroll behind the
+  // open modal on touch devices
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <motion.div
       role="dialog"
       aria-label={typeof title === 'string' ? title : 'sandbox toy'}
@@ -55,7 +72,9 @@ export default function SandboxModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: fullscreen ? 0 : '1rem',
+        // top pad clears the fixed 3.5rem nav; overflow guards very short screens
+        padding: fullscreen ? 0 : '4.5rem 1rem 1.5rem',
+        overflowY: 'auto',
       }}
       onClick={onClose}
     >
@@ -66,8 +85,10 @@ export default function SandboxModal({
         transition={{ duration: dur.quick, ease: ease.out }}
         style={{
           width: fullscreen ? '100vw' : `min(94vw, ${width}px)`,
-          height: fullscreen ? '100vh' : undefined,
-          maxHeight: fullscreen ? '100vh' : '88vh',
+          height: fullscreen ? '100dvh' : undefined,
+          // dvh (not vh) so the mobile address bar does not push the panel taller
+          // than the visible viewport; 6rem accounts for the overlay padding
+          maxHeight: fullscreen ? '100dvh' : 'calc(100dvh - 6rem)',
           display: 'flex',
           flexDirection: 'column',
           background: panelBg,
@@ -78,7 +99,7 @@ export default function SandboxModal({
       >
         <div
           className="flex items-center justify-between"
-          style={{ borderBottom: `1px solid ${borderColor}`, padding: '8px 14px', gap: 12 }}
+          style={{ borderBottom: `1px solid ${borderColor}`, padding: '8px 14px', gap: 12, flexShrink: 0 }}
         >
           <span style={{ fontFamily: titleFont, fontWeight: 700, fontSize: 15, letterSpacing: '0.01em' }}>
             {title}
@@ -96,6 +117,7 @@ export default function SandboxModal({
         </div>
         <div style={{ overflow: fullscreen ? 'hidden' : 'auto', flex: fullscreen ? 1 : undefined, minHeight: 0 }}>{children}</div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   )
 }
