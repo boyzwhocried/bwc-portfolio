@@ -27,7 +27,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import {
   firstLastAdded, eraSpan, decadeHistogram, topArtists, pickSampleTracks,
   anchorFallback, moodPalette, type StatTrack,
-} from '../_shared/playlistStats.ts'
+} from './playlistStats.ts'
 
 const OF_INSTA_ID = '7ua1oGuss0hr0MnpxvN345'
 const TOP_RANGES = ['short_term', 'medium_term', 'long_term'] as const
