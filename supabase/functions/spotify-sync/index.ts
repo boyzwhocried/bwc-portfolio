@@ -342,6 +342,77 @@ async function describe(
   }
 }
 
+// ---- playlist detail enrichment (Haiku + LRCLIB), best-effort -----------------
+
+const PLAYLIST_THEME_TRACKS = 4
+
+// abstract theme tags for a playlist, from a few of its tracks' lyrics. Same
+// privacy invariant as obsession themes: lyric text is fetched in-memory and
+// discarded; only tags survive.
+async function playlistThemeTags(tracks: StatTrack[]): Promise<string[]> {
+  const texts: string[] = []
+  for (const tk of tracks.slice(0, PLAYLIST_THEME_TRACKS)) {
+    const s = await lyricText(tk.name, tk.artist, tk.album)
+    if (s) texts.push(s)
+    await sleep(150)
+  }
+  if (texts.length === 0) return []
+  return (await distillThemes(texts)) ?? []
+}
+
+// A short read for one playlist: narrative (2 to 4 sentences, the owner's casual
+// lowercase voice), a mood label, and the most emblematic track. Returns nulls
+// on any failure. No lyric quoting; no em-dash.
+async function describePlaylistDetail(
+  name: string, spotifyDescription: string, tracks: StatTrack[], themeTags: string[],
+): Promise<{ narrative: string | null; mood: string | null; anchor: { name: string; artist: string } | null }> {
+  const key = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!key || tracks.length === 0) return { narrative: null, mood: null, anchor: null }
+  const sample = tracks.slice(0, 30).map((tk) => `${tk.artist} - ${tk.name}`).join('\n')
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 260,
+        system:
+          'You describe one music playlist for visitors on the owner\'s personal site, in the ' +
+          'FIRST PERSON as the owner. Output ONLY a JSON object: ' +
+          '{"narrative": string, "mood": string, "anchor": {"name": string, "artist": string}}. ' +
+          'narrative: 2 to 4 sentences, casual, warm, lowercase, a little dry, like telling a friend. ' +
+          'Base it on the playlist name and its own description if present; use the tracks and theme ' +
+          'tags only to confirm the feel. mood: 2 to 4 lowercase words for the overall feeling ' +
+          '(e.g. "restless and blue"). anchor: the single most emblematic track, copied EXACTLY from ' +
+          'the provided list (name and artist verbatim). ' +
+          'Hard rules: use "i"/"my"; all lowercase; no emoji, no hashtags, no quotes inside strings, ' +
+          'no em-dashes; never quote song lyrics; do not invent personal facts not in the name or ' +
+          'description. JSON object only.',
+        messages: [{
+          role: 'user',
+          content:
+            `playlist name: "${name}"\n` +
+            (spotifyDescription ? `its own description (my words): "${spotifyDescription}"\n` : `(no description of its own)\n`) +
+            (themeTags.length ? `lyric theme tags: ${themeTags.join(', ')}\n` : '') +
+            `some tracks:\n${sample}\n\noutput the JSON:`,
+        }],
+      }),
+    })
+    if (!res.ok) return { narrative: null, mood: null, anchor: null }
+    const data = await res.json()
+    const raw = (data.content?.[0]?.text ?? '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
+    const obj = JSON.parse(raw)
+    const clean = (s: unknown) => (typeof s === 'string' ? s.replace(/—/g, ',').trim() : null)
+    const narrative = clean(obj?.narrative)
+    const mood = clean(obj?.mood)
+    const anchor = obj?.anchor && typeof obj.anchor?.name === 'string' && typeof obj.anchor?.artist === 'string'
+      ? { name: clean(obj.anchor.name)!, artist: clean(obj.anchor.artist)! } : null
+    return { narrative, mood, anchor }
+  } catch {
+    return { narrative: null, mood: null, anchor: null }
+  }
+}
+
 // ---- main -------------------------------------------------------------------
 
 Deno.serve(async (req) => {
@@ -518,13 +589,22 @@ Deno.serve(async (req) => {
       const tops = topArtists(tracks, 4)
       const isObsession = !!obsessionAlbum && tracks.some((x) => (x.album ?? '').toLowerCase() === obsessionAlbum)
 
+      // LLM enrichment (best-effort): theme tags from lyrics (text discarded),
+      // then a narrative + mood + anchor pick. Failures leave nulls.
+      const themeTags = await playlistThemeTags(tracks)
+      const llm = await describePlaylistDetail(meta.name, meta.spotifyDescription, tracks, themeTags)
+      const llmMatch = llm.anchor ? tracks.find((x) => x.name === llm.anchor!.name) : undefined
+      const anchor = llmMatch
+        ? { name: llm.anchor!.name, artist: llm.anchor!.artist, image: llmMatch.image, url: llmMatch.url }
+        : anchorFallback(tracks)
+
       details[id] = {
         id,
         name: meta.name,
         url: meta.url,
         image: meta.image,
         count: meta.count,
-        description: cached?.description ?? null,
+        description: meta.spotifyDescription || cached?.description || null,
         snapshotId: meta.snapshotId,
         firstAdded: first,
         lastAdded: last,
@@ -533,11 +613,11 @@ Deno.serve(async (req) => {
         decades: decadeHistogram(tracks),
         topArtists: tops,
         sampleTracks: pickSampleTracks(tracks, 6),
-        anchorTrack: anchorFallback(tracks),
-        narrative: cached?.narrative ?? null,
-        mood: cached?.mood ?? null,
-        moodPalette: cached?.mood ? moodPalette(cached.mood) : moodPalette(''),
-        themeTags: cached?.themeTags ?? [],
+        anchorTrack: anchor,
+        narrative: llm.narrative ?? null,
+        mood: llm.mood ?? null,
+        moodPalette: moodPalette(llm.mood ?? ''),
+        themeTags,
         isObsession,
         sampled,
         generatedAt: new Date().toISOString(),
