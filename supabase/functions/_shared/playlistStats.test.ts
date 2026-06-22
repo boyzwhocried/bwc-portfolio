@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { firstLastAdded, eraSpan, decadeHistogram, type StatTrack } from './playlistStats'
+import {
+  firstLastAdded, eraSpan, decadeHistogram,
+  topArtists, pickSampleTracks, anchorFallback, moodPalette,
+  type StatTrack,
+} from './playlistStats'
 
 function t(over: Partial<StatTrack>): StatTrack {
   return { name: 'n', artist: 'a', album: 'al', image: '', url: '', addedAt: '', releaseYear: null, ...over }
@@ -43,5 +47,56 @@ describe('decadeHistogram', () => {
   })
   it('returns empty for no dated tracks', () => {
     expect(decadeHistogram([t({ releaseYear: null })])).toEqual([])
+  })
+})
+
+describe('topArtists', () => {
+  it('tallies primary artists, ranks by count then name, caps at n', () => {
+    const r = topArtists([
+      t({ artist: 'Deftones' }), t({ artist: 'Deftones' }), t({ artist: 'Korn' }),
+      t({ artist: 'Sleep Token' }), t({ artist: 'Sleep Token' }), t({ artist: 'Sleep Token' }),
+      t({ artist: '' }),
+    ], 2)
+    expect(r).toEqual([
+      { name: 'Sleep Token', count: 3 },
+      { name: 'Deftones', count: 2 },
+    ])
+  })
+})
+
+describe('pickSampleTracks', () => {
+  it('takes the first n as SampleTrack shape', () => {
+    const r = pickSampleTracks([
+      t({ name: 'a', artist: 'x', image: 'i', url: 'u' }),
+      t({ name: 'b' }), t({ name: 'c' }),
+    ], 2)
+    expect(r).toEqual([
+      { name: 'a', artist: 'x', image: 'i', url: 'u' },
+      { name: 'b', artist: 'a', image: '', url: '' },
+    ])
+  })
+})
+
+describe('anchorFallback', () => {
+  it('returns null for an empty list', () => {
+    expect(anchorFallback([])).toBeNull()
+  })
+  it('picks a track by the most-featured artist', () => {
+    const r = anchorFallback([
+      t({ name: 'one', artist: 'Korn' }),
+      t({ name: 'two', artist: 'Sleep Token' }),
+      t({ name: 'three', artist: 'Sleep Token' }),
+    ])
+    expect(r?.artist).toBe('Sleep Token')
+    expect(r?.name).toBe('two')
+  })
+})
+
+describe('moodPalette', () => {
+  it('maps a known mood keyword to its preset swatches', () => {
+    expect(moodPalette('restless and blue')).toEqual(['#1a2233', '#2a3a55', '#3a5577', '#5a7799'])
+  })
+  it('falls back to the default palette for an unknown mood', () => {
+    expect(moodPalette('zzz')).toEqual(['#222', '#3a3a3a', '#555', '#777'])
   })
 })
