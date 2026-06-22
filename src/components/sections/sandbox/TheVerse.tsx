@@ -91,7 +91,7 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   const [lockNow, setLockNow] = useState(0)
 
   const streakRef = useRef<StreakState | null>(null)
-  streakRef.current = streak
+  useEffect(() => { streakRef.current = streak }, [streak])
   const finalized = useRef(false)
 
   // an off-screen input that raises the device's native keyboard on touch. Tapping
@@ -179,8 +179,12 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
     setLoading(false)
   }, [resetBoard])
 
-  // first load: the daily
-  useEffect(() => { loadDaily() }, [loadDaily])
+  // first load: the daily. Deferred a frame so the loader's setState calls do not
+  // run synchronously inside the effect body (cascading-render lint).
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => { loadDaily() })
+    return () => cancelAnimationFrame(raf)
+  }, [loadDaily])
 
   // persist the daily across reloads
   useEffect(() => {
@@ -196,11 +200,15 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!puzzle || status !== 'playing' || finalized.current) return
     if (!isSolved(puzzle.cipherText, full, puzzle.hash)) return
-    finalized.current = true
-    setStatus('won')
-    setSelected(null)
-    if (mode === 'daily') setStreak(updateStreak(streakRef.current, today, true))
+    finalized.current = true // sync guard against double-fire before the rAF lands
+    // win transition deferred out of the effect body (no sync cascading render)
+    const raf = requestAnimationFrame(() => {
+      setStatus('won')
+      setSelected(null)
+      if (mode === 'daily') setStreak(updateStreak(streakRef.current, today, true))
+    })
     revealVerse(puzzle.ref, decode(puzzle.cipherText, full)).then((r) => { if (r.ok) setReveal(r) })
+    return () => cancelAnimationFrame(raf)
   }, [full, puzzle, status, mode, today])
 
   // live countdown ticker once the daily is finished (won or revealed)
@@ -214,13 +222,13 @@ export default function TheVerse({ onClose }: { onClose: () => void }) {
   // tick the brute-force lockout countdown and lift it the moment it expires
   useEffect(() => {
     if (lockUntil <= 0) return
-    setLockNow(Date.now())
+    const seed = requestAnimationFrame(() => setLockNow(Date.now()))
     const id = setInterval(() => {
       const t = Date.now()
       setLockNow(t)
       if (t >= lockUntil) { setLockUntil(0); clearInterval(id) }
     }, 250)
-    return () => clearInterval(id)
+    return () => { cancelAnimationFrame(seed); clearInterval(id) }
   }, [lockUntil])
 
   // move the selection to the next/prev editable box (skips locked letters)
