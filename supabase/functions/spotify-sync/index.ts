@@ -230,7 +230,7 @@ async function lyricText(track: string, artist: string, album: string): Promise<
   try {
     const exact = await fetch(
       `${LRCLIB}/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}&album_name=${encodeURIComponent(album)}`,
-      { headers },
+      { headers, signal: AbortSignal.timeout(5000) },
     )
     if (exact.ok) {
       const j = await exact.json()
@@ -239,7 +239,7 @@ async function lyricText(track: string, artist: string, album: string): Promise<
     }
     const search = await fetch(
       `${LRCLIB}/search?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}`,
-      { headers },
+      { headers, signal: AbortSignal.timeout(5000) },
     )
     if (!search.ok) return null
     const list = (await search.json()) as any[]
@@ -344,7 +344,7 @@ async function describe(
 
 // ---- playlist detail enrichment (Haiku + LRCLIB), best-effort -----------------
 
-const PLAYLIST_THEME_TRACKS = 4
+const PLAYLIST_THEME_TRACKS = 2
 
 // abstract theme tags for a playlist, from a few of its tracks' lyrics. Same
 // privacy invariant as obsession themes: lyric text is fetched in-memory and
@@ -548,55 +548,97 @@ Deno.serve(async (req) => {
     return cards
   })
 
-  // per-playlist detail: pre-baked stats for the on-site modal. snapshot_id +
-  // TTL gating means an unchanged playlist costs one cheap meta call and reuses
-  // the cached detail (no track fetch, no LLM). Phase A computes stats only.
-  await keep('playlist_details', async () => {
+  // commit the CORE keys FIRST. A slow per-playlist-detail build must never block
+  // the core music sync from persisting: a worker time-limit kill mid-detail used
+  // to drop the entire run (HTTP 546), freezing all cached data. Core commits now
+  // happen before the detail build even starts.
+  for (const u of upserts) {
+    const { error } = await supabase
+      .from('spotify_cache')
+      .upsert({ key: u.key, payload: u.payload, updated_at: new Date().toISOString() })
+    if (error) result[u.key] = `db-fail: ${error.message}`
+  }
+
+  // dated history append (spotify_history): one row per key per UTC day, last
+  // sync of the day wins. Strictly best-effort.
+  const HISTORY_KEYS = new Set([
+    'top_tracks', 'top_artists', 'recently_played',
+    'playlist_this_month', 'playlist_of_insta', 'obsession_themes',
+  ])
+  const snapshotDate = new Date().toISOString().slice(0, 10)
+  for (const u of upserts) {
+    if (!HISTORY_KEYS.has(u.key)) continue
+    try {
+      const { error } = await supabase
+        .from('spotify_history')
+        .upsert({ snapshot_date: snapshotDate, key: u.key, payload: u.payload, updated_at: new Date().toISOString() })
+      result[`history:${u.key}`] = error ? `db-fail: ${error.message}` : 'ok'
+    } catch (e) {
+      result[`history:${u.key}`] = `skip: ${String(e).slice(0, 120)}`
+    }
+  }
+
+  // per-playlist detail LAST and TIME-BOUNDED. Stats are cheap and computed for
+  // every playlist each run; LLM enrichment (narrative/mood/tags) is capped per
+  // run and stops well before the worker limit, accumulating across runs via
+  // snapshot gating. Committed on its own key so a partial build is harmless.
+  try {
+    const startMs = Date.now()
+    const ENRICH_DEADLINE_MS = 70_000 // stop starting new LLM work past this point
+    const MAX_ENRICH = 5              // at most N freshly-enriched playlists per run
+
     const { data: priorRow } = await supabase
       .from('spotify_cache').select('payload, updated_at').eq('key', 'playlist_details').maybeSingle()
     const prior = (priorRow?.payload ?? {}) as Record<string, any>
     const priorAt = priorRow?.updated_at ? new Date(priorRow.updated_at).getTime() : 0
 
-    // every playlist we surface: the shelf rows + this-month + of-insta
     const ids = new Set<string>()
-    const { data: shelfRows } = await supabase
-      .from('spotify_playlists').select('id').eq('enabled', true)
+    const { data: shelfRows } = await supabase.from('spotify_playlists').select('id').eq('enabled', true)
     for (const r of shelfRows ?? []) ids.add(r.id as string)
     ids.add(OF_INSTA_ID)
     const thisMonthId = await resolveThisMonth(token).catch(() => null)
     if (thisMonthId) ids.add(thisMonthId)
 
-    // obsession subject (album) for the cross-link badge
     const obs = upserts.find((u) => u.key === 'obsession_themes')?.payload
     const obsessionAlbum = (obs?.subject ?? '').toString().toLowerCase()
 
+    let enriched = 0
     const details: Record<string, any> = {}
     for (const id of ids) {
       let meta
-      try { meta = await playlistMeta(token, id) } catch { continue }
+      try { meta = await playlistMeta(token, id) } catch { if (prior[id]) details[id] = prior[id]; continue }
 
       const cached = prior[id]
-      if (cached && cached.snapshotId === meta.snapshotId && Date.now() - priorAt < DETAIL_TTL_MS) {
+      const snapshotSame = !!cached && cached.snapshotId === meta.snapshotId
+      // fully reuse when unchanged, already enriched, and within the TTL
+      if (snapshotSame && cached.narrative != null && Date.now() - priorAt < DETAIL_TTL_MS) {
         details[id] = { ...cached, name: meta.name, image: meta.image, count: meta.count, url: meta.url }
         continue
       }
 
       let scan: { tracks: StatTrack[]; sampled: boolean }
-      try { scan = await fetchAllTracks(token, id, SCAN_CAP) } catch { continue }
+      try { scan = await fetchAllTracks(token, id, SCAN_CAP) } catch { if (cached) details[id] = cached; continue }
       const { tracks, sampled } = scan
       const { first, last } = firstLastAdded(tracks)
       const era = eraSpan(tracks)
-      const tops = topArtists(tracks, 4)
       const isObsession = !!obsessionAlbum && tracks.some((x) => (x.album ?? '').toLowerCase() === obsessionAlbum)
 
-      // LLM enrichment (best-effort): theme tags from lyrics (text discarded),
-      // then a narrative + mood + anchor pick. Failures leave nulls.
-      const themeTags = await playlistThemeTags(tracks)
-      const llm = await describePlaylistDetail(meta.name, meta.spotifyDescription, tracks, themeTags)
-      const llmMatch = llm.anchor ? tracks.find((x) => x.name === llm.anchor!.name) : undefined
-      const anchor = llmMatch
-        ? { name: llm.anchor!.name, artist: llm.anchor!.artist, image: llmMatch.image, url: llmMatch.url }
-        : anchorFallback(tracks)
+      // carry forward any prior enrichment for an unchanged playlist; only spend
+      // the LLM/lyrics budget on a few playlists per run, within the deadline.
+      let narrative: string | null = snapshotSame ? (cached?.narrative ?? null) : null
+      let mood: string | null = snapshotSame ? (cached?.mood ?? null) : null
+      let themeTags: string[] = snapshotSame ? (cached?.themeTags ?? []) : []
+      let anchor = anchorFallback(tracks)
+
+      if (narrative == null && enriched < MAX_ENRICH && Date.now() - startMs < ENRICH_DEADLINE_MS) {
+        themeTags = await playlistThemeTags(tracks)
+        const llm = await describePlaylistDetail(meta.name, meta.spotifyDescription, tracks, themeTags)
+        const llmMatch = llm.anchor ? tracks.find((x) => x.name === llm.anchor!.name) : undefined
+        if (llmMatch) anchor = { name: llm.anchor!.name, artist: llm.anchor!.artist, image: llmMatch.image, url: llmMatch.url }
+        narrative = llm.narrative ?? null
+        mood = llm.mood ?? null
+        enriched++
+      }
 
       details[id] = {
         id,
@@ -611,57 +653,29 @@ Deno.serve(async (req) => {
         eraFrom: era.from,
         eraTo: era.to,
         decades: decadeHistogram(tracks),
-        topArtists: tops,
+        topArtists: topArtists(tracks, 4),
         sampleTracks: pickSampleTracks(tracks, 6),
         anchorTrack: anchor,
-        narrative: llm.narrative ?? null,
-        mood: llm.mood ?? null,
-        moodPalette: moodPalette(llm.mood ?? ''),
+        narrative,
+        mood,
+        moodPalette: moodPalette(mood ?? ''),
         themeTags,
         isObsession,
         sampled,
         generatedAt: new Date().toISOString(),
       }
     }
-    if (Object.keys(details).length === 0) throw new Error('no playlist details resolved')
-    return details
-  })
 
-  // commit successful keys only
-  for (const u of upserts) {
-    const { error } = await supabase
-      .from('spotify_cache')
-      .upsert({ key: u.key, payload: u.payload, updated_at: new Date().toISOString() })
-    if (error) result[u.key] = `db-fail: ${error.message}`
-  }
-
-  // dated history append (spotify_history): one row per key per UTC day, last
-  // sync of the day wins. Powers the over-time obsession/mood views. Strictly
-  // best-effort: a history failure must never break the cache commit above.
-  const HISTORY_KEYS = new Set([
-    'top_tracks',
-    'top_artists',
-    'recently_played',
-    'playlist_this_month',
-    'playlist_of_insta',
-    'obsession_themes',
-  ])
-  const snapshotDate = new Date().toISOString().slice(0, 10)
-  for (const u of upserts) {
-    if (!HISTORY_KEYS.has(u.key)) continue
-    try {
+    if (Object.keys(details).length > 0) {
       const { error } = await supabase
-        .from('spotify_history')
-        .upsert({
-          snapshot_date: snapshotDate,
-          key: u.key,
-          payload: u.payload,
-          updated_at: new Date().toISOString(),
-        })
-      result[`history:${u.key}`] = error ? `db-fail: ${error.message}` : 'ok'
-    } catch (e) {
-      result[`history:${u.key}`] = `skip: ${String(e).slice(0, 120)}`
+        .from('spotify_cache')
+        .upsert({ key: 'playlist_details', payload: details, updated_at: new Date().toISOString() })
+      result['playlist_details'] = error ? `db-fail: ${error.message}` : `ok (${enriched} enriched)`
+    } else {
+      result['playlist_details'] = 'skip: no details resolved'
     }
+  } catch (e) {
+    result['playlist_details'] = `skip: ${String(e).slice(0, 120)}`
   }
 
   return new Response(JSON.stringify({ synced: result }, null, 2), {
