@@ -82,6 +82,40 @@ export interface PlaylistFeature {
   tracks: CachedTrack[]
 }
 
+export interface PlaylistDetailSampleTrack {
+  name: string
+  artist: string
+  image: string
+  url: string
+}
+
+// Pre-baked per-playlist detail (spotify-sync playlist_details key). Read by
+// /music, rendered by PlaylistModal. LLM fields are null until Phase B runs.
+export interface PlaylistDetail {
+  id: string
+  name: string
+  url: string
+  image: string
+  count: number
+  description: string | null
+  snapshotId: string
+  firstAdded: string | null
+  lastAdded: string | null
+  eraFrom: number | null
+  eraTo: number | null
+  decades: { decade: number; count: number }[]
+  topArtists: { name: string; count: number }[]
+  sampleTracks: PlaylistDetailSampleTrack[]
+  anchorTrack: PlaylistDetailSampleTrack | null
+  narrative: string | null
+  mood: string | null
+  moodPalette: string[]
+  themeTags: string[]
+  isObsession: boolean
+  sampled: boolean
+  generatedAt: string
+}
+
 // Derived theme tags for the dominant album (spotify-sync obsession_themes key;
 // tags only, lyric text is never cached or shipped).
 export interface ObsessionThemesPayload {
@@ -98,6 +132,7 @@ export interface MusicData {
   thisMonth: PlaylistFeature | null
   ofInsta: PlaylistFeature | null
   obsessionThemes: ObsessionThemesPayload | null
+  playlistDetails: Record<string, PlaylistDetail> | null
   updatedAt: string | null
 }
 

@@ -93,6 +93,7 @@ function fixture(): MusicData {
     thisMonth: null,
     ofInsta: null,
     obsessionThemes: null,
+    playlistDetails: null,
     updatedAt: '2026-06-12T12:00:00Z',
   }
 }
@@ -282,6 +283,7 @@ describe('buildObsessionReport', () => {
       thisMonth: null,
       ofInsta: null,
       obsessionThemes: null,
+      playlistDetails: null,
       updatedAt: null,
     }
     expect(buildObsessionReport(empty)).toBeNull()
