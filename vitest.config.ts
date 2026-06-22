@@ -8,7 +8,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/lib/**/*.test.ts', 'scripts/verse/**/*.test.mjs'],
+    include: ['src/lib/**/*.test.ts', 'scripts/verse/**/*.test.mjs', 'supabase/functions/_shared/**/*.test.ts'],
   },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
