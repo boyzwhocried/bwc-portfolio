@@ -24,10 +24,16 @@
 //   (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are auto-injected by Supabase)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import {
+  firstLastAdded, eraSpan, decadeHistogram, topArtists, pickSampleTracks,
+  anchorFallback, moodPalette, type StatTrack,
+} from '../_shared/playlistStats.ts'
 
 const OF_INSTA_ID = '7ua1oGuss0hr0MnpxvN345'
 const TOP_RANGES = ['short_term', 'medium_term', 'long_term'] as const
 const SPOTIFY = 'https://api.spotify.com/v1'
+const SCAN_CAP = 100
+const DETAIL_TTL_MS = 7 * 86_400_000 // regenerate a detail at most weekly even if unchanged
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -115,12 +121,13 @@ async function fetchRecent(token: string) {
 async function playlistMeta(token: string, id: string) {
   const data = await api(
     token,
-    `/playlists/${id}?fields=id,name,description,images,external_urls(spotify),tracks(total)`,
+    `/playlists/${id}?fields=id,name,description,snapshot_id,images,external_urls(spotify),tracks(total)`,
   )
   return {
     id: data.id,
     name: data.name,
     spotifyDescription: (data.description ?? '').trim(), // the owner's own blurb, if any
+    snapshotId: (data.snapshot_id ?? '') as string,
     image: img(data.images),
     count: data.tracks?.total ?? 0,
     url: data.external_urls?.spotify ?? `https://open.spotify.com/playlist/${id}`,
@@ -133,6 +140,38 @@ async function playlistSample(token: string, id: string, limit: number) {
     `/playlists/${id}/tracks?limit=${limit}&fields=items(track(name,artists(name),album(name,images),external_urls(spotify)))`,
   )
   return (data.items ?? []).map((it: any) => trackOf(it.track)).filter((t: any) => t.name)
+}
+
+// Paginate a playlist's tracks up to `cap`, capturing added_at and the album
+// release year for the stat layer. Returns sampled=true when the playlist has
+// more tracks than the cap (stats then describe a sample, not the whole list).
+async function fetchAllTracks(token: string, id: string, cap: number): Promise<{ tracks: StatTrack[]; sampled: boolean }> {
+  const out: StatTrack[] = []
+  let url: string | null =
+    `/playlists/${id}/tracks?limit=50&fields=next,items(added_at,track(name,artists(name),album(name,images,release_date),external_urls(spotify)))`
+  let total = 0
+  while (url && out.length < cap) {
+    const data: any = await api(token, url)
+    for (const it of data.items ?? []) {
+      total++
+      const tk = it?.track
+      if (!tk?.name) continue
+      const base = trackOf(tk)
+      const yr = parseInt(String(tk?.album?.release_date ?? '').slice(0, 4), 10)
+      out.push({
+        name: base.name,
+        artist: base.artist,
+        album: base.album,
+        image: base.image,
+        url: base.url,
+        addedAt: it?.added_at ?? '',
+        releaseYear: Number.isFinite(yr) ? yr : null,
+      })
+      if (out.length >= cap) break
+    }
+    url = data.next
+  }
+  return { tracks: out, sampled: !!url || total > out.length }
 }
 
 // resolve current-month diary playlist "#YYMM" by name (owned). Falls back to the
@@ -436,6 +475,76 @@ Deno.serve(async (req) => {
     }
     if (cards.length === 0) throw new Error('no shelf cards resolved')
     return cards
+  })
+
+  // per-playlist detail: pre-baked stats for the on-site modal. snapshot_id +
+  // TTL gating means an unchanged playlist costs one cheap meta call and reuses
+  // the cached detail (no track fetch, no LLM). Phase A computes stats only.
+  await keep('playlist_details', async () => {
+    const { data: priorRow } = await supabase
+      .from('spotify_cache').select('payload, updated_at').eq('key', 'playlist_details').maybeSingle()
+    const prior = (priorRow?.payload ?? {}) as Record<string, any>
+    const priorAt = priorRow?.updated_at ? new Date(priorRow.updated_at).getTime() : 0
+
+    // every playlist we surface: the shelf rows + this-month + of-insta
+    const ids = new Set<string>()
+    const { data: shelfRows } = await supabase
+      .from('spotify_playlists').select('id').eq('enabled', true)
+    for (const r of shelfRows ?? []) ids.add(r.id as string)
+    ids.add(OF_INSTA_ID)
+    const thisMonthId = await resolveThisMonth(token).catch(() => null)
+    if (thisMonthId) ids.add(thisMonthId)
+
+    // obsession subject (album) for the cross-link badge
+    const obs = upserts.find((u) => u.key === 'obsession_themes')?.payload
+    const obsessionAlbum = (obs?.subject ?? '').toString().toLowerCase()
+
+    const details: Record<string, any> = {}
+    for (const id of ids) {
+      let meta
+      try { meta = await playlistMeta(token, id) } catch { continue }
+
+      const cached = prior[id]
+      if (cached && cached.snapshotId === meta.snapshotId && Date.now() - priorAt < DETAIL_TTL_MS) {
+        details[id] = { ...cached, name: meta.name, image: meta.image, count: meta.count, url: meta.url }
+        continue
+      }
+
+      let scan: { tracks: StatTrack[]; sampled: boolean }
+      try { scan = await fetchAllTracks(token, id, SCAN_CAP) } catch { continue }
+      const { tracks, sampled } = scan
+      const { first, last } = firstLastAdded(tracks)
+      const era = eraSpan(tracks)
+      const tops = topArtists(tracks, 4)
+      const isObsession = !!obsessionAlbum && tracks.some((x) => (x.album ?? '').toLowerCase() === obsessionAlbum)
+
+      details[id] = {
+        id,
+        name: meta.name,
+        url: meta.url,
+        image: meta.image,
+        count: meta.count,
+        description: cached?.description ?? null,
+        snapshotId: meta.snapshotId,
+        firstAdded: first,
+        lastAdded: last,
+        eraFrom: era.from,
+        eraTo: era.to,
+        decades: decadeHistogram(tracks),
+        topArtists: tops,
+        sampleTracks: pickSampleTracks(tracks, 6),
+        anchorTrack: anchorFallback(tracks),
+        narrative: cached?.narrative ?? null,
+        mood: cached?.mood ?? null,
+        moodPalette: cached?.mood ? moodPalette(cached.mood) : moodPalette(''),
+        themeTags: cached?.themeTags ?? [],
+        isObsession,
+        sampled,
+        generatedAt: new Date().toISOString(),
+      }
+    }
+    if (Object.keys(details).length === 0) throw new Error('no playlist details resolved')
+    return details
   })
 
   // commit successful keys only
