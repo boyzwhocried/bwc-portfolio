@@ -12,6 +12,7 @@ import type {
   CachedTrack,
 } from '@/types'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import PlaylistModal, { type PlaylistFallback } from '@/components/sections/PlaylistModal'
 import MusicObsession from '@/components/sections/MusicObsession'
 import ObsessionLog from '@/components/sections/ObsessionLog'
 import type { HistorySnapshot } from '@/lib/music/obsessionLog'
@@ -182,6 +183,40 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
       items: shelf.filter((p) => p.category === g.key).sort(cmp),
     })).filter((g) => g.items.length > 0)
   }, [music.shelf, sort])
+
+  const [openId, setOpenId] = useState<string | null>(null)
+
+  // every playlist we can open, keyed by id, with the minimal fields the modal
+  // needs when no pre-baked detail exists yet (graceful fallback).
+  const fallbacks = useMemo(() => {
+    const map = new Map<string, PlaylistFallback>()
+    for (const p of music.shelf ?? []) map.set(p.id, { id: p.id, name: p.name, image: p.image, count: p.count, url: p.url, description: p.description })
+    if (music.thisMonth) { const f = music.thisMonth; map.set(f.id, { id: f.id, name: f.name, image: f.image, count: f.count, url: f.url, description: f.description }) }
+    if (music.ofInsta) { const f = music.ofInsta; map.set(f.id, { id: f.id, name: 'of insta', image: f.image, count: f.count, url: f.url, description: f.description }) }
+    return map
+  }, [music.shelf, music.thisMonth, music.ofInsta])
+
+  // deep-link: /music#p=<id> opens that modal; closing clears the hash.
+  useEffect(() => {
+    const apply = () => {
+      const m = window.location.hash.match(/^#p=(.+)$/)
+      const id = m ? decodeURIComponent(m[1]) : null
+      setOpenId(id && fallbacks.has(id) ? id : null)
+    }
+    apply()
+    window.addEventListener('hashchange', apply)
+    return () => window.removeEventListener('hashchange', apply)
+  }, [fallbacks])
+
+  const openPlaylist = (id: string) => {
+    if (!fallbacks.has(id)) return
+    window.history.replaceState(null, '', `#p=${encodeURIComponent(id)}`)
+    setOpenId(id)
+  }
+  const closePlaylist = () => {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    setOpenId(null)
+  }
 
   return (
     <section style={{ position: 'relative', overflow: 'hidden', paddingTop: '3.5rem' }}>
@@ -377,7 +412,8 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
                 {music.thisMonth && (
                   <div className="md:flex-1 min-w-0 md:pr-12 lg:pr-16">
                     <BeatFeature
-                      href={music.thisMonth.url}
+                      id={music.thisMonth.id}
+                      onOpen={openPlaylist}
                       image={music.thisMonth.image}
                       label="this month"
                       title={music.thisMonth.name}
@@ -393,7 +429,8 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
                     style={music.thisMonth ? { borderColor: 'var(--accent)' } : undefined}
                   >
                     <BeatFeature
-                      href={music.ofInsta.url}
+                      id={music.ofInsta.id}
+                      onOpen={openPlaylist}
                       image={music.ofInsta.image}
                       label="the archive"
                       title="of insta"
@@ -433,7 +470,7 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{g.items.length}</span>
                   </div>
                   <div className="grid gap-x-6 gap-y-8" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-                    {items.map((p) => <ShelfCard key={p.id} p={p} />)}
+                    {items.map((p) => <ShelfCard key={p.id} p={p} onOpen={openPlaylist} />)}
                   </div>
                   {g.items.length > shelfPreview && (
                     <button
@@ -454,6 +491,10 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
           <p style={{ ...labelStyle, marginTop: '3.5rem' }}>
             slow data synced {timeAgo(music.updatedAt)} · now-playing is live
           </p>
+        )}
+
+        {openId && fallbacks.has(openId) && (
+          <PlaylistModal detail={music.playlistDetails?.[openId]} fallback={fallbacks.get(openId)!} onClose={closePlaylist} />
         )}
       </div>
     </section>
@@ -484,14 +525,16 @@ function TrackRow({ t, i }: { t: CachedTrack; i: number }) {
 }
 
 function BeatFeature({
-  href,
+  id,
+  onOpen,
   image,
   label,
   title,
   meta,
   blurb,
 }: {
-  href: string
+  id: string
+  onOpen: (id: string) => void
   image: string
   label: string
   title: string
@@ -499,11 +542,10 @@ function BeatFeature({
   blurb: string
 }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mp-card block transition-opacity hover:opacity-90"
+    <button
+      onClick={() => onOpen(id)}
+      className="mp-card block text-left transition-opacity hover:opacity-90"
+      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', width: '100%' }}
     >
       <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-8">
         <div style={{ width: 'clamp(8rem, 20vw, 12rem)', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: 'var(--accent)', flexShrink: 0 }}>
@@ -524,17 +566,16 @@ function BeatFeature({
           </p>
         </div>
       </div>
-    </a>
+    </button>
   )
 }
 
-function ShelfCard({ p }: { p: PlaylistCard }) {
+function ShelfCard({ p, onOpen }: { p: PlaylistCard; onOpen: (id: string) => void }) {
   return (
-    <a
-      href={p.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mp-card block transition-opacity hover:opacity-95"
+    <button
+      onClick={() => onOpen(p.id)}
+      className="mp-card block text-left transition-opacity hover:opacity-95"
+      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', width: '100%' }}
     >
       <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: 'var(--accent)' }}>
         {p.image && (
@@ -544,15 +585,11 @@ function ShelfCard({ p }: { p: PlaylistCard }) {
       <div className="truncate" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, color: 'var(--fg)', marginTop: 10 }}>{p.name}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent)', marginTop: 3 }}>{p.count.toLocaleString()} tracks</div>
       {p.description && (
-        <p
-          title={p.description}
-          className="truncate"
-          style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--muted)', marginTop: 6 }}
-        >
+        <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--muted)', marginTop: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {p.description}
         </p>
       )}
-    </a>
+    </button>
   )
 }
 
