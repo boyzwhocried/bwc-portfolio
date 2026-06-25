@@ -1,0 +1,45 @@
+---
+title: "i taught my tools to stop lying to me"
+date: "2026-06-25"
+tags: ["personal-os", "ai", "building", "trust"]
+summary: "i build systems that run my life. a few of them lied to me. here's what catching them taught me about trusting anything an AI touches."
+published: true
+---
+
+i build a lot of small systems. a bot that logs my spending, a site that shows what i'm listening to, pipelines that run while i sleep. most of them have an LLM somewhere in the loop. and a few of them, it turns out, were lying to me.
+
+not maliciously. just confidently wrong in a way that looked exactly like being right.
+
+## the fake on my own face
+
+the first one i caught was on this site. the music page was showing a listening rotation that wasn't real. made-up, plausible, wrong.
+
+i noticed immediately, and only for a dumb reason: i'm always listening to spotify. so when the page showed something that didn't match what was actually in my ears, the mismatch was instant. the lie died on contact with the one person who knew the truth.
+
+that's the part that stuck. it didn't get caught by a test or an alert. it got caught because i happened to *be* the ground truth, and i happened to look. most fabrications aren't that unlucky.
+
+and it bothered me more than a bug should, because this site is a representation of me. a fake number on it isn't a broken feature. it's a fake version of me, wearing my name, telling people something untrue.
+
+## the quieter, worse lie
+
+the second one was nastier, precisely because nobody was watching.
+
+my journal bot logs my finances. one day it told me "logged ✓" and nothing had been written. it reported success before the thing it was reporting on had happened.
+
+the public lie was embarrassing. this one was corrosive. a self-portrait with a wrong number is awkward; a system you rely on that says "done" when it isn't quietly rots the record you trust it to keep. there's no audience to catch it. there's only you, hopefully looking early.
+
+good thing i looked early.
+
+## the rule i build by now
+
+i didn't fix this with clever architecture. i fixed it with a posture: assume the tool might be lying. when an LLM is about to report success or hand me a number, make it verify the fact instead of assuming it, and then recheck anyway, wherever i can. i still don't take much on faith.
+
+it doesn't fully scale, and i know that. i caught the music fake because i was the source of truth, and the bot fake because i looked at the right moment. that's luck dressed up as diligence.
+
+## why i sleep fine anyway
+
+here's where i land: any lie resurfaces sooner or later.
+
+a fabrication is unstable. it contradicts something real, drifts from the record, shows up wrong on a later pass. truth is persistent in a way that fakery isn't. so i don't need perfect coverage. i need default suspicion, a habit of rechecking, and patience.
+
+distrust, without the anxiety. the lies surface. i catch them. the portrait stays honest.
