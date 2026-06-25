@@ -54,7 +54,7 @@ export default function AboutProfile({ currently }: { currently: NowCurrently[] 
                 quality={70}
                 style={{ objectFit: 'cover' }}
               />
-              <span style={{ position: 'absolute', bottom: 6, left: 6, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--paper)', background: 'rgba(26,26,26,0.72)', padding: '2px 6px' }}>BANDUNG, 2026</span>
+              <span style={{ position: 'absolute', bottom: 6, left: 6, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--paper)', background: 'rgba(26,26,26,0.72)', padding: '2px 6px' }}>BANDUNG, 2025</span>
             </div>
             <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: '0.5rem', letterSpacing: '0.06em' }}>
               VERREL ALSYOUMI · data engineer, tinkerer
