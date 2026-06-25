@@ -1,4 +1,7 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@vercel/analytics/next'
+import JsonLd from '@/components/JsonLd'
+import { personJsonLd, websiteJsonLd } from '@/lib/jsonld'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -9,6 +12,7 @@ export const metadata: Metadata = {
   },
   description: 'data engineer in jakarta. a playground and workshop. i build things & break a few.',
   alternates: {
+    canonical: '/',
     types: { 'application/rss+xml': '/feed.xml' },
   },
   openGraph: {
@@ -49,8 +53,11 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <JsonLd data={personJsonLd()} />
+        <JsonLd data={websiteJsonLd()} />
         <div id="splash-cover" aria-hidden />
         {children}
+        <Analytics />
       </body>
     </html>
   )

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getAllBlogSlugs, getBlogPostWithContent, readingMinutes } from '@/lib/mdx'
+import { blogPostingJsonLd } from '@/lib/jsonld'
+import JsonLd from '@/components/JsonLd'
 import Reveal from '@/components/ui/Reveal'
 
 export function generateStaticParams() {
@@ -17,7 +19,11 @@ export async function generateMetadata({
   const { slug } = await params
   const post = getBlogPostWithContent(slug)
   if (!post) return { title: 'Not Found' }
-  return { title: post.title, description: post.summary }
+  return {
+    title: post.title,
+    description: post.summary,
+    alternates: { canonical: `/blog/${slug}` },
+  }
 }
 
 export default async function BlogPostPage({
@@ -33,6 +39,7 @@ export default async function BlogPostPage({
 
   return (
     <article className="min-h-screen" style={{ paddingTop: '3.5rem' }}>
+      <JsonLd data={blogPostingJsonLd(post)} />
       <div className="mx-auto px-6" style={{ maxWidth: '42rem', paddingTop: '2.5rem', paddingBottom: '5rem' }}>
         {/* back to the issue */}
         <Link
