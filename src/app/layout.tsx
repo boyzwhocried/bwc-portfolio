@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: 'cprCvkNz5xSJgDWpLnYp3XUiN5x2MG7dKLWZlOvRlhI',
+  },
   // icons come from the file convention: src/app/icon.svg (rel=icon) and
   // src/app/apple-icon.tsx (apple-touch-icon for iOS). no inline data-URI here,
   // which iOS Safari ignored and which would override the real icon files.
