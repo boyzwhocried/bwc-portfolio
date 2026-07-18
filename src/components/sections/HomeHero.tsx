@@ -73,9 +73,9 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
 
           <motion.div custom={3} variants={drift} className="md:col-span-5 lg:col-span-4">
             <p className="text-sm md:text-base leading-relaxed" style={{ color: 'var(--fg)' }}>
-              hey. i&apos;m a data engineer in jakarta who builds systems for a living and for fun.
-              this site is a playground and a workshop: finance tools, a wiki that knows my whole
-              life, a horror-shorts bot, plus a pile of half-finished experiments i keep poking at.
+              hey. this is a personal site for the things i make, keep, and return to.
+              systems and selected work live beside listening notes, photographs, and small
+              experiments that are still becoming themselves.
             </p>
 
             <p className="mt-6 flex items-center gap-3" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', color: 'var(--fg)', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
@@ -84,7 +84,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
             </p>
 
             <p className="mt-4 text-[10px] uppercase" style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-text)', letterSpacing: '0.08em' }}>
-              scroll to dig in ↓
+              enter the rooms ↓
             </p>
           </motion.div>
         </div>
@@ -131,7 +131,7 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
       >
         <div className="flex items-baseline justify-between" style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(1.4rem, 3vw, 2rem)', letterSpacing: '-0.02em', color: 'var(--fg)' }}>
-            selected work
+            from the workbench
           </h2>
           <Link href="/projects" className="transition-opacity hover:opacity-60" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-text)' }}>
             all work →
@@ -153,11 +153,12 @@ export default function HomeHero({ featured }: { featured: Project[] }) {
           ))}
         </div>
 
-        {/* cross-links to the other rooms (connect the site) */}
+        {/* room links make the rest of the site visible before the footer */}
         <div className="flex flex-wrap gap-x-8 gap-y-2" style={{ marginTop: '2rem', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-          <Link href="/hub" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>launch live apps →</Link>
-          <Link href="/now" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>what i&apos;m on now →</Link>
-          <Link href="/sandbox" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>poke around the sandbox →</Link>
+          <Link href="/now" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>right now →</Link>
+          <Link href="/music" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>listening room →</Link>
+          <Link href="/photography" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>photo desk →</Link>
+          <Link href="/sandbox" className="transition-opacity hover:opacity-60" style={{ color: 'var(--fg)' }}>experiments →</Link>
         </div>
       </motion.div>
     </motion.section>

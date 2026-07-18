@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getAllProjects, getProjectBySlug } from '@/lib/projects'
 import Reveal from '@/components/ui/Reveal'
 import DropCap from '@/components/ui/DropCap'
+import { pageMetadata } from '@/lib/metadata'
 
 export const revalidate = 3600
 
@@ -20,7 +21,12 @@ export async function generateMetadata({
   const { slug } = await params
   const project = await getProjectBySlug(slug)
   if (!project) return { title: 'Not Found' }
-  return { title: project.title, description: project.description }
+  return pageMetadata({
+    title: project.title,
+    description: project.description,
+    path: `/projects/${slug}`,
+    image: `/projects/${slug}/opengraph-image`,
+  })
 }
 
 // kicker label from tags

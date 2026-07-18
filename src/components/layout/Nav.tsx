@@ -6,23 +6,38 @@ import { useState, useEffect } from 'react'
 import Square from '@/components/ui/Square'
 import useRandomTilt from '@/lib/useRandomTilt'
 
-const links = [
+const primaryLinks = [
   { href: '/', label: 'home' },
-  { href: '/about', label: 'about' },
-  { href: '/projects', label: 'projects' },
-  { href: '/blog', label: 'blog' },
+  { href: '/projects', label: 'work', paths: ['/projects', '/cv'] },
+  { href: '/now', label: 'now', paths: ['/now', '/blog'] },
   { href: '/contact', label: 'contact' },
 ]
+
+const roomLinks = [
+  { href: '/about', label: 'about' },
+  { href: '/music', label: 'music' },
+  { href: '/photography', label: 'photography' },
+  { href: '/hub', label: 'hub' },
+  { href: '/sandbox', label: 'sandbox' },
+]
+
+function isActive(pathname: string, href: string, paths?: string[]) {
+  return (paths ?? [href]).some((path) => path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(path + '/'))
+}
 
 export default function Nav({ room }: { room: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [roomsOpen, setRoomsOpen] = useState(false)
   // random base lean on the brand mark; the inner Square keeps its hover rotate
   const navTilt = useRandomTilt()
 
   // close the mobile menu on route change (deferred so it is not a sync set in the effect body)
   useEffect(() => {
-    const t = setTimeout(() => setOpen(false), 0)
+    const t = setTimeout(() => {
+      setOpen(false)
+      setRoomsOpen(false)
+    }, 0)
     return () => clearTimeout(t)
   }, [pathname])
 
@@ -30,6 +45,15 @@ export default function Nav({ room }: { room: string }) {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setRoomsOpen(false)
+    }
+
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [])
 
   // /hub replaces the nav with its own OS menu bar (rendered by the hub page)
   if (room === 'hub') return null
@@ -68,9 +92,9 @@ export default function Nav({ room }: { room: string }) {
           </Link>
 
           {/* desktop links */}
-          <ul className="hidden md:flex gap-6">
-            {links.map(({ href, label }) => {
-              const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
+          <ul className="hidden md:flex items-center gap-6">
+            {primaryLinks.slice(0, 3).map(({ href, label, paths }) => {
+              const active = isActive(pathname, href, paths)
               return (
                 <li key={href}>
                   <Link
@@ -80,6 +104,42 @@ export default function Nav({ room }: { room: string }) {
                       color: active ? 'var(--accent-text)' : 'var(--muted)',
                     }}
                   >
+                    {label}
+                  </Link>
+                </li>
+              )
+            })}
+            <li className="relative">
+              <button
+                type="button"
+                aria-expanded={roomsOpen}
+                aria-controls="room-index"
+                onClick={() => setRoomsOpen((value) => !value)}
+                className="text-sm transition-opacity hover:opacity-60"
+                style={{ color: roomLinks.some(({ href }) => isActive(pathname, href)) ? 'var(--accent-text)' : 'var(--muted)', background: 'none', border: 0, cursor: 'pointer', padding: 0 }}
+              >
+                rooms
+              </button>
+              <div
+                id="room-index"
+                className="absolute right-0 top-8 w-44 transition-all duration-200"
+                style={{ background: 'var(--bg)', border: '1px solid var(--rule)', boxShadow: '4px 4px 0 var(--fg)', opacity: roomsOpen ? 1 : 0, pointerEvents: roomsOpen ? 'auto' : 'none', transform: roomsOpen ? 'translateY(0)' : 'translateY(-6px)', padding: '0.75rem' }}
+              >
+                <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: '0.5rem' }}>other rooms</p>
+                <div className="flex flex-col gap-1">
+                  {roomLinks.map(({ href, label }) => (
+                    <Link key={href} href={href} onClick={() => setRoomsOpen(false)} className="px-2 py-1.5 transition-colors hover:bg-[var(--rule)]" style={{ color: isActive(pathname, href) ? 'var(--accent-text)' : 'var(--fg)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </li>
+            {primaryLinks.slice(3).map(({ href, label, paths }) => {
+              const active = isActive(pathname, href, paths)
+              return (
+                <li key={href}>
+                  <Link href={href} className="text-sm transition-all" style={{ color: active ? 'var(--accent-text)' : 'var(--muted)' }}>
                     {label}
                   </Link>
                 </li>
@@ -135,8 +195,8 @@ export default function Nav({ room }: { room: string }) {
         aria-hidden={!open}
       >
         <ul className="space-y-2">
-          {links.map(({ href, label }, i) => {
-            const active = href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
+          {primaryLinks.map(({ href, label, paths }, i) => {
+            const active = isActive(pathname, href, paths)
             return (
               <li
                 key={href}
@@ -159,8 +219,18 @@ export default function Nav({ room }: { room: string }) {
                   {label}
                 </Link>
               </li>
-            )
-          })}
+              )
+            })}
+          <li style={{ paddingTop: '1.5rem' }}>
+            <p className="uppercase" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', marginBottom: '0.75rem' }}>rooms</p>
+            <div className="grid grid-cols-2 gap-x-5 gap-y-2">
+              {roomLinks.map(({ href, label }) => (
+                <Link key={href} href={href} className="text-base transition-opacity hover:opacity-60" tabIndex={open ? 0 : -1} style={{ color: isActive(pathname, href) ? 'var(--accent)' : 'var(--fg)' }}>
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </li>
         </ul>
 
         <p

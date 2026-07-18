@@ -1,0 +1,32 @@
+---
+title: "what a public data project needs to prove"
+date: "2026-07-19"
+tags: ["data", "projects", "engineering"]
+summary: "a public data project does not need production data to show serious engineering. it needs clear boundaries, believable constraints, and evidence that the system works."
+published: true
+---
+data work has an awkward portfolio problem: the most convincing examples often belong to someone else.
+
+the useful datasets are private. the interesting failures are tied to real systems. the details that make a project feel credible can also be the details that should never leave work.
+
+that is not a reason to show nothing. it is a reason to design public proof differently.
+
+## use a clean boundary
+
+a public project should be public all the way through. synthetic or openly licensed data is not a lesser substitute when the system is honest about what it is.
+
+the boundary creates room to explain decisions without turning a case study into a leak. the schema can be readable. the transformations can be inspected. the repository can be shared. nobody has to wonder whether a screenshot contains a client record.
+
+## make the constraints visible
+
+the project becomes believable when it has real constraints. changing records need a history. inputs need contracts. tests need to fail for a reason. a pipeline should make clear what happens when it runs twice, when a field changes, or when the source is wrong.
+
+those are not enterprise-only problems. they are the parts that turn a dashboard demo into engineering.
+
+## show evidence, not theatre
+
+screenshots can make a project look finished. evidence makes it trustworthy.
+
+show the checks. explain the assumptions. include the small decisions that protect data quality. make the failure cases legible. if a number is synthetic, say so. if a limitation exists, leave it in the open.
+
+a public project cannot prove that someone has worked inside every kind of production system. it can prove something more useful: that they understand the responsibility of building one without borrowing someone else's data to make the point.

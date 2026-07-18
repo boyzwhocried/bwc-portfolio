@@ -1,13 +1,14 @@
-import { Metadata } from 'next'
 import Link from 'next/link'
 import DriftingSquares from '@/components/ui/DriftingSquares'
 import NowHeadline from '@/components/sections/NowHeadline'
 import { createServerClient } from '@/lib/supabase/server'
+import { pageMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'now',
   description: 'what i am focused on right now. a living changelog of the platform growing.',
-}
+  path: '/now',
+})
 
 // hourly ISR: new now_entries appear without a redeploy (kills the stale-bake class)
 export const revalidate = 3600

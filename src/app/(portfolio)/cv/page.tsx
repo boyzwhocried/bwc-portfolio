@@ -1,12 +1,13 @@
-import { Metadata } from 'next'
 import Link from 'next/link'
 import PrintButton from '@/components/ui/PrintButton'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import { pageMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'cv',
   description: 'Verrel Mohammad Al Syoumi, data engineer. Print-ready CV.',
-}
+  path: '/cv',
+})
 
 // one timeline entry: date in the left rail, content on the right
 function Entry({

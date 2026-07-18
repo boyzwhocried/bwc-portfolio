@@ -190,7 +190,6 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(2deg)' }}>
               <button
                 onClick={() => setApp('darkroom')}
-                aria-label="enter the darkroom"
                 style={{ display: 'block', width: 116, height: 138, background: '#2a0808', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 10, position: 'relative', overflow: 'hidden' }}
               >
                 <span aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 0%, rgba(200,40,25,0.5), transparent 65%)' }} />
@@ -222,7 +221,7 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(-1.5deg)' }}>
               <button
                 onClick={() => setApp('parry')}
-                aria-label="play parry"
+                aria-label="PARRY, play the arcade"
                 style={{ display: 'block', width: 144, height: 116, background: '#0d0f0d', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden' }}
               >
                 <span style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 21, letterSpacing: '0.12em', color: '#7CFC9A', textShadow: '0 0 6px #7CFC9A' }}>PARRY</span>
@@ -235,7 +234,7 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(2deg)' }}>
               <button
                 onClick={() => setApp('rig')}
-                aria-label="open the rig"
+                aria-label="open the rig, calibrate"
                 style={{ display: 'block', width: 116, height: 116, background: '#1b1e21', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
               >
                 <span style={{ position: 'absolute', bottom: -28, left: '50%', width: 72, height: 72, border: '2px solid #3a4046', borderRadius: '50%', transform: 'translateX(-50%)' }} />
@@ -249,7 +248,6 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(1.5deg)' }}>
               <button
                 onClick={() => setApp('press')}
-                aria-label="play the press"
                 style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
               >
                 <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE PRESS</span>
@@ -267,7 +265,7 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(-2.5deg)' }}>
               <button
                 onClick={() => setApp('pipeline')}
-                aria-label="play pipeline panic"
+                aria-label="play pipeline panic, you are the staging layer"
                 style={{ display: 'block', width: 138, height: 128, background: '#f1ede4', border: '1.5px solid var(--ink)', boxShadow: SHADOW_INK, cursor: 'pointer', padding: 10 }}
               >
                 <span style={{ display: 'block', height: 18, background: '#ad6a3e', border: '1px solid var(--ink)' }} />
@@ -306,7 +304,6 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(-2deg)' }}>
               <button
                 onClick={() => setApp('daily')}
-                aria-label="play the lockup"
                 style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
               >
                 <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE LOCKUP</span>
@@ -324,7 +321,6 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(2deg)' }}>
               <button
                 onClick={() => setApp('proof')}
-                aria-label="play the proof"
                 style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
               >
                 <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE PROOF</span>
@@ -342,7 +338,6 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(-1.5deg)' }}>
               <button
                 onClick={() => setApp('impose')}
-                aria-label="play the impose"
                 style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
               >
                 <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE IMPOSE</span>
@@ -360,7 +355,7 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(1.5deg)' }}>
               <button
                 onClick={() => setApp('guestbook')}
-                aria-label="open the guestbook"
+                aria-label="Leave a mark. Real entries, real table. Sign it. Open the guestbook."
                 style={{ display: 'block', width: 130, height: 112, background: '#f1ede4', border: '1.5px solid var(--ink)', boxShadow: SHADOW, padding: 9, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.55, cursor: 'pointer', textAlign: 'left' }}
               >
                 ★ leave a mark<br />real entries,<br />real table.<br />&gt; sign it_
@@ -372,7 +367,6 @@ export default function ToyShelf() {
             <div style={{ transform: 'rotate(2.5deg)' }}>
               <button
                 onClick={() => setApp('verse')}
-                aria-label="play the verse"
                 style={{ display: 'block', width: 124, height: 112, background: '#efe9dd', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 11, textAlign: 'left' }}
               >
                 <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: '#6b665d' }}>THE VERSE</span>

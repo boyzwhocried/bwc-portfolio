@@ -1,12 +1,13 @@
-import { Metadata } from 'next'
 import ContactForm from '@/components/sections/ContactForm'
 import ContactPanel from '@/components/sections/ContactPanel'
 import DriftingSquares from '@/components/ui/DriftingSquares'
+import { pageMetadata } from '@/lib/metadata'
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'contact',
   description: 'hey verrel, i want to ___. get in touch.',
-}
+  path: '/contact', image: '/contact/opengraph-image',
+})
 
 const frame: React.CSSProperties = {
   maxWidth: 'var(--page-max)',

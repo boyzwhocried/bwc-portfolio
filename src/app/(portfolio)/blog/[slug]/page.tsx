@@ -6,6 +6,7 @@ import { getAllBlogSlugs, getBlogPostWithContent, readingMinutes } from '@/lib/m
 import { blogPostingJsonLd } from '@/lib/jsonld'
 import JsonLd from '@/components/JsonLd'
 import Reveal from '@/components/ui/Reveal'
+import { pageMetadata } from '@/lib/metadata'
 
 export function generateStaticParams() {
   return getAllBlogSlugs().map((slug) => ({ slug }))
@@ -20,9 +21,14 @@ export async function generateMetadata({
   const post = getBlogPostWithContent(slug)
   if (!post) return { title: 'Not Found' }
   return {
+    ...pageMetadata({
+      title: post.title,
+      description: post.summary,
+      path: `/blog/${slug}`,
+      image: `/blog/${slug}/opengraph-image`,
+    }),
     title: post.title,
     description: post.summary,
-    alternates: { canonical: `/blog/${slug}` },
   }
 }
 
