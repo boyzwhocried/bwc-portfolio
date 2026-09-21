@@ -26,6 +26,7 @@ export async function generateMetadata({
       description: post.summary,
       path: `/blog/${slug}`,
       image: `/blog/${slug}/opengraph-image`,
+      type: 'article',
     }),
     title: post.title,
     description: post.summary,
