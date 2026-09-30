@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerClient } from '@/lib/supabase/server'
+import { notifyContact } from '@/lib/notify'
 import { ContactMessage } from '@/types'
 
 export interface ContactFormState {
@@ -34,6 +35,8 @@ export async function submitContact(
   if (error) {
     return { success: false, error: 'Failed to send message. Try again.' }
   }
+
+  await notifyContact(payload)
 
   return { success: true, error: null }
 }
