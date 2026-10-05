@@ -63,3 +63,4 @@ server.log
 server-*.log
 
 .vercel
+supabase/.temp/
