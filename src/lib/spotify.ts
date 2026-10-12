@@ -1,5 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { SpotifyTrack, CachedTrack, SpotifyLive } from '@/types'
+import { createServiceClient } from '@/lib/supabase/service'
+import { mergeRecent } from '@/lib/music/recentMerge'
 
 const TOKEN_URL = 'https://accounts.spotify.com/api/token'
 const API = 'https://api.spotify.com/v1'
@@ -53,7 +55,7 @@ async function fetchNowPlaying(token: string): Promise<SpotifyTrack | null> {
 }
 
 async function fetchRecent(token: string): Promise<CachedTrack[]> {
-  const res = await fetch(`${API}/me/player/recently-played?limit=20`, {
+  const res = await fetch(`${API}/me/player/recently-played?limit=50`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   })
@@ -80,6 +82,34 @@ async function fetchRecent(token: string): Promise<CachedTrack[]> {
   return out
 }
 
+// Own play log (spotify_plays): Spotify's recently-played can stall for hours,
+// so every actively-playing track seen here is upserted, and the log is merged
+// into `recent`. Fail-open: a missing table or key just means Spotify-only data.
+async function logAndReadPlays(now: SpotifyTrack | null): Promise<CachedTrack[]> {
+  const db = createServiceClient()
+  if (!db) return []
+  try {
+    if (now?.is_playing && now.track_url) {
+      await db.from('spotify_plays').upsert({
+        url: now.track_url,
+        name: now.title,
+        artist: now.artist,
+        album: now.album,
+        image: now.album_art_url,
+        played_at: new Date().toISOString(),
+      })
+    }
+    const { data } = await db
+      .from('spotify_plays')
+      .select('url, name, artist, album, image, played_at')
+      .order('played_at', { ascending: false })
+      .limit(30)
+    return (data ?? []) as CachedTrack[]
+  } catch {
+    return []
+  }
+}
+
 // Single shared cache for ALL live reads. unstable_cache dedupes across requests
 // AND serverless instances: the body runs at most once per 30s no matter how many
 // visitors are on the page, so Spotify calls stay flat under heavy traffic.
@@ -87,11 +117,12 @@ export const getLiveSpotify = unstable_cache(
   async (): Promise<SpotifyLive> => {
     const token = await getAccessToken()
     if (!token) return { nowPlaying: null, recent: [] }
-    const [nowPlaying, recent] = await Promise.all([
+    const [nowPlaying, spotifyRecent] = await Promise.all([
       fetchNowPlaying(token),
       fetchRecent(token),
     ])
-    return { nowPlaying, recent }
+    const logged = await logAndReadPlays(nowPlaying)
+    return { nowPlaying, recent: mergeRecent(spotifyRecent, logged, 14) }
   },
   ['spotify-live'],
   { revalidate: 30 }
