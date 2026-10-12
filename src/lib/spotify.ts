@@ -110,6 +110,16 @@ async function logAndReadPlays(now: SpotifyTrack | null): Promise<CachedTrack[]>
   }
 }
 
+// Cron entrypoint: log whatever is playing right now, with no page open. Skips the
+// recently-played call (the log is the point), and is not behind the 30s cache.
+export async function logNowPlaying(): Promise<{ logged: string | null }> {
+  const token = await getAccessToken()
+  if (!token) return { logged: null }
+  const now = await fetchNowPlaying(token)
+  await logAndReadPlays(now)
+  return { logged: now?.is_playing ? now.title : null }
+}
+
 // Single shared cache for ALL live reads. unstable_cache dedupes across requests
 // AND serverless instances: the body runs at most once per 30s no matter how many
 // visitors are on the page, so Spotify calls stay flat under heavy traffic.
