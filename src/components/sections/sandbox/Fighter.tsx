@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import SandboxModal from './SandboxModal'
+import FighterTouchControls from './FighterTouchControls'
 import { initMatch, step, UNIT } from '@/lib/sandbox/fighter/sim'
 import { INTRO_FRAMES, matchWinner } from '@/lib/sandbox/fighter/match'
 import { advance } from '@/lib/sandbox/fighter/loop'
@@ -13,6 +14,7 @@ import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
 import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
+import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import type { Inputs, MatchState } from '@/lib/sandbox/fighter/types'
 
 const W = 320
@@ -165,13 +167,49 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const reduceRef = useRef(false)
   const modeRef = useRef<'title' | 'play'>('title')
   const humanInput = useRef(0)
+  const keysRef = useRef(new Set<string>())
+  const touchBits = useRef(0)
+  const playingRef = useRef(false)
+  const [showTouch, setShowTouch] = useState(false)
+  const onTouch = useCallback((bits: number) => {
+    touchBits.current = bits
+  }, [])
 
   useEffect(() => {
     reduceRef.current = !!reduce
   }, [reduce])
   useEffect(() => {
     modeRef.current = mode
-  }, [mode])
+    playingRef.current = mode === 'play' && !result
+  }, [mode, result])
+
+  // keyboard: only game keys, and only block page scrolling while a match is live
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (!GAME_KEYS.has(e.code)) return
+      if (playingRef.current) e.preventDefault()
+      keysRef.current.add(e.code)
+    }
+    const up = (e: KeyboardEvent) => keysRef.current.delete(e.code)
+    const clear = () => keysRef.current.clear()
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    window.addEventListener('blur', clear)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', clear)
+    }
+  }, [])
+
+  // show on-screen controls on touch devices
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse)')
+    const upd = () => setShowTouch(mq.matches)
+    upd()
+    mq.addEventListener('change', upd)
+    return () => mq.removeEventListener('change', upd)
+  }, [])
 
   // integer scale to fit the wrapper
   useEffect(() => {
@@ -210,6 +248,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     const tick = (ts: number) => {
       const dt = last === null ? 0 : ts - last
       last = ts
+      humanInput.current = keysToInput(keysRef.current) | touchBits.current
       const r = advance(accum, dt)
       accum = r.accum
       for (let i = 0; i < r.steps; i++) {
@@ -268,6 +307,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           aria-label="Pixel fighting game: Si Penyadap versus Sang Ajudan in a burning forest"
           style={{ width: W * scale, height: H * scale, imageRendering: 'pixelated', display: 'block' }}
         />
+        {mode === 'play' && showTouch && <FighterTouchControls hand="right" onChange={onTouch} />}
         {mode === 'title' && (
           <div style={overlay}>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
