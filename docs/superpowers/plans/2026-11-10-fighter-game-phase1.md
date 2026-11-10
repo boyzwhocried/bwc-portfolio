@@ -174,7 +174,7 @@ Failure modes the spec implies but a happy-path test would miss (each is pinned 
 - [ ] **Step 1: Failing tests:** `loadSettings returns defaults when localStorage throws` (Review Focus 5); `loadSettings ignores corrupt JSON`; `saveSettings does not throw when storage is full`.
 - [ ] **Step 2: Run, confirm FAIL.**
 - [ ] **Step 3: Implement** settings, then add `'fighter'` to the `app` union and the shelf button/render in `ToyShelf.tsx` following the Parry entries. Respect `useReducedMotion` for shake and flash.
-- [ ] **Step 4: Run full verification:** `npm test`, `npm run lint`, `npm run build` all pass; grep the repo diff for em-dashes (`—`) and for blocked names (expect none); Lighthouse accessibility 100 on `/sandbox` with the toy open; play one full match with keyboard and one with touch emulation.
+- [ ] **Step 4: Run full verification:** `npm test`, `npm run lint`, `npm run build` all pass; grep the repo diff for em-dashes (U+2014) and for blocked names (expect none); Lighthouse accessibility 100 on `/sandbox` with the toy open; play one full match with keyboard and one with touch emulation.
 - [ ] **Step 5: Commit** `feat(fighter): wire toy into sandbox shelf`. Do not push.
 
 ## Self-review notes
