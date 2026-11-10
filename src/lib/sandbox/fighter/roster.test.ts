@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { FIGHTERS, FIGHTER_IDS } from './roster'
-import { MOVE_KINDS } from './types'
+import { BTN, MOVE_KINDS } from './types'
+import { initMatch, step, UNIT } from './sim'
 
 describe('roster', () => {
   it('has exactly the two phase 1 fighters', () => {
@@ -63,5 +64,22 @@ describe('roster', () => {
       expect(kick.startup).toBeLessThanOrEqual(punch.hitstun)
       expect(special.startup).toBeLessThanOrEqual(kick.hitstun)
     }
+  })
+
+  it('punch hits freeze the game for 5 frames and kick hits for 6, for both fighters', () => {
+    for (const id of FIGHTER_IDS) {
+      expect(FIGHTERS[id].moves.punch.hitstop).toBe(5)
+      expect(FIGHTERS[id].moves.kick.hitstop).toBe(6)
+    }
+  })
+
+  it('a real punch landing freezes the match for its hitstop, and the defender gets the same hitstun after it', () => {
+    const pair = [FIGHTERS['sang-ajudan'], FIGHTERS['si-penyadap']] as [(typeof FIGHTERS)['sang-ajudan'], (typeof FIGHTERS)['si-penyadap']]
+    let s = initMatch(1, pair)
+    s = { ...s, fighters: [s.fighters[0], { ...s.fighters[1], x: s.fighters[0].x + 30 * UNIT }] }
+    s = step(s, [BTN.PUNCH, 0])
+    for (let i = 0; i < pair[0].moves.punch.startup; i++) s = step(s, [0, 0])
+    expect(s.hitstop).toBe(5)
+    expect(s.fighters[1].stun).toBe(pair[0].moves.punch.hitstun)
   })
 })
