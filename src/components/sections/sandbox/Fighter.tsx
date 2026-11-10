@@ -21,6 +21,7 @@ import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
 import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
 import { PORTRAITS } from '@/lib/sandbox/fighter/art/portraits'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
+import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import { afterMatch, loadSettings, saveSettings, stripVisible, withStrip, type Settings } from '@/lib/sandbox/fighter/settings'
 import type { Inputs, MatchState } from '@/lib/sandbox/fighter/types'
 
@@ -314,6 +315,8 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     saveSettings(next)
   }
   const [showTouch, setShowTouch] = useState(false)
+  const [rotate, setRotate] = useState(false)
+  const rotateRef = useRef(false)
   const onTouch = useCallback((bits: number) => {
     touchBits.current = bits
   }, [])
@@ -353,6 +356,22 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     mq.addEventListener('change', upd)
     return () => mq.removeEventListener('change', upd)
   }, [])
+
+  // touch device held upright: pause and ask for landscape
+  useEffect(() => {
+    const check = () => {
+      const r = needsRotate(showTouch, window.innerWidth, window.innerHeight)
+      rotateRef.current = r
+      setRotate(r)
+    }
+    check()
+    window.addEventListener('resize', check)
+    window.addEventListener('orientationchange', check)
+    return () => {
+      window.removeEventListener('resize', check)
+      window.removeEventListener('orientationchange', check)
+    }
+  }, [showTouch])
 
   // integer scale to fit the wrapper
   useEffect(() => {
@@ -407,6 +426,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     document.addEventListener('visibilitychange', onVis)
 
     const tick = (ts: number) => {
+      if (rotateRef.current) {
+        last = null
+        raf = requestAnimationFrame(tick)
+        return
+      }
       const dt = last === null ? 0 : ts - last
       last = ts
       humanInput.current = keysToInput(keysRef.current) | touchBits.current
@@ -451,6 +475,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   }, [mode, round])
 
   const start = () => {
+    if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
     setResult(null)
     setMode('play')
     setRound((r) => r + 1)
@@ -470,6 +495,12 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             aria-label="Pixel fighting game: Si Penyadap versus Sang Ajudan in a burning forest"
             style={{ width: W * scale, height: H * scale, imageRendering: 'pixelated', display: 'block' }}
           />
+          {rotate && (
+            <div role="alert" style={{ ...overlay, top: 0, bottom: 0, justifyContent: 'center', background: INK, zIndex: 5 }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: VERM, textAlign: 'center' }}>{ROTATE_LINE.id}</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.8, textAlign: 'center' }}>{ROTATE_LINE.en}</p>
+            </div>
+          )}
           {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}
           {mode === 'title' && !howTo && (
             <div style={overlay}>
