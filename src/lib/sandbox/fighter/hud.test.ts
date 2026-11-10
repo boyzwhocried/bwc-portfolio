@@ -57,11 +57,12 @@ describe('hud layout', () => {
     expect(hudRects(0).pips.w).toBeGreaterThanOrEqual(2 * 7 + 4 + 2 * 6)
   })
 
-  it('bars are thin and names are large', () => {
+  it('bars are thin and names are small but still legible', () => {
     for (const side of [0, 1] as const) {
       const r = hudRects(side)
       expect(r.bar.h).toBeLessThanOrEqual(8)
-      expect(NAME_FONT_PX).toBeGreaterThanOrEqual(10)
+      expect(NAME_FONT_PX).toBeLessThanOrEqual(9)
+      expect(NAME_FONT_PX).toBeGreaterThanOrEqual(8)
       expect(r.name.h).toBeGreaterThanOrEqual(NAME_FONT_PX + 2)
     }
   })

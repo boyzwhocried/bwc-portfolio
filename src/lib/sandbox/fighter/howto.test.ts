@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from './howto'
+import { BUGGED_LINE, COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from './howto'
 import { FIGHTERS, FIGHTER_IDS } from './roster'
 
 describe('how to play text', () => {
@@ -52,6 +52,21 @@ describe('how to play text', () => {
       expect(t).toMatch(/^Drag on the right/)
       expect(t).toMatch(/Left: punch/)
     })
+  })
+
+  it('the Penyadap line says which key throws the wire and what the wire is', () => {
+    const t = specialLines().find((l) => l.label === 'Si Penyadap')!.text
+    expect(t).toMatch(/\bL\b/)
+    expect(t.toLowerCase()).toContain('wire')
+  })
+
+  it('has a plain line that defines BUGGED: the red tag, and the 25 percent next-hit bonus', () => {
+    const t = BUGGED_LINE.toLowerCase()
+    expect(t).toContain('bugged')
+    expect(t).toMatch(/tag/)
+    expect(t).toContain('25')
+    expect(BUGGED_LINE.length).toBeLessThanOrEqual(100)
+    expect(BUGGED_LINE).not.toContain('—')
   })
 
   it('the combo line explains the cancel order in one short line', () => {

@@ -12,8 +12,9 @@ import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
 import { poseFor } from '@/lib/sandbox/fighter/pose'
 import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
 import { isArmed } from '@/lib/sandbox/fighter/combat'
+import { stageFx } from '@/lib/sandbox/fighter/stagefx'
 import { COMBO_SHOW, afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
-import { COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
+import { BUGGED_LINE, COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
@@ -158,6 +159,11 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
   ctx.save()
   if (fx.shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 4), Math.round((Math.random() - 0.5) * 4))
   ctx.drawImage(cache.stage, 0, 0)
+  // animated fire and embers over the baked stage; frozen on frame 0 under reduced motion
+  for (const p of stageFx(reduce ? 0 : s.frame)) {
+    ctx.fillStyle = p.color
+    ctx.fillRect(p.x, p.y, 1, 1)
+  }
 
   s.fighters.forEach((f, i) => {
     const id = IDS[i]
@@ -191,23 +197,23 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
       const w = Math.max(1, Math.round(Math.abs(wire.x1 - wire.x0)))
       const y = Math.round(FLOOR_Y - wire.y)
       ctx.fillStyle = INK
-      ctx.fillRect(x, y - 2, w, 4)
+      ctx.fillRect(x - 1, y - 3, w + 2, 6)
       ctx.fillStyle = VERM
-      ctx.fillRect(x, y - 1, w, 2)
+      ctx.fillRect(x, y - 2, w, 4)
     }
 
     // BUGGED tag above the marked fighter
     if (f.bugged && f.action !== 'ko') {
-      ctx.font = 'bold 7px monospace'
+      ctx.font = 'bold 8px monospace'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = VERM
-      ctx.fillRect(cx - 18, py - 11, 36, 10)
+      ctx.fillRect(cx - 21, py - 12, 42, 11)
       ctx.strokeStyle = INK
       ctx.lineWidth = 1
-      ctx.strokeRect(cx - 18 + 0.5, py - 11 + 0.5, 35, 9)
+      ctx.strokeRect(cx - 21 + 0.5, py - 12 + 0.5, 41, 10)
       ctx.fillStyle = INK
-      ctx.fillText('BUGGED', cx, py - 5.5)
+      ctx.fillText('BUGGED', cx, py - 6)
     }
   })
 
@@ -509,6 +515,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
                 </tbody>
               </table>
               <p style={howToText}>{COMBO_LINE}</p>
+              <p style={howToText}>{BUGGED_LINE}</p>
               <p style={howToText}>Touch: drag the pad to walk and jump, tap the buttons.</p>
               {specialLines().map((l) => (
                 <p key={l.label} style={howToText}>

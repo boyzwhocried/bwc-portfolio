@@ -4,7 +4,7 @@ export type Rect = { x: number; y: number; w: number; h: number }
 // block with the name plate and round-win plate on top and the thin HP bar under them. The right
 // side mirrors the left.
 export const TIMER_RECT: Rect = { x: 147, y: 6, w: 26, h: 14 }
-export const NAME_FONT_PX = 11
+export const NAME_FONT_PX = 9
 export const PORTRAIT_PX = 40 // the generated portrait sprite is 40x40
 
 const MARGIN = 10

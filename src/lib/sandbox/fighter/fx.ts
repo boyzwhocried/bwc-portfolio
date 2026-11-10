@@ -8,7 +8,7 @@ import type { FighterDef, FighterState, MatchState } from './types'
 
 export const HURT_FLASH_FRAMES = 3
 export const HEAVY_DAMAGE = 60 // hits at or above this shake the screen and flash once
-export const WIRE_LINGER = 6 // frames the wire stays visible (shrinking) after its active frames
+export const WIRE_LINGER = 12 // frames the wire stays visible (shrinking) after its active frames
 export const COMBO_WINDOW = 30 // sim frames after a hit in which the next hit still counts as part of the combo
 export const COMBO_SHOW = 70 // sim frames the combo count stays on screen after the last hit
 const SHAKE_HEAVY = 6

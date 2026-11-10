@@ -183,6 +183,10 @@ describe('wireFor', () => {
     expect(Math.abs(lingering.x1 - lingering.x0)).toBeLessThan(Math.abs(full.x1 - full.x0))
     expect(wireFor(at(last + WIRE_LINGER), WIRE)).toBeNull()
   })
+
+  it('stays on screen long enough to notice: at least a quarter second in total', () => {
+    expect(m.active + WIRE_LINGER).toBeGreaterThanOrEqual(15)
+  })
 })
 
 describe('combo counter', () => {
