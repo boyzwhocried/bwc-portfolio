@@ -66,7 +66,7 @@ describe('how to play text', () => {
     expect(t).toMatch(/tag/)
     expect(t).toContain('25')
     expect(BUGGED_LINE.length).toBeLessThanOrEqual(100)
-    expect(BUGGED_LINE).not.toContain('—')
+    expect(BUGGED_LINE).not.toContain(String.fromCharCode(0x2014))
   })
 
   it('the combo line explains the cancel order in one short line', () => {
