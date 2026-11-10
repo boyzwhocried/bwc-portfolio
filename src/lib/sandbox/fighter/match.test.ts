@@ -105,4 +105,17 @@ describe('match flow', () => {
     s = step(s, NONE)
     expect(s.roundTimer).toBe(t)
   })
+
+  it('a held kick cannot cancel into a phantom hit on a fighter who was just KOed', () => {
+    let s = withHp(near(), 1000, 10)
+    s = step(s, [BTN.PUNCH, 0])
+    for (let i = 0; i < 60; i++) {
+      s = step(s, [BTN.KICK, 0])
+      if (s.phase !== 'fight' && s.phase !== 'intro') break
+    }
+    const after = stepN(s, 30, [BTN.KICK, 0])
+    expect(after.fighters[1].hp).toBe(0)
+    expect(after.fighters[0].move).not.toBe('kick')
+    expect(after.fighters[0].buffered).toBeNull()
+  })
 })
