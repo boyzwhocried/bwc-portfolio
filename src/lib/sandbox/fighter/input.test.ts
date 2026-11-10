@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { BTN } from './types'
-import { keysToInput, dpadDirs, touchReduce, touchToInput, layoutFor, EMPTY_TOUCH, TOUCH_BUTTONS } from './input'
+import { keysToInput, dpadDirs, dpadStep, touchReduce, touchToInput, layoutFor, EMPTY_TOUCH, TOUCH_BUTTONS } from './input'
 
 describe('keysToInput', () => {
   it('maps keys to the right bits', () => {
@@ -76,5 +76,14 @@ describe('layoutFor', () => {
     expect(layoutFor('right')).toEqual({ dpadSide: 'left', buttonSide: 'right' })
     expect(layoutFor('left')).toEqual({ dpadSide: 'right', buttonSide: 'left' })
     expect(TOUCH_BUTTONS.map((b) => b.bits)).toEqual([BTN.PUNCH, BTN.KICK, BTN.SPECIAL, BTN.BLOCK])
+  })
+})
+
+describe('dpadStep', () => {
+  it('a move with no anchor (after a resize cleared it) re-anchors at the pointer instead of going dead', () => {
+    expect(dpadStep(undefined, 100, 200)).toEqual({ anchor: { x: 100, y: 200 }, bits: 0 })
+  })
+  it('a move with an anchor keeps it and reports direction bits', () => {
+    expect(dpadStep({ x: 100, y: 200 }, 140, 200)).toEqual({ anchor: { x: 100, y: 200 }, bits: BTN.RIGHT })
   })
 })

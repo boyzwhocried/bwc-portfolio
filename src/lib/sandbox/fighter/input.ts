@@ -42,6 +42,17 @@ export function dpadDirs(dx: number, dy: number, dead = DEAD_ZONE): number {
   return bits
 }
 
+// One d-pad pointer move. With no anchor (cleared by a resize while the thumb stayed down)
+// the pointer re-anchors where it is, instead of leaving the d-pad dead until it is lifted.
+export function dpadStep(
+  anchor: { x: number; y: number } | undefined,
+  x: number,
+  y: number,
+): { anchor: { x: number; y: number }; bits: number } {
+  if (!anchor) return { anchor: { x, y }, bits: 0 }
+  return { anchor, bits: dpadDirs(x - anchor.x, y - anchor.y) }
+}
+
 export type TouchState = { readonly held: Readonly<Record<number, number>> }
 export type TouchEvent =
   | { type: 'set'; id: number; bits: number }

@@ -174,6 +174,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const settingsRef = useRef(settings)
   const [tutorial, setTutorial] = useState(false)
+  const [readyFor, setReadyFor] = useState<string | null>(null)
   const update = (patch: Partial<Settings>) => {
     const next = { ...settingsRef.current, ...patch }
     settingsRef.current = next
@@ -231,6 +232,14 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+
+  // result buttons appear shortly after the result text so a held Block key (Space) cannot trigger REMATCH
+  useEffect(() => {
+    if (!result) return
+    const id = window.setTimeout(() => setReadyFor(round + ':' + result), 700)
+    return () => window.clearTimeout(id)
+  }, [result, round])
+  const resultReady = result !== null && readyFor === round + ':' + result
 
   // one-time 10 second controls overlay inside the first match
   useEffect(() => {
@@ -318,8 +327,8 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <SandboxModal title="FIGHTER" onClose={onClose} fullscreen panelBg={INK} panelFg={PAPER} borderColor="#000" titleFont="var(--font-mono)">
-      <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+    <SandboxModal title="FIGHTER" onClose={onClose} fullscreen panelBg={INK} panelFg={PAPER} borderColor={INK} titleFont="var(--font-mono)">
+      <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: INK }}>
         <canvas
           ref={canvasRef}
           width={W}
@@ -363,10 +372,12 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
         {mode === 'play' && result && (
           <div style={overlay} role="status" aria-live="polite">
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>{result}</p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={start} autoFocus style={btn}>REMATCH</button>
-              <button onClick={onClose} style={btn}>CLOSE</button>
-            </div>
+            {resultReady && (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={start} autoFocus style={btn}>REMATCH</button>
+                <button onClick={onClose} style={btn}>CLOSE</button>
+              </div>
+            )}
           </div>
         )}
       </div>

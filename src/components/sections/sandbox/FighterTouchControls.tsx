@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { EMPTY_TOUCH, TOUCH_BUTTONS, dpadDirs, layoutFor, touchReduce, touchToInput, type Hand } from '@/lib/sandbox/fighter/input'
+import { EMPTY_TOUCH, TOUCH_BUTTONS, dpadStep, layoutFor, touchReduce, touchToInput, type Hand } from '@/lib/sandbox/fighter/input'
 
 const INK = '#1a1a1a'
 const PAPER = '#ece7de'
@@ -21,6 +21,9 @@ export default function FighterTouchControls({ hand, onChange }: { hand: Hand; o
   useEffect(() => {
     onChange(touchToInput(state))
   }, [state, onChange])
+
+  // unmounting (for example the pointer type flips mid-hold) must release everything
+  useEffect(() => () => onChange(0), [onChange])
 
   // anything that could strand a held input releases everything
   useEffect(() => {
@@ -65,13 +68,13 @@ export default function FighterTouchControls({ hand, onChange }: { hand: Hand; o
           dispatch({ type: 'set', id: e.pointerId, bits: 0 })
         }}
         onPointerMove={(e) => {
-          const a = anchors.current.get(e.pointerId)
-          if (!a) return
-          const dx = e.clientX - a.x
-          const dy = e.clientY - a.y
+          const step = dpadStep(anchors.current.get(e.pointerId), e.clientX, e.clientY)
+          anchors.current.set(e.pointerId, step.anchor)
+          const dx = e.clientX - step.anchor.x
+          const dy = e.clientY - step.anchor.y
           const r = e.currentTarget.getBoundingClientRect()
-          setKnob({ x: a.x - r.left, y: a.y - r.top, dx: Math.max(-36, Math.min(36, dx)), dy: Math.max(-36, Math.min(36, dy)) })
-          dispatch({ type: 'set', id: e.pointerId, bits: dpadDirs(dx, dy) })
+          setKnob({ x: step.anchor.x - r.left, y: step.anchor.y - r.top, dx: Math.max(-36, Math.min(36, dx)), dy: Math.max(-36, Math.min(36, dy)) })
+          dispatch({ type: 'set', id: e.pointerId, bits: step.bits })
         }}
         onPointerUp={(e) => endPointer(e.pointerId)}
         onPointerCancel={(e) => endPointer(e.pointerId)}
