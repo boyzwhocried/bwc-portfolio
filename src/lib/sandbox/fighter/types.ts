@@ -12,13 +12,35 @@ export const BTN = {
 
 export type Inputs = [number, number]
 
+export type MoveKind = 'punch' | 'kick' | 'special'
+
+// Hitbox in pixels: x = near-edge offset in front of the fighter's center,
+// y = bottom edge above the floor, w/h = size.
+export type MoveDef = {
+  kind: MoveKind
+  startup: number
+  active: number
+  recovery: number
+  damage: number
+  hitstun: number
+  blockstun: number
+  knockback: number // world units
+  hitstop: number // frames both fighters freeze on contact
+  hitbox: { x: number; y: number; w: number; h: number }
+}
+
 export type FighterDef = {
   id: string
   label: string
   hp: number
   walkSpeed: number // world units per frame
   jumpVelocity: number // world units per frame, upward
+  moves: Record<MoveKind, MoveDef>
 }
+
+export type Action = 'idle' | 'walk' | 'jump' | 'block' | 'attack' | 'hitstun' | 'blockstun' | 'ko'
+export const ACTIONS: readonly Action[] = ['idle', 'walk', 'jump', 'block', 'attack', 'hitstun', 'blockstun', 'ko']
+export const MOVE_KINDS: readonly MoveKind[] = ['punch', 'kick', 'special']
 
 export type FighterState = {
   x: number // world units (1 px = 256 units), center of the fighter
@@ -27,11 +49,17 @@ export type FighterState = {
   vy: number
   facing: 1 | -1
   hp: number
+  action: Action
+  move: MoveKind | null
+  actionFrame: number // frames since the current attack began
+  stun: number // frames of hitstun/blockstun left
+  hitConnected: boolean // current swing already hit
 }
 
 export type MatchState = {
   frame: number
   seed: number
+  hitstop: number // frames left in the shared freeze
   fighters: [FighterState, FighterState]
   defs: [FighterDef, FighterDef]
 }

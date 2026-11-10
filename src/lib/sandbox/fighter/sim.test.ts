@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { BTN, type FighterDef, type Inputs } from './types'
+import { BTN, type Inputs } from './types'
 import { initMatch, step, hashState, STAGE_W, HALF_W, JUMP_FRAMES } from './sim'
 
-const DEF: FighterDef = { id: 'test', label: 'Test', hp: 1000, walkSpeed: 768, jumpVelocity: 2560 }
+import { TEST_DEF as DEF } from './test-fixtures'
 const fresh = () => initMatch(42, [DEF, DEF])
 const NONE: Inputs = [0, 0]
 
