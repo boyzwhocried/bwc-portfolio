@@ -26,9 +26,13 @@ export function freshFighters(defs: [FighterDef, FighterDef]): [FighterState, Fi
     stun: 0,
     hitConnected: false,
     bugged: false,
+    buffered: null,
   })
   return [mk(defs[0], 100, 1), mk(defs[1], 220, -1)]
 }
+
+// A connected move can be cancelled into a stronger one: punch, then kick, then special.
+const TIER: Record<MoveKind, number> = { punch: 0, kick: 1, special: 2 }
 
 // Attack priority when several buttons are held: special, kick, punch.
 function attackPressed(input: number): MoveKind | null {
@@ -40,6 +44,7 @@ function attackPressed(input: number): MoveKind | null {
 
 function stepFighter(f: FighterState, def: FighterDef, input: number): FighterState {
   let { y, vy, action, move, actionFrame, stun, hitConnected } = f
+  const atkInput = attackPressed(input) ?? f.buffered
   let vx = 0
 
   // timers
@@ -62,7 +67,7 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
   // decisions (only when free to act)
   if (action === 'idle' || action === 'walk' || action === 'jump' || action === 'block') {
     const grounded = y === 0 && vy === 0
-    const atk = attackPressed(input)
+    const atk = atkInput
     if (grounded && atk) {
       action = 'attack'
       move = atk
@@ -77,6 +82,10 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
       vx = h * def.walkSpeed
       action = grounded && vy === 0 ? (h !== 0 ? 'walk' : 'idle') : 'jump'
     }
+  } else if (action === 'attack' && move && hitConnected && atkInput && TIER[atkInput] > TIER[move]) {
+    move = atkInput
+    actionFrame = 0
+    hitConnected = false
   }
 
   if (action === 'attack' && move) {
@@ -95,12 +104,16 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
     }
   }
   const x = Math.min(STAGE_W - HALF_W, Math.max(HALF_W, f.x + vx))
-  return { ...f, x, y, vx, vy, action, move, actionFrame, stun, hitConnected }
+  return { ...f, x, y, vx, vy, action, move, actionFrame, stun, hitConnected, buffered: null }
 }
 
 // One frame of fighter physics and combat. Round flow lives in match.ts.
 export function stepWorld(s: MatchState, inputs: Inputs): MatchState {
-  if (s.hitstop > 0) return { ...s, frame: s.frame + 1, hitstop: s.hitstop - 1 }
+  if (s.hitstop > 0) {
+    // inputs are ignored during the freeze, but the last attack press is kept for the first free frame
+    const keep = (f: FighterState, input: number): FighterState => ({ ...f, buffered: attackPressed(input) ?? f.buffered })
+    return { ...s, frame: s.frame + 1, hitstop: s.hitstop - 1, fighters: [keep(s.fighters[0], inputs[0]), keep(s.fighters[1], inputs[1])] }
+  }
   const a = stepFighter(s.fighters[0], s.defs[0], inputs[0])
   const b = stepFighter(s.fighters[1], s.defs[1], inputs[1])
   const face = (me: FighterState, other: FighterState): 1 | -1 =>

@@ -56,4 +56,12 @@ describe('roster', () => {
         expect(!!m.armor).toBe(id === 'sang-ajudan' && k === 'special')
       }
   })
+
+  it('punch to kick and kick to special are true combos: the next move is out before hitstun ends', () => {
+    for (const id of FIGHTER_IDS) {
+      const { punch, kick, special } = FIGHTERS[id].moves
+      expect(kick.startup).toBeLessThanOrEqual(punch.hitstun)
+      expect(special.startup).toBeLessThanOrEqual(kick.hitstun)
+    }
+  })
 })

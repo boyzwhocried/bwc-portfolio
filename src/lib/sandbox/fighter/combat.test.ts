@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { BTN, type Inputs, type MatchState } from './types'
 import { initMatch, step, hashState, UNIT } from './sim'
 import { isArmed } from './combat'
-import { TEST_DEF, TEST_PUNCH, TEST_SPECIAL } from './test-fixtures'
+import { TEST_DEF, TEST_PUNCH, TEST_KICK, TEST_SPECIAL } from './test-fixtures'
 
 const NONE: Inputs = [0, 0]
 
@@ -205,6 +205,84 @@ describe('combat', () => {
       s = stepN(s, TEST_PUNCH.startup)
       expect(s.fighters[1].action).toBe('hitstun')
       expect(s.fighters[1].hp).toBe(1000 - TEST_PUNCH.damage)
+    })
+  })
+
+  describe('cancels', () => {
+    // p1 lands a punch on p2 (who stands still) and is left on the first frame after hitstop.
+    const afterPunchHit = (defInput = 0) => {
+      let s = step(near(), [BTN.PUNCH, defInput])
+      s = stepN(s, TEST_PUNCH.startup, [0, defInput])
+      return stepN(s, TEST_PUNCH.hitstop, [0, defInput])
+    }
+
+    it('a connected punch cancels into a kick, and the kick lands too', () => {
+      let s = afterPunchHit()
+      expect(s.fighters[0].move).toBe('punch')
+      s = step(s, [BTN.KICK, 0])
+      expect(s.fighters[0].move).toBe('kick')
+      expect(s.fighters[0].actionFrame).toBe(0)
+      s = stepN(s, TEST_KICK.startup + TEST_KICK.hitstop, NONE)
+      expect(s.fighters[1].hp).toBe(1000 - TEST_PUNCH.damage - TEST_KICK.damage)
+    })
+
+    it('a connected punch cancels into the special', () => {
+      const s = step(afterPunchHit(), [BTN.SPECIAL, 0])
+      expect(s.fighters[0].move).toBe('special')
+    })
+
+    it('a connected kick cancels into the special but not back into a punch', () => {
+      let s = step(near(), [BTN.KICK, 0])
+      s = stepN(s, TEST_KICK.startup + TEST_KICK.hitstop)
+      expect(s.fighters[0].move).toBe('kick')
+      expect(step(s, [BTN.PUNCH, 0]).fighters[0].move).toBe('kick')
+      expect(step(s, [BTN.SPECIAL, 0]).fighters[0].move).toBe('special')
+    })
+
+    it('punch, kick, special chains into a three hit combo', () => {
+      let s = step(afterPunchHit(), [BTN.KICK, 0])
+      s = stepN(s, TEST_KICK.startup + TEST_KICK.hitstop)
+      s = step(s, [BTN.SPECIAL, 0])
+      expect(s.fighters[0].move).toBe('special')
+      s = stepN(s, TEST_SPECIAL.startup + TEST_SPECIAL.hitstop)
+      expect(s.fighters[1].hp).toBe(1000 - TEST_PUNCH.damage - TEST_KICK.damage - TEST_SPECIAL.damage)
+    })
+
+    it('a whiffed move cannot be cancelled', () => {
+      let s = step(far(), [BTN.PUNCH, 0])
+      s = stepN(s, TEST_PUNCH.startup + 1)
+      s = step(s, [BTN.KICK, 0])
+      expect(s.fighters[0].move).toBe('punch')
+    })
+
+    it('a blocked move can be cancelled', () => {
+      let s = step(near(), [BTN.PUNCH, BTN.BLOCK])
+      s = stepN(s, TEST_PUNCH.startup + TEST_PUNCH.hitstop, [0, BTN.BLOCK])
+      s = step(s, [BTN.KICK, BTN.BLOCK])
+      expect(s.fighters[0].move).toBe('kick')
+    })
+
+    it('a button pressed during hitstop is kept and fires on the first free frame', () => {
+      let s = step(near(), [BTN.PUNCH, 0])
+      s = stepN(s, TEST_PUNCH.startup) // the hit lands, hitstop starts
+      expect(s.hitstop).toBeGreaterThan(0)
+      s = step(s, [BTN.KICK, 0]) // pressed during hitstop, then released
+      s = stepN(s, TEST_PUNCH.hitstop - 1, NONE)
+      expect(s.hitstop).toBe(0)
+      s = step(s, NONE)
+      expect(s.fighters[0].move).toBe('kick')
+    })
+
+    it('the buffer is spent after one free frame and part of the hash', () => {
+      let s = step(near(), [BTN.PUNCH, 0])
+      s = stepN(s, TEST_PUNCH.startup)
+      s = step(s, [BTN.KICK, 0])
+      expect(s.fighters[0].buffered).toBe('kick')
+      const before = hashState(s)
+      s = stepN(s, TEST_PUNCH.hitstop, NONE)
+      expect(s.fighters[0].buffered).toBeNull()
+      expect(hashState({ ...s, fighters: [{ ...s.fighters[0], buffered: 'kick' }, s.fighters[1]] })).not.toBe(hashState(s))
+      expect(before).not.toBe(hashState(s))
     })
   })
 })

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { BTN, type Inputs, type MatchState, type FighterDef } from './types'
 import { initMatch, step, UNIT } from './sim'
 import { TEST_DEF, TEST_PUNCH, TEST_SPECIAL } from './test-fixtures'
-import { detectEvents, initFx, stepFx, afterDraw, wireFor, HURT_FLASH_FRAMES, WIRE_LINGER, type FxEvent } from './fx'
+import { detectEvents, initFx, stepFx, afterDraw, wireFor, COMBO_WINDOW, HURT_FLASH_FRAMES, WIRE_LINGER, type FxEvent } from './fx'
 
 const NONE: Inputs = [0, 0]
 const GUARD: FighterDef = { ...TEST_DEF, moves: { ...TEST_DEF.moves, special: { ...TEST_SPECIAL, armor: true } } }
@@ -182,5 +182,45 @@ describe('wireFor', () => {
     const lingering = wireFor(at(last + 1), WIRE)!
     expect(Math.abs(lingering.x1 - lingering.x0)).toBeLessThan(Math.abs(full.x1 - full.x0))
     expect(wireFor(at(last + WIRE_LINGER), WIRE)).toBeNull()
+  })
+})
+
+describe('combo counter', () => {
+  const hit = (target: 0 | 1): FxEvent => ({ kind: 'hit', target, x: 100, y: 40, damage: 35, ko: false })
+  const idle = (fx: ReturnType<typeof initFx>, n: number) => {
+    for (let i = 0; i < n; i++) fx = stepFx(fx, [], false)
+    return fx
+  }
+
+  it('counts consecutive hits by the same attacker', () => {
+    let fx = stepFx(initFx(), [hit(1)], false)
+    expect(fx.combo).toMatchObject({ by: 0, count: 1 })
+    fx = stepFx(idle(fx, 10), [hit(1)], false)
+    fx = stepFx(idle(fx, 10), [hit(1)], false)
+    expect(fx.combo).toMatchObject({ by: 0, count: 3 })
+  })
+
+  it('restarts after the window passes', () => {
+    let fx = stepFx(initFx(), [hit(1)], false)
+    fx = stepFx(idle(fx, COMBO_WINDOW + 1), [hit(1)], false)
+    expect(fx.combo.count).toBe(1)
+  })
+
+  it('restarts when the other fighter lands a hit', () => {
+    let fx = stepFx(initFx(), [hit(1), hit(1)], false)
+    expect(fx.combo.count).toBe(2)
+    fx = stepFx(fx, [hit(0)], false)
+    expect(fx.combo).toMatchObject({ by: 1, count: 1 })
+  })
+
+  it('blocks and armor hits do not extend a combo', () => {
+    let fx = stepFx(initFx(), [hit(1)], false)
+    fx = stepFx(fx, [{ kind: 'block', target: 1, x: 90, y: 40, damage: 3, ko: false }], false)
+    expect(fx.combo.count).toBe(1)
+  })
+
+  it('still counts under reduced motion', () => {
+    const fx = stepFx(stepFx(initFx(), [hit(1)], true), [hit(1)], true)
+    expect(fx.combo.count).toBe(2)
   })
 })

@@ -9,6 +9,8 @@ import type { FighterDef, FighterState, MatchState } from './types'
 export const HURT_FLASH_FRAMES = 3
 export const HEAVY_DAMAGE = 60 // hits at or above this shake the screen and flash once
 export const WIRE_LINGER = 6 // frames the wire stays visible (shrinking) after its active frames
+export const COMBO_WINDOW = 30 // sim frames after a hit in which the next hit still counts as part of the combo
+export const COMBO_SHOW = 70 // sim frames the combo count stays on screen after the last hit
 const SHAKE_HEAVY = 6
 const SHAKE_KO = 10
 const KO_FLASH_FRAMES = 10
@@ -26,10 +28,11 @@ export type FxState = {
   shake: number // rendered frames of screen shake left
   flash: number // rendered frames of the heavy-hit screen flash left; kept until drawn
   koFlash: number // rendered frames of the KO flash left; kept until drawn
+  combo: { by: 0 | 1 | null; count: number; age: number } // age = sim frames since the last counted hit
 }
 
 export function initFx(): FxState {
-  return { sparks: [], hurt: [0, 0], shake: 0, flash: 0, koFlash: 0 }
+  return { sparks: [], hurt: [0, 0], shake: 0, flash: 0, koFlash: 0, combo: { by: null, count: 0, age: 0 } }
 }
 
 const mid = (a: [number, number], b: [number, number]) => {
@@ -67,12 +70,17 @@ export function stepFx(fx: FxState, events: FxEvent[], reduce: boolean): FxState
   let sparks = fx.sparks.map((p) => ({ ...p, age: p.age + 1 })).filter((p) => p.age < p.ttl)
   const hurt: [number, number] = [Math.max(0, fx.hurt[0] - 1), Math.max(0, fx.hurt[1] - 1)]
   let { shake, flash, koFlash } = fx
+  let combo = { ...fx.combo, age: fx.combo.age + 1 }
   for (const e of events) {
     if (e.kind === 'land') {
       sparks = [...sparks, { kind: 'dust', x: e.x, y: 0, age: 0, ttl: TTL.dust }]
       continue
     }
     sparks = [...sparks, { kind: e.kind, x: e.x, y: e.y, age: 0, ttl: TTL[e.kind] }]
+    if (e.kind === 'hit') {
+      const by = (1 - e.target) as 0 | 1
+      combo = combo.by === by && combo.age <= COMBO_WINDOW ? { by, count: combo.count + 1, age: 0 } : { by, count: 1, age: 0 }
+    }
     if (reduce) continue
     if (e.kind === 'hit') hurt[e.target] = HURT_FLASH_FRAMES
     if (e.ko) {
@@ -83,7 +91,7 @@ export function stepFx(fx: FxState, events: FxEvent[], reduce: boolean): FxState
       flash = 1
     }
   }
-  return { sparks, hurt, shake, flash, koFlash }
+  return { sparks, hurt, shake, flash, koFlash, combo }
 }
 
 // Call once after each rendered frame: screen effects count in rendered frames, so a rendered
