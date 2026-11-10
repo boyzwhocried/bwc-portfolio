@@ -1,0 +1,76 @@
+import { describe, it, expect } from 'vitest'
+import { BTN, type FighterDef, type Inputs } from './types'
+import { initMatch, step, hashState, STAGE_W, HALF_W, JUMP_FRAMES } from './sim'
+
+const DEF: FighterDef = { id: 'test', label: 'Test', hp: 1000, walkSpeed: 768, jumpVelocity: 2560 }
+const fresh = () => initMatch(42, [DEF, DEF])
+const NONE: Inputs = [0, 0]
+
+function run(frames: number, script: (f: number) => Inputs) {
+  let s = fresh()
+  for (let f = 0; f < frames; f++) s = step(s, script(f))
+  return s
+}
+
+describe('sim core', () => {
+  it('replay is deterministic', () => {
+    const script = (f: number): Inputs => [
+      f % 90 < 40 ? BTN.RIGHT : f % 90 < 50 ? BTN.UP : BTN.LEFT,
+      f % 70 < 30 ? BTN.LEFT : f % 70 < 45 ? BTN.UP | BTN.RIGHT : 0,
+    ]
+    let a = fresh()
+    let b = fresh()
+    for (let f = 0; f < 600; f++) {
+      a = step(a, script(f))
+      b = step(b, script(f))
+      expect(hashState(a)).toBe(hashState(b))
+    }
+  })
+
+  it('step does not mutate its input', () => {
+    const s = fresh()
+    const before = JSON.stringify(s)
+    step(s, [BTN.RIGHT, BTN.LEFT])
+    expect(JSON.stringify(s)).toBe(before)
+  })
+
+  it('walk moves right then stops at the stage wall', () => {
+    const start = fresh().fighters[0].x
+    const mid = run(10, () => [BTN.RIGHT, 0])
+    expect(mid.fighters[0].x).toBeGreaterThan(start)
+    const end = run(2000, () => [0, BTN.RIGHT])
+    expect(end.fighters[1].x).toBe(STAGE_W - HALF_W)
+  })
+
+  it('jump rises and lands on the floor in a fixed frame count', () => {
+    const s0 = fresh()
+    let s = step(s0, [BTN.UP, 0])
+    expect(s.fighters[0].y).toBeGreaterThan(0)
+    for (let f = 1; f < JUMP_FRAMES - 1; f++) s = step(s, NONE)
+    expect(s.fighters[0].y).toBeGreaterThan(0)
+    s = step(s, NONE)
+    expect(s.fighters[0].y).toBe(0)
+  })
+
+  it('left and right together is neutral', () => {
+    const s = run(30, () => [BTN.LEFT | BTN.RIGHT, 0])
+    expect(s.fighters[0].x).toBe(fresh().fighters[0].x)
+  })
+
+  it('up and down together is neutral', () => {
+    const s = run(5, () => [BTN.UP | BTN.DOWN, 0])
+    expect(s.fighters[0].y).toBe(0)
+  })
+
+  it('fighters face each other and swap facing when they cross', () => {
+    let s = fresh()
+    expect(s.fighters[0].facing).toBe(1)
+    expect(s.fighters[1].facing).toBe(-1)
+    // p1 walks right through p2 side; p2 stands still
+    s = fresh()
+    s = { ...s, fighters: [{ ...s.fighters[0], x: s.fighters[1].x + 2000 }, s.fighters[1]] }
+    s = step(s, NONE)
+    expect(s.fighters[0].facing).toBe(-1)
+    expect(s.fighters[1].facing).toBe(1)
+  })
+})
