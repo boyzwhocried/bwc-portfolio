@@ -10,6 +10,7 @@ import { advance } from '@/lib/sandbox/fighter/loop'
 import { cpuInput } from '@/lib/sandbox/fighter/cpu'
 import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
 import { poseFor } from '@/lib/sandbox/fighter/pose'
+import { hudRects, TIMER_RECT } from '@/lib/sandbox/fighter/hud'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
@@ -116,24 +117,25 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: { 
   ctx.font = 'bold 8px monospace'
   ctx.textBaseline = 'top'
   s.fighters.forEach((f, i) => {
-    const bx = i === 0 ? 10 : W - 10 - 124
-    plate(ctx, bx, 6, 124, 12)
-    const w = Math.round((f.hp / s.defs[i].hp) * 120)
+    const r = hudRects(i as 0 | 1)
+    plate(ctx, r.bar.x, r.bar.y, r.bar.w, r.bar.h)
+    const w = Math.round((f.hp / s.defs[i].hp) * (r.bar.w - 4))
     ctx.fillStyle = VERM
-    ctx.fillRect(i === 0 ? bx + 122 - w : bx + 2, 8, w, 8)
-    plate(ctx, bx, 20, 84, 11)
+    ctx.fillRect(i === 0 ? r.bar.x + r.bar.w - 2 - w : r.bar.x + 2, r.bar.y + 2, w, r.bar.h - 4)
+    plate(ctx, r.name.x, r.name.y, r.name.w, r.name.h)
     ctx.fillStyle = INK
     ctx.textAlign = 'left'
-    ctx.fillText(s.defs[i].label.toUpperCase(), bx + 3, 22)
+    ctx.fillText(s.defs[i].label.toUpperCase(), r.name.x + 3, r.name.y + 2)
+    plate(ctx, r.pips.x, r.pips.y, r.pips.w, r.pips.h)
     for (let k = 0; k < 2; k++) {
       ctx.fillStyle = k < s.wins[i] ? VERM : PAPER
       ctx.strokeStyle = INK
-      const wx = i === 0 ? bx + 92 + k * 10 : bx + 22 - k * 10 + 0
-      ctx.fillRect(wx, 22, 7, 7)
-      ctx.strokeRect(wx + 0.5, 22.5, 6, 6)
+      const wx = r.pips.x + 8 + k * 11
+      ctx.fillRect(wx, r.pips.y + 2, 7, 7)
+      ctx.strokeRect(wx + 0.5, r.pips.y + 2.5, 6, 6)
     }
   })
-  plate(ctx, W / 2 - 13, 6, 26, 14)
+  plate(ctx, TIMER_RECT.x, TIMER_RECT.y, TIMER_RECT.w, TIMER_RECT.h)
   ctx.fillStyle = INK
   ctx.textAlign = 'center'
   ctx.font = 'bold 10px monospace'
