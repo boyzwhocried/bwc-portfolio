@@ -15,6 +15,7 @@ import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
 import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
+import { loadSettings, saveSettings, type Settings } from '@/lib/sandbox/fighter/settings'
 import type { Inputs, MatchState } from '@/lib/sandbox/fighter/types'
 
 const W = 320
@@ -170,6 +171,15 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const keysRef = useRef(new Set<string>())
   const touchBits = useRef(0)
   const playingRef = useRef(false)
+  const [settings, setSettings] = useState<Settings>(() => loadSettings())
+  const settingsRef = useRef(settings)
+  const [tutorial, setTutorial] = useState(false)
+  const update = (patch: Partial<Settings>) => {
+    const next = { ...settingsRef.current, ...patch }
+    settingsRef.current = next
+    setSettings(next)
+    saveSettings(next)
+  }
   const [showTouch, setShowTouch] = useState(false)
   const onTouch = useCallback((bits: number) => {
     touchBits.current = bits
@@ -222,6 +232,17 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     return () => ro.disconnect()
   }, [])
 
+  // one-time 10 second controls overlay inside the first match
+  useEffect(() => {
+    if (mode !== 'play' || settingsRef.current.tutorialSeen) return
+    setTutorial(true)
+    const id = window.setTimeout(() => {
+      setTutorial(false)
+      update({ tutorialSeen: true })
+    }, 10000)
+    return () => window.clearTimeout(id)
+  }, [mode, round])
+
   // game loop: fixed-step sim, rAF render. Title screen runs CPU vs CPU as an attract loop.
   useEffect(() => {
     const canvas = canvasRef.current
@@ -261,7 +282,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           next = { ...next, seed: c0.seed }
           p1 = c0.input
         }
-        const c1 = cpuInput(next, 1, 'easy')
+        const c1 = cpuInput(next, 1, settingsRef.current.cpu)
         next = step({ ...next, seed: c1.seed }, [p1, c1.input] as Inputs)
         if (next.fighters[0].hp + next.fighters[1].hp < prevHp && !reduceRef.current) shake = 6
         // one-frame flash on the step a hit lands
@@ -307,11 +328,36 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           aria-label="Pixel fighting game: Si Penyadap versus Sang Ajudan in a burning forest"
           style={{ width: W * scale, height: H * scale, imageRendering: 'pixelated', display: 'block' }}
         />
-        {mode === 'play' && showTouch && <FighterTouchControls hand="right" onChange={onTouch} />}
+        {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}
         {mode === 'title' && (
           <div style={overlay}>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
             <button onClick={start} autoFocus style={btn}>FIGHT CPU</button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button
+                onClick={() => update({ cpu: settings.cpu === 'easy' ? 'normal' : 'easy' })}
+                aria-label={'CPU difficulty: ' + settings.cpu + '. Activate to change.'}
+                style={smallBtn}
+              >
+                CPU: {settings.cpu.toUpperCase()}
+              </button>
+              <button
+                onClick={() => update({ hand: settings.hand === 'right' ? 'left' : 'right' })}
+                aria-label={'Touch layout: ' + settings.hand + '-handed. Activate to change.'}
+                style={smallBtn}
+              >
+                TOUCH: {settings.hand.toUpperCase()}-HANDED
+              </button>
+            </div>
+          </div>
+        )}
+        {mode === 'play' && tutorial && !result && (
+          <div style={{ ...overlay, top: 44, bottom: 'auto' }} role="note">
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, background: INK, border: `1px solid ${PAPER}`, padding: '6px 10px', maxWidth: '90%', textAlign: 'center' }}>
+              {showTouch
+                ? 'Drag on the left to walk and jump. Right: punch, kick, special, block.'
+                : 'A/D walk, W jump, J punch, K kick, L special, Space block.'}
+            </p>
           </div>
         )}
         {mode === 'play' && result && (
@@ -330,6 +376,9 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
 
 const overlay: React.CSSProperties = {
   position: 'absolute', left: 0, right: 0, bottom: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: PAPER,
+}
+const smallBtn: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)', fontSize: 10, color: PAPER, background: 'transparent', border: `1px solid ${PAPER}`, padding: '8px 12px', minHeight: 44, cursor: 'pointer', letterSpacing: '0.06em',
 }
 const btn: React.CSSProperties = {
   fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: INK, background: PAPER, border: `2px solid ${INK}`, padding: '10px 18px', minHeight: 44, cursor: 'pointer', letterSpacing: '0.08em',

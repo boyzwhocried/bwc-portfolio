@@ -17,6 +17,7 @@ import ThePress from './sandbox/ThePress'
 import TheProof from './sandbox/TheProof'
 import TheImpose from './sandbox/TheImpose'
 import TheVerse from './sandbox/TheVerse'
+import Fighter from './sandbox/Fighter'
 
 const SHADOW = '4px 4px 0 #b3ada0'
 const SHADOW_INK = '4px 4px 0 var(--ink)'
@@ -37,7 +38,7 @@ const USELESS_MSGS = [
 export type SandboxApp =
   | 'terminal' | 'darkroom' | 'pipeline' | 'guestbook'
   | 'sand' | 'gravity' | 'tone' | 'daily' | 'rig' | 'parry' | 'press'
-  | 'proof' | 'impose' | 'verse'
+  | 'proof' | 'impose' | 'verse' | 'fighter'
   | null
 
 function Caption({ children }: { children: React.ReactNode }) {
@@ -230,6 +231,22 @@ export default function ToyShelf() {
               <Caption>PARRY <span style={TAG}>· arcade · leaderboard</span></Caption>
             </div>
 
+            {/* FIGHTER: pixel satire brawler */}
+            <div style={{ transform: 'rotate(-1deg)' }}>
+              <button
+                onClick={() => setApp('fighter')}
+                aria-label="FIGHTER, pixel fighting game"
+                style={{ display: 'block', width: 144, height: 116, background: '#ece7de', border: '1.5px solid var(--ink)', boxShadow: SHADOW, cursor: 'pointer', padding: 0, position: 'relative', overflow: 'hidden' }}
+              >
+                <span aria-hidden style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 30, background: '#1a1a1a' }} />
+                <span aria-hidden style={{ position: 'absolute', left: 22, bottom: 30, width: 18, height: 46, background: '#1a1a1a' }} />
+                <span aria-hidden style={{ position: 'absolute', right: 22, bottom: 30, width: 18, height: 46, background: '#1a1a1a' }} />
+                <span aria-hidden style={{ position: 'absolute', left: '50%', top: 18, width: 22, height: 22, background: '#e84c28', borderRadius: '50%', transform: 'translateX(-50%)' }} />
+                <span style={{ position: 'absolute', top: 8, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.14em', color: '#1a1a1a' }}>FIGHTER</span>
+              </button>
+              <Caption>FIGHTER <span style={TAG}>· satire · vs cpu</span></Caption>
+            </div>
+
             {/* the rig (calibration) */}
             <div style={{ transform: 'rotate(2deg)' }}>
               <button
@@ -408,6 +425,7 @@ export default function ToyShelf() {
       {app === 'proof' && <TheProof onClose={() => setApp(null)} />}
       {app === 'impose' && <TheImpose onClose={() => setApp(null)} />}
       {app === 'verse' && <TheVerse onClose={() => setApp(null)} />}
+      {app === 'fighter' && <Fighter onClose={() => setApp(null)} />}
     </section>
   )
 }
