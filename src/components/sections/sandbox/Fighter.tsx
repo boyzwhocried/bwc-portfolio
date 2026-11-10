@@ -10,13 +10,16 @@ import { advance } from '@/lib/sandbox/fighter/loop'
 import { cpuInput } from '@/lib/sandbox/fighter/cpu'
 import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
 import { poseFor } from '@/lib/sandbox/fighter/pose'
-import { hudRects, TIMER_RECT } from '@/lib/sandbox/fighter/hud'
+import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
+import { isArmed } from '@/lib/sandbox/fighter/combat'
+import { afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
+import { HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
 import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
-import { loadSettings, saveSettings, type Settings } from '@/lib/sandbox/fighter/settings'
+import { afterMatch, loadSettings, saveSettings, stripVisible, withStrip, type Settings } from '@/lib/sandbox/fighter/settings'
 import type { Inputs, MatchState } from '@/lib/sandbox/fighter/types'
 
 const W = 320
@@ -96,7 +99,61 @@ function bannerFor(s: MatchState): string {
   return ''
 }
 
-function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: { shake: number; flash: boolean }) {
+const silhouettes = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>()
+// Paper-colored copy of a sprite, used for the hurt flash.
+function silhouette(src: HTMLCanvasElement): HTMLCanvasElement {
+  let c = silhouettes.get(src)
+  if (!c) {
+    c = document.createElement('canvas')
+    c.width = src.width
+    c.height = src.height
+    const x = c.getContext('2d')!
+    x.drawImage(src, 0, 0)
+    x.globalCompositeOperation = 'source-in'
+    x.fillStyle = PAPER
+    x.fillRect(0, 0, c.width, c.height)
+    silhouettes.set(src, c)
+  }
+  return c
+}
+
+function px1(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, size = 1) {
+  ctx.fillStyle = color
+  ctx.fillRect(Math.round(x), Math.round(y), size, size)
+}
+
+const DIAGONALS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]
+
+function drawSpark(ctx: CanvasRenderingContext2D, p: Spark) {
+  const cx = p.x
+  const cy = FLOOR_Y - p.y
+  const t = p.age / p.ttl
+  if (p.kind === 'hit') {
+    const len = 2 + p.age * 1.4
+    for (let k = 1; k <= len; k++) {
+      const col = k < len * 0.55 ? PAPER : VERM
+      for (const [dx, dy] of DIAGONALS) px1(ctx, cx + dx * k, cy + dy * k, col, k < 3 ? 2 : 1)
+    }
+    if (p.age < 3) {
+      ctx.fillStyle = PAPER
+      ctx.fillRect(Math.round(cx) - 2, Math.round(cy) - 2, 5, 5)
+    }
+  } else if (p.kind === 'block') {
+    const d = 2 + p.age
+    for (const [dx, dy] of [[1, -1], [-1, -1], [1, 1], [-1, 1]]) px1(ctx, cx + dx * d, cy + dy * d, t < 0.5 ? PAPER : INK, 2)
+    px1(ctx, cx, cy - d - 2, PAPER, 2)
+    px1(ctx, cx, cy + d, PAPER, 2)
+  } else if (p.kind === 'armor') {
+    const half = 3 + p.age * 1.6
+    ctx.strokeStyle = t < 0.5 ? PAPER : VERM
+    ctx.lineWidth = 2
+    ctx.strokeRect(Math.round(cx - half) + 0.5, Math.round(cy - half) + 0.5, Math.round(half * 2), Math.round(half * 2))
+  } else if (t < 0.85) {
+    for (const dir of [-2, -1, 1, 2]) px1(ctx, cx + dir * (2 + p.age * 0.9), cy - 1 - p.age * 0.35 - (Math.abs(dir) === 2 ? 1 : 0), PAPER, 2)
+  }
+}
+
+function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean) {
   ctx.save()
   if (fx.shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 4), Math.round((Math.random() - 0.5) * 4))
   ctx.drawImage(cache.stage, 0, 0)
@@ -105,17 +162,57 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: { 
     const id = IDS[i]
     const pose = poseFor(f, s.defs[i], s.frame, s.phase === 'ko' ? s.phaseFrame : 99)
     const dir = f.facing === 1 ? 0 : 1
-    const px = Math.round(f.x / UNIT) - 40
+    const cx = Math.round(f.x / UNIT)
+    const px = cx - 40
     const py = FLOOR_Y - 80 - Math.round(f.y / UNIT)
     const c = cache.fighters[id]
     const frames = c.frames[pose.anim]
-    ctx.drawImage(frames[Math.min(pose.index, frames.length - 1)][dir], px, py)
+    const sprite = frames[Math.min(pose.index, frames.length - 1)][dir]
+    ctx.drawImage(fx.hurt[i] > 0 ? silhouette(sprite) : sprite, px, py)
     if (pose.smear) ctx.drawImage(c.smear[dir], px, py)
+
+    // armored move: a shield while it is armed (steady under reduced motion)
+    if (isArmed(f, s.defs[i])) {
+      const col = !reduce && (s.frame >> 2) & 1 ? VERM : PAPER
+      ctx.globalAlpha = 0.18
+      ctx.fillStyle = col
+      ctx.fillRect(cx - 22, py - 2, 44, 84)
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = col
+      ctx.lineWidth = 2
+      ctx.strokeRect(cx - 22 + 1, py - 2 + 1, 42, 82)
+    }
+
+    // marking move: the wire, a vermilion line with an ink edge so it reads against the fire
+    const wire = wireFor(f, s.defs[i])
+    if (wire) {
+      const x = Math.round(Math.min(wire.x0, wire.x1))
+      const w = Math.max(1, Math.round(Math.abs(wire.x1 - wire.x0)))
+      const y = Math.round(FLOOR_Y - wire.y)
+      ctx.fillStyle = INK
+      ctx.fillRect(x, y - 2, w, 4)
+      ctx.fillStyle = VERM
+      ctx.fillRect(x, y - 1, w, 2)
+    }
+
+    // BUGGED tag above the marked fighter
+    if (f.bugged && f.action !== 'ko') {
+      ctx.font = 'bold 7px monospace'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = VERM
+      ctx.fillRect(cx - 18, py - 11, 36, 10)
+      ctx.strokeStyle = INK
+      ctx.lineWidth = 1
+      ctx.strokeRect(cx - 18 + 0.5, py - 11 + 0.5, 35, 9)
+      ctx.fillStyle = INK
+      ctx.fillText('BUGGED', cx, py - 5.5)
+    }
   })
 
+  for (const p of fx.sparks) drawSpark(ctx, p)
+
   // HUD
-  ctx.font = 'bold 8px monospace'
-  ctx.textBaseline = 'top'
   s.fighters.forEach((f, i) => {
     const r = hudRects(i as 0 | 1)
     plate(ctx, r.bar.x, r.bar.y, r.bar.w, r.bar.h)
@@ -123,21 +220,25 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: { 
     ctx.fillStyle = VERM
     ctx.fillRect(i === 0 ? r.bar.x + r.bar.w - 2 - w : r.bar.x + 2, r.bar.y + 2, w, r.bar.h - 4)
     plate(ctx, r.name.x, r.name.y, r.name.w, r.name.h)
-    ctx.fillStyle = INK
+    ctx.font = `bold ${NAME_FONT_PX}px monospace`
+    ctx.textBaseline = 'middle'
     ctx.textAlign = 'left'
-    ctx.fillText(s.defs[i].label.toUpperCase(), r.name.x + 3, r.name.y + 2)
+    ctx.fillStyle = INK
+    ctx.fillText(s.defs[i].label.toUpperCase(), r.name.x + 3, r.name.y + r.name.h / 2 + 0.5)
     plate(ctx, r.pips.x, r.pips.y, r.pips.w, r.pips.h)
     for (let k = 0; k < 2; k++) {
       ctx.fillStyle = k < s.wins[i] ? VERM : PAPER
       ctx.strokeStyle = INK
       const wx = r.pips.x + 8 + k * 11
-      ctx.fillRect(wx, r.pips.y + 2, 7, 7)
-      ctx.strokeRect(wx + 0.5, r.pips.y + 2.5, 6, 6)
+      const wy = r.pips.y + Math.floor((r.pips.h - 7) / 2)
+      ctx.fillRect(wx, wy, 7, 7)
+      ctx.strokeRect(wx + 0.5, wy + 0.5, 6, 6)
     }
   })
   plate(ctx, TIMER_RECT.x, TIMER_RECT.y, TIMER_RECT.w, TIMER_RECT.h)
   ctx.fillStyle = INK
   ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
   ctx.font = 'bold 10px monospace'
   ctx.fillText(String(Math.ceil(s.roundTimer / 60)), W / 2, 9)
 
@@ -151,9 +252,9 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: { 
     ctx.fillText(banner, W / 2, 81)
   }
   ctx.restore()
-  if (fx.flash) {
-    ctx.globalAlpha = 0.35
-    ctx.fillStyle = PAPER
+  if (!reduce && (fx.flash > 0 || fx.koFlash > 0)) {
+    ctx.globalAlpha = fx.koFlash > 0 ? Math.min(0.85, 0.15 + fx.koFlash * 0.07) : 0.35
+    ctx.fillStyle = fx.koFlash > 5 ? VERM : PAPER
     ctx.fillRect(0, 0, W, H)
     ctx.globalAlpha = 1
   }
@@ -176,6 +277,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const settingsRef = useRef(settings)
   const [tutorial, setTutorial] = useState(false)
+  const [howTo, setHowTo] = useState(false)
   const [readyFor, setReadyFor] = useState<string | null>(null)
   const update = (patch: Partial<Settings>) => {
     const next = { ...settingsRef.current, ...patch }
@@ -266,8 +368,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     let accum = 0
     let last: number | null = null
     let raf = 0
-    let shake = 0
-    let flash = false
+    let fx = initFx()
     let reported = false
     let endTicks = 0
     setResult(null)
@@ -284,7 +385,6 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
       const r = advance(accum, dt)
       accum = r.accum
       for (let i = 0; i < r.steps; i++) {
-        const prevHp = s.fighters[0].hp + s.fighters[1].hp
         const attract = modeRef.current === 'title'
         let next = s
         let p1 = humanInput.current
@@ -295,11 +395,9 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
         }
         const c1 = cpuInput(next, 1, settingsRef.current.cpu)
         next = step({ ...next, seed: c1.seed }, [p1, c1.input] as Inputs)
-        if (next.fighters[0].hp + next.fighters[1].hp < prevHp && !reduceRef.current) shake = 6
-        // one-frame flash on the step a hit lands
-        flash = s.hitstop === 0 && next.hitstop > 0 && !reduceRef.current
+        // effects step once per sim step, so a rendered frame that runs several steps loses none
+        fx = stepFx(fx, detectEvents(s, next), reduceRef.current)
         s = next
-        if (shake > 0) shake--
         if (s.phase === 'matchEnd') {
           endTicks++
           if (attract && endTicks > 180) {
@@ -308,11 +406,13 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           } else if (!attract && !reported) {
             reported = true
             const w = matchWinner(s)
+            update(afterMatch(settingsRef.current))
             setResult(w === 'draw' ? 'Draw' : w === 'p1' ? FIGHTERS[IDS[0]].label + ' wins' : FIGHTERS[IDS[1]].label + ' wins')
           }
         }
       }
-      draw(ctx, s, cache, { shake, flash })
+      draw(ctx, s, cache, fx, reduceRef.current)
+      fx = afterDraw(fx)
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
@@ -328,63 +428,111 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     setRound((r) => r + 1)
   }
 
+  const showStrip = stripVisible(settings, showTouch)
+
   return (
     <SandboxModal title="FIGHTER" onClose={onClose} fullscreen panelBg={INK} panelFg={PAPER} borderColor={INK} titleFont="var(--font-mono)">
-      <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: INK }}>
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          role="img"
-          aria-label="Pixel fighting game: Si Penyadap versus Sang Ajudan in a burning forest"
-          style={{ width: W * scale, height: H * scale, imageRendering: 'pixelated', display: 'block' }}
-        />
-        {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}
-        {mode === 'title' && (
-          <div style={overlay}>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
-            <button onClick={start} autoFocus style={btn}>FIGHT CPU</button>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              <button
-                onClick={() => update({ cpu: settings.cpu === 'easy' ? 'normal' : 'easy' })}
-                aria-label={'CPU difficulty: ' + settings.cpu + '. Activate to change.'}
-                style={smallBtn}
-              >
-                CPU: {settings.cpu.toUpperCase()}
-              </button>
-              <button
-                onClick={() => update({ hand: settings.hand === 'right' ? 'left' : 'right' })}
-                aria-label={'Touch layout: ' + settings.hand + '-handed. Activate to change.'}
-                style={smallBtn}
-              >
-                TOUCH: {settings.hand.toUpperCase()}-HANDED
-              </button>
-            </div>
-          </div>
-        )}
-        {mode === 'play' && tutorial && !result && (
-          <div style={{ ...overlay, top: 44, bottom: 'auto' }} role="note">
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, background: INK, border: `1px solid ${PAPER}`, padding: '6px 10px', maxWidth: '90%', textAlign: 'center' }}>
-              {showTouch
-                ? 'Drag on the left to walk and jump. Right: punch, kick, special, block.'
-                : 'A/D walk, W jump, J punch, K kick, L special, Space block.'}
-            </p>
-          </div>
-        )}
-        {mode === 'play' && result && (
-          <div style={overlay} role="status" aria-live="polite">
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>{result}</p>
-            {resultReady && (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={start} autoFocus style={btn}>REMATCH</button>
-                <button onClick={onClose} style={btn}>CLOSE</button>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: INK }}>
+        <div ref={wrapRef} style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: INK }}>
+          <canvas
+            ref={canvasRef}
+            width={W}
+            height={H}
+            role="img"
+            aria-label="Pixel fighting game: Si Penyadap versus Sang Ajudan in a burning forest"
+            style={{ width: W * scale, height: H * scale, imageRendering: 'pixelated', display: 'block' }}
+          />
+          {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}
+          {mode === 'title' && !howTo && (
+            <div style={overlay}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
+              <button onClick={start} autoFocus style={btn}>FIGHT CPU</button>
+              <button onClick={() => setHowTo(true)} style={smallBtn}>HOW TO PLAY</button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  onClick={() => update({ cpu: settings.cpu === 'easy' ? 'normal' : 'easy' })}
+                  aria-label={'CPU difficulty: ' + settings.cpu + '. Activate to change.'}
+                  style={smallBtn}
+                >
+                  CPU: {settings.cpu.toUpperCase()}
+                </button>
+                <button
+                  onClick={() => update({ hand: settings.hand === 'right' ? 'left' : 'right' })}
+                  aria-label={'Touch layout: ' + settings.hand + '-handed. Activate to change.'}
+                  style={smallBtn}
+                >
+                  TOUCH: {settings.hand.toUpperCase()}-HANDED
+                </button>
+                {!showTouch && (
+                  <button
+                    onClick={() => update(withStrip(settingsRef.current, !settings.strip))}
+                    aria-label={'Controls strip under the game: ' + (settings.strip ? 'on' : 'off') + '. Activate to change.'}
+                    style={smallBtn}
+                  >
+                    CONTROLS: {settings.strip ? 'ON' : 'OFF'}
+                  </button>
+                )}
               </div>
-            )}
+            </div>
+          )}
+          {mode === 'title' && howTo && (
+            <div style={{ ...howToPanel }} role="dialog" aria-label="How to play">
+              <h2 style={{ fontFamily: 'var(--font-mono)', fontSize: 14, letterSpacing: '0.08em', margin: 0 }}>HOW TO PLAY</h2>
+              <p style={howToText}>First to win 2 rounds. Empty the other bar, or lead on health when the timer ends.</p>
+              <table style={{ borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                <tbody>
+                  {HOWTO_KEYS.map((r) => (
+                    <tr key={r.action}>
+                      <th scope="row" style={{ textAlign: 'left', fontWeight: 700, paddingRight: 14 }}>{r.action}</th>
+                      <td>{r.keys}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p style={howToText}>Touch: drag the pad to walk and jump, tap the buttons.</p>
+              {specialLines().map((l) => (
+                <p key={l.label} style={howToText}>
+                  <strong>{l.label.toUpperCase()}</strong> {l.text}
+                </p>
+              ))}
+              <button onClick={() => setHowTo(false)} autoFocus style={btn}>BACK</button>
+            </div>
+          )}
+          {mode === 'play' && tutorial && !result && (
+            <div style={{ ...overlay, top: 44, bottom: 'auto' }} role="note">
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, background: INK, border: `1px solid ${PAPER}`, padding: '6px 10px', maxWidth: '90%', textAlign: 'center' }}>
+                {tutorialText(showTouch, settings.hand)}
+              </p>
+            </div>
+          )}
+          {mode === 'play' && result && (
+            <div style={overlay} role="status" aria-live="polite">
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>{result}</p>
+              {resultReady && (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={start} autoFocus style={btn}>REMATCH</button>
+                  <button onClick={onClose} style={btn}>CLOSE</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        {showStrip && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '6px 12px', borderTop: `1px solid ${PAPER}`, fontFamily: 'var(--font-mono)', fontSize: 11, color: PAPER }}>
+            <span>{KEYS_LINE}</span>
+            <button onClick={() => update(withStrip(settingsRef.current, false))} aria-label="Hide the controls strip" style={{ ...smallBtn, minHeight: 28, padding: '2px 8px' }}>HIDE</button>
           </div>
         )}
       </div>
     </SandboxModal>
   )
+}
+
+const howToPanel: React.CSSProperties = {
+  position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, background: INK, color: PAPER, overflowY: 'auto',
+}
+const howToText: React.CSSProperties = {
+  fontFamily: 'var(--font-mono)', fontSize: 11, maxWidth: 420, textAlign: 'center', margin: 0,
 }
 
 const overlay: React.CSSProperties = {

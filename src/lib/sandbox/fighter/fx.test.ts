@@ -34,7 +34,7 @@ describe('detectEvents', () => {
   it('reports one hit on the defender, between the two fighters, at body height', () => {
     const { ev, next } = firstEvents(near(), (f) => (f === 0 ? [BTN.PUNCH, 0] : NONE))
     expect(ev).toHaveLength(1)
-    const e = ev[0] as Extract<FxEvent, { kind: 'hit' }>
+    const e = ev[0] as Extract<FxEvent, { damage: number }>
     expect(e.kind).toBe('hit')
     expect(e.target).toBe(1)
     expect(e.damage).toBe(TEST_PUNCH.damage)
