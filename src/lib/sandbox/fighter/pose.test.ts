@@ -36,4 +36,18 @@ describe('poseFor', () => {
     expect(p({ action: 'ko' }, 0, 0)).toEqual({ anim: 'ko', index: 0, smear: false })
     expect(p({ action: 'ko' }, 0, 30).index).toBe(1)
   })
+
+  it('crouching and the crouch punch are drawn squashed; the jump kick uses the kick frames in the air', () => {
+    expect(p({ action: 'crouch' })).toEqual({ anim: 'idle', index: 0, smear: false, crouch: true })
+    expect(p({ action: 'attack', move: 'crouchPunch', actionFrame: 0 })).toEqual({ anim: 'punch', index: 0, smear: false, crouch: true })
+    expect(p({ action: 'attack', move: 'crouchPunch', actionFrame: TEST_PUNCH.startup })).toMatchObject({ anim: 'punch', index: 1, smear: true, crouch: true })
+    const kick = p({ action: 'attack', move: 'jumpKick', actionFrame: 3, y: 4000 })
+    expect(kick.anim).toBe('kick')
+    expect(kick.crouch).toBeUndefined()
+  })
+
+  it('ordinary poses never carry the crouch flag', () => {
+    expect(p({}).crouch).toBeUndefined()
+    expect(p({ action: 'attack', move: 'punch', actionFrame: 0 }).crouch).toBeUndefined()
+  })
 })

@@ -1,7 +1,8 @@
 import type { AnimName } from './art/sprite'
 import type { FighterDef, FighterState } from './types'
 
-export type Pose = { anim: AnimName; index: number; smear: boolean }
+// crouch is only present (and true) for crouched poses; the renderer draws those squashed.
+export type Pose = { anim: AnimName; index: number; smear: boolean; crouch?: boolean }
 
 // Maps sim state to the animation frame to draw. Purely visual; never feeds back into the sim.
 export function poseFor(f: FighterState, def: FighterDef, frame: number, koAge: number): Pose {
@@ -13,6 +14,8 @@ export function poseFor(f: FighterState, def: FighterDef, frame: number, koAge: 
     case 'block':
     case 'blockstun':
       return { anim: 'block', index: 0, smear: false }
+    case 'crouch':
+      return { anim: 'idle', index: 0, smear: false, crouch: true }
     case 'jump':
       return { anim: 'jump', index: 0, smear: false }
     case 'walk':
@@ -20,9 +23,12 @@ export function poseFor(f: FighterState, def: FighterDef, frame: number, koAge: 
     case 'attack': {
       if (!f.move) return { anim: 'idle', index: 0, smear: false }
       const m = def.moves[f.move]
-      if (f.actionFrame < m.startup) return { anim: f.move, index: 0, smear: false }
-      if (f.actionFrame < m.startup + m.active) return { anim: f.move, index: 1, smear: true }
-      return { anim: f.move, index: 2, smear: false }
+      // the new moves reuse the punch and kick frames
+      const anim: AnimName = f.move === 'crouchPunch' ? 'punch' : f.move === 'jumpKick' ? 'kick' : f.move
+      const low = f.move === 'crouchPunch' ? { crouch: true } : {}
+      if (f.actionFrame < m.startup) return { anim, index: 0, smear: false, ...low }
+      if (f.actionFrame < m.startup + m.active) return { anim, index: 1, smear: true, ...low }
+      return { anim, index: 2, smear: false, ...low }
     }
     default:
       return { anim: 'idle', index: (frame >> 5) & 1, smear: false }

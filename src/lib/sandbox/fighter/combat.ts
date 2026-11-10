@@ -1,4 +1,4 @@
-import { BUG_BONUS_PCT, FIGHTER_H, HALF_W, STAGE_W, UNIT } from './constants'
+import { BUG_BONUS_PCT, CROUCH_H, FIGHTER_H, HALF_W, STAGE_W, UNIT } from './constants'
 import type { FighterDef, FighterState, MatchState, MoveDef } from './types'
 
 type Range = [number, number]
@@ -9,6 +9,11 @@ export function hitRect(att: FighterState, m: MoveDef): { x: Range; y: Range } {
   const far = (m.hitbox.x + m.hitbox.w) * UNIT
   const x: Range = att.facing === 1 ? [att.x + near, att.x + far] : [att.x - far, att.x - near]
   return { x, y: [att.y + m.hitbox.y * UNIT, att.y + (m.hitbox.y + m.hitbox.h) * UNIT] }
+}
+
+// How tall the fighter's hurtbox is right now: short while crouching or throwing the crouch punch.
+export function hurtHeight(f: FighterState): number {
+  return f.action === 'crouch' || (f.action === 'attack' && f.move === 'crouchPunch') ? CROUCH_H : FIGHTER_H
 }
 
 // True while an armored move absorbs hits: from its first frame until its active frames end.
@@ -30,7 +35,7 @@ export function resolveHits(s: MatchState): MatchState {
   const landed: [boolean, boolean] = [false, false]
   const hurt = (d: FighterState): { x: Range; y: Range } => ({
     x: [d.x - HALF_W, d.x + HALF_W],
-    y: [d.y, d.y + FIGHTER_H],
+    y: [d.y, d.y + hurtHeight(d)],
   })
 
   for (const i of [0, 1] as const) {

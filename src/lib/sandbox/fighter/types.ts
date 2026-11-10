@@ -12,7 +12,7 @@ export const BTN = {
 
 export type Inputs = [number, number]
 
-export type MoveKind = 'punch' | 'kick' | 'special'
+export type MoveKind = 'punch' | 'kick' | 'special' | 'crouchPunch' | 'jumpKick'
 
 // Hitbox in pixels: x = near-edge offset in front of the fighter's center,
 // y = bottom edge above the floor, w/h = size.
@@ -41,9 +41,10 @@ export type FighterDef = {
   moves: Record<MoveKind, MoveDef>
 }
 
-export type Action = 'idle' | 'walk' | 'jump' | 'block' | 'attack' | 'hitstun' | 'blockstun' | 'ko'
-export const ACTIONS: readonly Action[] = ['idle', 'walk', 'jump', 'block', 'attack', 'hitstun', 'blockstun', 'ko']
-export const MOVE_KINDS: readonly MoveKind[] = ['punch', 'kick', 'special']
+export type Action = 'idle' | 'walk' | 'jump' | 'block' | 'attack' | 'hitstun' | 'blockstun' | 'ko' | 'crouch'
+// New entries go at the end: the state hash uses the index.
+export const ACTIONS: readonly Action[] = ['idle', 'walk', 'jump', 'block', 'attack', 'hitstun', 'blockstun', 'ko', 'crouch']
+export const MOVE_KINDS: readonly MoveKind[] = ['punch', 'kick', 'special', 'crouchPunch', 'jumpKick']
 
 export type FighterState = {
   x: number // world units (1 px = 256 units), center of the fighter

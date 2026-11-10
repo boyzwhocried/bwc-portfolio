@@ -1,5 +1,5 @@
-import { FIGHTER_H, HALF_W, UNIT } from './constants'
-import { hitRect } from './combat'
+import { HALF_W, UNIT } from './constants'
+import { hitRect, hurtHeight } from './combat'
 import type { FighterDef, FighterState, MatchState } from './types'
 
 // Visual effects. Everything here is derived from pairs of sim states and never feeds back into
@@ -54,7 +54,7 @@ export function detectEvents(prev: MatchState, next: MatchState): FxEvent[] {
       const pd = prev.fighters[j]
       const nd = next.fighters[j]
       const x = mid(hb.x, [pd.x - HALF_W, pd.x + HALF_W]) / UNIT
-      const y = mid(hb.y, [pd.y, pd.y + FIGHTER_H]) / UNIT
+      const y = mid(hb.y, [pd.y, pd.y + hurtHeight(pd)]) / UNIT
       const kind = nd.action === 'blockstun' ? 'block' : nd.action === 'attack' ? 'armor' : 'hit'
       out.push({ kind, target: j, x, y, damage: pd.hp - nd.hp, ko: nd.hp <= 0 && pd.hp > 0 })
     }

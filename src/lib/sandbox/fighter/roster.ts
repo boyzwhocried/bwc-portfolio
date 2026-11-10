@@ -17,6 +17,8 @@ export const FIGHTERS: Record<FighterId, FighterDef> = {
       punch: { kind: 'punch', startup: 5, active: 3, recovery: 9, damage: 35, hitstun: 12, blockstun: 8, knockback: 3 * UNIT, hitstop: 5, hitbox: { x: 10, y: 40, w: 28, h: 14 } },
       kick: { kind: 'kick', startup: 8, active: 4, recovery: 15, damage: 75, hitstun: 16, blockstun: 10, knockback: 5 * UNIT, hitstop: 6, hitbox: { x: 10, y: 12, w: 36, h: 16 } },
       special: { kind: 'special', startup: 14, active: 5, recovery: 24, damage: 60, hitstun: 14, blockstun: 10, knockback: 2 * UNIT, hitstop: 3, hitbox: { x: 10, y: 30, w: 95, h: 8 }, mark: true },
+      crouchPunch: { kind: 'crouchPunch', startup: 5, active: 3, recovery: 9, damage: 30, hitstun: 12, blockstun: 8, knockback: 2 * UNIT, hitstop: 5, hitbox: { x: 10, y: 2, w: 30, h: 12 } },
+      jumpKick: { kind: 'jumpKick', startup: 4, active: 12, recovery: 6, damage: 60, hitstun: 14, blockstun: 12, knockback: 4 * UNIT, hitstop: 6, hitbox: { x: 6, y: 0, w: 30, h: 22 } },
     },
   },
   // Young, stern, stays in front of the hit. The special steps in with armor.
@@ -30,6 +32,8 @@ export const FIGHTERS: Record<FighterId, FighterDef> = {
       punch: { kind: 'punch', startup: 4, active: 3, recovery: 8, damage: 40, hitstun: 12, blockstun: 8, knockback: 3 * UNIT, hitstop: 5, hitbox: { x: 10, y: 40, w: 28, h: 14 } },
       kick: { kind: 'kick', startup: 7, active: 4, recovery: 14, damage: 80, hitstun: 16, blockstun: 10, knockback: 5 * UNIT, hitstop: 6, hitbox: { x: 10, y: 12, w: 36, h: 16 } },
       special: { kind: 'special', startup: 10, active: 5, recovery: 22, damage: 90, hitstun: 18, blockstun: 12, knockback: 6 * UNIT, hitstop: 4, hitbox: { x: 10, y: 20, w: 46, h: 30 }, advance: 640, armor: true },
+      crouchPunch: { kind: 'crouchPunch', startup: 4, active: 3, recovery: 8, damage: 35, hitstun: 12, blockstun: 8, knockback: 2 * UNIT, hitstop: 5, hitbox: { x: 10, y: 2, w: 24, h: 12 } },
+      jumpKick: { kind: 'jumpKick', startup: 3, active: 12, recovery: 6, damage: 65, hitstun: 14, blockstun: 12, knockback: 4 * UNIT, hitstop: 6, hitbox: { x: 6, y: 0, w: 28, h: 22 } },
     },
   },
 }

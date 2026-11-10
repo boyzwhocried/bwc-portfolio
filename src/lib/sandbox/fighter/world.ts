@@ -33,7 +33,8 @@ export function freshFighters(defs: [FighterDef, FighterDef]): [FighterState, Fi
 }
 
 // A connected move can be cancelled into a stronger one: punch, then kick, then special.
-const TIER: Record<MoveKind, number> = { punch: 0, kick: 1, special: 2 }
+// The jump kick never cancels into anything.
+const TIER: Record<MoveKind, number> = { punch: 0, kick: 1, special: 2, crouchPunch: 0, jumpKick: 99 }
 
 const ATTACK_BITS = BTN.PUNCH | BTN.KICK | BTN.SPECIAL
 
@@ -43,6 +44,14 @@ function attackPressed(input: number): MoveKind | null {
   if (input & BTN.KICK) return 'kick'
   if (input & BTN.PUNCH) return 'punch'
   return null
+}
+
+// Which move a fresh button press starts, from the stance: down plus punch on the ground is the
+// crouch punch, kick in the air is the jump kick, and the other buttons do nothing in the air.
+function resolveMove(base: MoveKind | null, grounded: boolean, crouching: boolean): MoveKind | null {
+  if (!base) return null
+  if (!grounded) return base === 'kick' ? 'jumpKick' : null
+  return crouching && base === 'punch' ? 'crouchPunch' : base
 }
 
 function stepFighter(f: FighterState, def: FighterDef, input: number): FighterState {
@@ -69,19 +78,21 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
   }
 
   // decisions (only when free to act)
-  if (action === 'idle' || action === 'walk' || action === 'jump' || action === 'block') {
+  if (action === 'idle' || action === 'walk' || action === 'jump' || action === 'block' || action === 'crouch') {
     const grounded = y === 0 && vy === 0
-    const atk = atkInput
-    if (grounded && atk) {
+    const h = dirAxis(input, BTN.LEFT, BTN.RIGHT)
+    const v = dirAxis(input, BTN.DOWN, BTN.UP)
+    const atk = resolveMove(atkInput, grounded, grounded && v === -1)
+    if (atk) {
       action = 'attack'
       move = atk
       actionFrame = 0
       hitConnected = false
     } else if (grounded && input & BTN.BLOCK) {
       action = 'block'
+    } else if (grounded && v === -1) {
+      action = 'crouch'
     } else {
-      const h = dirAxis(input, BTN.LEFT, BTN.RIGHT)
-      const v = dirAxis(input, BTN.DOWN, BTN.UP)
       if (grounded && v === 1) vy = def.jumpVelocity
       vx = h * def.walkSpeed
       action = grounded && vy === 0 ? (h !== 0 ? 'walk' : 'idle') : 'jump'
@@ -94,6 +105,8 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
 
   if (action === 'attack' && move) {
     const m = def.moves[move]
+    // the jump kick keeps the air momentum it started with, until it lands
+    if (move === 'jumpKick' && (f.y > 0 || f.vy !== 0)) vx = f.vx
     if (m.advance && actionFrame >= m.startup && actionFrame < m.startup + m.active) vx = f.facing * m.advance
   }
 
@@ -105,6 +118,8 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
       y = 0
       vy = 0
       if (action === 'jump') action = 'idle'
+      // landing during a jump kick skips the rest of the swing and goes straight to recovery
+      else if (action === 'attack' && move === 'jumpKick') actionFrame = Math.max(actionFrame, def.moves.jumpKick.startup + def.moves.jumpKick.active)
     }
   }
   const x = Math.min(STAGE_W - HALF_W, Math.max(HALF_W, f.x + vx))
