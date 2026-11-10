@@ -56,10 +56,19 @@ export type FighterState = {
   hitConnected: boolean // current swing already hit
 }
 
+export type Phase = 'intro' | 'fight' | 'ko' | 'roundEnd' | 'matchEnd'
+export const PHASES: readonly Phase[] = ['intro', 'fight', 'ko', 'roundEnd', 'matchEnd']
+
 export type MatchState = {
   frame: number
   seed: number
   hitstop: number // frames left in the shared freeze
+  phase: Phase
+  phaseFrame: number // frames spent in the current phase
+  introFrames: number // intro length for every round; 0 skips intros
+  roundTimer: number // frames left in the round
+  wins: [number, number]
+  round: number // 1-based
   fighters: [FighterState, FighterState]
   defs: [FighterDef, FighterDef]
 }
