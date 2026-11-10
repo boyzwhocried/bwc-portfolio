@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hudRects, TIMER_RECT, NAME_FONT_PX, type Rect } from './hud'
+import { hudRects, TIMER_RECT, NAME_FONT_PX, PORTRAIT_PX, type Rect } from './hud'
 import { FIGHTERS } from './roster'
 
 const W = 320
@@ -11,7 +11,7 @@ describe('hud layout', () => {
     ['timer', TIMER_RECT],
     ...([0, 1] as const).flatMap((s) => {
       const r = hudRects(s)
-      return [[`bar${s}`, r.bar], [`name${s}`, r.name], [`pips${s}`, r.pips]] as [string, Rect][]
+      return [[`bar${s}`, r.bar], [`name${s}`, r.name], [`pips${s}`, r.pips], [`portrait${s}`, r.portrait]] as [string, Rect][]
     }),
   ]
 
@@ -34,6 +34,23 @@ describe('hud layout', () => {
     const b = hudRects(1)
     expect(b.bar.x + b.bar.w).toBe(W - a.bar.x)
     expect(b.bar.w).toBe(a.bar.w)
+  })
+
+  it('each portrait plate is square and holds the whole portrait plus its frame', () => {
+    for (const side of [0, 1] as const) {
+      const p = hudRects(side).portrait
+      expect(p.w).toBe(p.h)
+      expect(p.w).toBeGreaterThanOrEqual(PORTRAIT_PX + 2)
+    }
+  })
+
+  it('the portrait sits at the outer edge with the name block between it and the timer', () => {
+    const l = hudRects(0)
+    const r = hudRects(1)
+    expect(l.portrait.x).toBeLessThan(l.name.x)
+    expect(r.portrait.x).toBeGreaterThan(r.name.x)
+    expect(l.name.x + l.name.w).toBeLessThanOrEqual(TIMER_RECT.x)
+    expect(r.name.x).toBeGreaterThanOrEqual(TIMER_RECT.x + TIMER_RECT.w)
   })
 
   it('the pips box holds two win squares', () => {

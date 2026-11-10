@@ -12,12 +12,13 @@ import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
 import { poseFor } from '@/lib/sandbox/fighter/pose'
 import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
 import { isArmed } from '@/lib/sandbox/fighter/combat'
-import { afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
-import { HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
+import { COMBO_SHOW, afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
+import { COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
 import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
+import { PORTRAITS } from '@/lib/sandbox/fighter/art/portraits'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { afterMatch, loadSettings, saveSettings, stripVisible, withStrip, type Settings } from '@/lib/sandbox/fighter/settings'
 import type { Inputs, MatchState } from '@/lib/sandbox/fighter/types'
@@ -33,7 +34,7 @@ const IDS: [FighterId, FighterId] = ['si-penyadap', 'sang-ajudan']
 type Pair = [HTMLCanvasElement, HTMLCanvasElement] // [facing right, facing left]
 type Cache = {
   stage: HTMLCanvasElement
-  fighters: Record<FighterId, { frames: Record<AnimName, Pair[]>; smear: Pair }>
+  fighters: Record<FighterId, { frames: Record<AnimName, Pair[]>; smear: Pair; portrait: Pair }>
 }
 
 function toCanvas(s: Sprite): HTMLCanvasElement {
@@ -76,7 +77,7 @@ function buildCache(): Cache {
     const a = ART[id]
     const frames = {} as Record<AnimName, Pair[]>
     for (const n of ANIM_NAMES) frames[n] = a.frames[n].map(toPair)
-    fighters[id] = { frames, smear: toPair(a.smear) }
+    fighters[id] = { frames, smear: toPair(a.smear), portrait: toPair(PORTRAITS[id]) }
   }
   return { stage: toCanvas(STAGE_FOREST), fighters }
 }
@@ -225,6 +226,9 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
     ctx.textAlign = 'left'
     ctx.fillStyle = INK
     ctx.fillText(s.defs[i].label.toUpperCase(), r.name.x + 3, r.name.y + r.name.h / 2 + 0.5)
+    // portrait faces inward: the left fighter's looks right, the right fighter's looks left
+    plate(ctx, r.portrait.x, r.portrait.y, r.portrait.w, r.portrait.h)
+    ctx.drawImage(cache.fighters[IDS[i]].portrait[i === 0 ? 0 : 1], r.portrait.x + 1, r.portrait.y + 1)
     plate(ctx, r.pips.x, r.pips.y, r.pips.w, r.pips.h)
     for (let k = 0; k < 2; k++) {
       ctx.fillStyle = k < s.wins[i] ? VERM : PAPER
@@ -241,6 +245,21 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
   ctx.textBaseline = 'top'
   ctx.font = 'bold 10px monospace'
   ctx.fillText(String(Math.ceil(s.roundTimer / 60)), W / 2, 9)
+
+  if (fx.combo.by !== null && fx.combo.count >= 2 && fx.combo.age < COMBO_SHOW) {
+    const r = hudRects(fx.combo.by)
+    const label = fx.combo.count + ' HIT'
+    ctx.font = 'bold 12px monospace'
+    const tw = Math.ceil(ctx.measureText(label).width) + 10
+    const bx = fx.combo.by === 0 ? r.name.x : r.name.x + r.name.w - tw
+    plate(ctx, bx, 48, tw, 16)
+    ctx.fillStyle = VERM
+    ctx.fillRect(bx + 2, 50, 3, 12)
+    ctx.fillStyle = INK
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, bx + 7, 56.5)
+  }
 
   const banner = bannerFor(s)
   if (banner) {
@@ -489,6 +508,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
                   ))}
                 </tbody>
               </table>
+              <p style={howToText}>{COMBO_LINE}</p>
               <p style={howToText}>Touch: drag the pad to walk and jump, tap the buttons.</p>
               {specialLines().map((l) => (
                 <p key={l.label} style={howToText}>

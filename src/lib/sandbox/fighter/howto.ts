@@ -10,6 +10,8 @@ export const HOWTO_KEYS: readonly { action: string; keys: string }[] = [
   { action: 'Block', keys: 'Space or Shift' },
 ]
 
+export const COMBO_LINE = 'Combos: once a punch or kick connects, press a stronger button: punch, kick, special.'
+
 export const KEYS_LINE = 'A/D walk, W jump, J punch, K kick, L special, Space block.'
 
 const SPECIAL_BLURB: Record<FighterId, string> = {

@@ -6,6 +6,9 @@ import { ANIM_NAMES, pixelsOf, type FighterArt, type Sprite } from './sprite'
 import { ART as PENYADAP } from './si-penyadap'
 import { ART as AJUDAN } from './sang-ajudan'
 import { STAGE_FOREST, FLOOR_Y } from './stage-forest'
+import { PORTRAITS } from './portraits'
+import { PORTRAIT_PX } from '../hud'
+import { FIGHTER_IDS } from '../roster'
 
 const FIGHTERS: Record<string, FighterArt> = { 'si-penyadap': PENYADAP, 'sang-ajudan': AJUDAN }
 const MIN_FRAMES: Record<string, number> = { idle: 2, walk: 4, punch: 3, kick: 3, special: 3, hit: 2, block: 1, jump: 1, ko: 2 }
@@ -55,6 +58,16 @@ describe('fighter art data', () => {
 
   it('only archetype slug files live in art/', () => {
     const dir = dirname(fileURLToPath(import.meta.url))
-    expect(readdirSync(dir).sort()).toEqual(['art.test.ts', 'sang-ajudan.ts', 'si-penyadap.ts', 'sprite.ts', 'stage-forest.ts'])
+    expect(readdirSync(dir).sort()).toEqual(['art.test.ts', 'portraits.ts', 'sang-ajudan.ts', 'si-penyadap.ts', 'sprite.ts', 'stage-forest.ts'])
+  })
+
+  it('every fighter has a fully opaque, palette-only portrait of the size the hud expects', () => {
+    for (const id of FIGHTER_IDS) {
+      const p = PORTRAITS[id]
+      expect(p, id).toBeDefined()
+      expect([p.w, p.h]).toEqual([PORTRAIT_PX, PORTRAIT_PX])
+      expect(p.rows.length).toBe(p.h)
+      for (const r of p.rows) expect(r).toMatch(new RegExp('^[ipv]{' + p.w + '}$'))
+    }
   })
 })

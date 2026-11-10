@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from './howto'
+import { COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from './howto'
 import { FIGHTERS, FIGHTER_IDS } from './roster'
 
 describe('how to play text', () => {
@@ -31,7 +31,7 @@ describe('how to play text', () => {
   })
 
   it('no em-dashes anywhere in the copy', () => {
-    const all = [KEYS_LINE, ...HOWTO_KEYS.flatMap((r) => [r.action, r.keys]), ...specialLines().flatMap((l) => [l.label, l.text]), tutorialText(false, 'right'), tutorialText(true, 'right'), tutorialText(true, 'left')]
+    const all = [COMBO_LINE, KEYS_LINE, ...HOWTO_KEYS.flatMap((r) => [r.action, r.keys]), ...specialLines().flatMap((l) => [l.label, l.text]), tutorialText(false, 'right'), tutorialText(true, 'right'), tutorialText(true, 'left')]
     for (const t of all) expect(t).not.toContain('—')
   })
 
@@ -52,5 +52,13 @@ describe('how to play text', () => {
       expect(t).toMatch(/^Drag on the right/)
       expect(t).toMatch(/Left: punch/)
     })
+  })
+
+  it('the combo line explains the cancel order in one short line', () => {
+    expect(COMBO_LINE.length).toBeLessThanOrEqual(100)
+    const t = COMBO_LINE.toLowerCase()
+    expect(t.indexOf('punch')).toBeLessThan(t.indexOf('kick'))
+    expect(t.indexOf('kick')).toBeLessThan(t.indexOf('special'))
+    expect(t).toMatch(/connect|land|hit/)
   })
 })
