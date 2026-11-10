@@ -14,7 +14,7 @@ import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
 import { isArmed } from '@/lib/sandbox/fighter/combat'
 import { stageFx } from '@/lib/sandbox/fighter/stagefx'
 import { COMBO_SHOW, afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
-import { BUGGED_LINE, COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
+import { BUGGED_LINE, COMBO_LINE, MOVES_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
@@ -29,6 +29,7 @@ const H = 180
 const INK = '#1a1a1a'
 const PAPER = '#ece7de'
 const VERM = '#e84c28'
+const CROUCH_DRAW_H = 46 // a crouched sprite is drawn squashed to this height, feet on the floor
 const ART: Record<FighterId, FighterArt> = { 'si-penyadap': PENYADAP, 'sang-ajudan': AJUDAN }
 const IDS: [FighterId, FighterId] = ['si-penyadap', 'sang-ajudan']
 
@@ -175,8 +176,10 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
     const c = cache.fighters[id]
     const frames = c.frames[pose.anim]
     const sprite = frames[Math.min(pose.index, frames.length - 1)][dir]
-    ctx.drawImage(fx.hurt[i] > 0 ? silhouette(sprite) : sprite, px, py)
-    if (pose.smear) ctx.drawImage(c.smear[dir], px, py)
+    const dh = pose.crouch ? CROUCH_DRAW_H : 80
+    const top = py + 80 - dh
+    ctx.drawImage(fx.hurt[i] > 0 ? silhouette(sprite) : sprite, 0, 0, 80, 80, px, top, 80, dh)
+    if (pose.smear) ctx.drawImage(c.smear[dir], 0, 0, 80, 80, px, top, 80, dh)
 
     // armored move: a shield while it is armed (steady under reduced motion)
     if (isArmed(f, s.defs[i])) {
@@ -208,12 +211,12 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = VERM
-      ctx.fillRect(cx - 21, py - 12, 42, 11)
+      ctx.fillRect(cx - 21, top - 12, 42, 11)
       ctx.strokeStyle = INK
       ctx.lineWidth = 1
-      ctx.strokeRect(cx - 21 + 0.5, py - 12 + 0.5, 41, 10)
+      ctx.strokeRect(cx - 21 + 0.5, top - 12 + 0.5, 41, 10)
       ctx.fillStyle = INK
-      ctx.fillText('BUGGED', cx, py - 6)
+      ctx.fillText('BUGGED', cx, top - 6)
     }
   })
 
@@ -515,8 +518,9 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
                 </tbody>
               </table>
               <p style={howToText}>{COMBO_LINE}</p>
+              <p style={howToText}>{MOVES_LINE}</p>
               <p style={howToText}>{BUGGED_LINE}</p>
-              <p style={howToText}>Touch: drag the pad to walk and jump, tap the buttons.</p>
+              <p style={howToText}>Touch: drag the pad to walk, jump and crouch, tap the buttons.</p>
               {specialLines().map((l) => (
                 <p key={l.label} style={howToText}>
                   <strong>{l.label.toUpperCase()}</strong> {l.text}

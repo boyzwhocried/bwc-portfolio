@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { BUGGED_LINE, COMBO_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from './howto'
+import { BUGGED_LINE, COMBO_LINE, MOVES_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from './howto'
 import { FIGHTERS, FIGHTER_IDS } from './roster'
 
 describe('how to play text', () => {
   it('lists every action once with its keys', () => {
     const actions = HOWTO_KEYS.map((r) => r.action)
-    expect(actions).toEqual(['Walk', 'Jump', 'Punch', 'Kick', 'Special', 'Block'])
+    expect(actions).toEqual(['Walk', 'Jump', 'Crouch', 'Punch', 'Kick', 'Special', 'Block'])
     for (const r of HOWTO_KEYS) expect(r.keys.length).toBeGreaterThan(0)
   })
 
   it('the one-line keys hint names every action key', () => {
-    for (const k of ['A/D', 'W', 'J', 'K', 'L', 'Space']) expect(KEYS_LINE).toContain(k)
+    for (const k of ['A/D', 'W', 'S', 'J', 'K', 'L', 'Space']) expect(KEYS_LINE).toContain(k)
   })
 
   it('gives each fighter one short special line labelled with its archetype name', () => {
@@ -31,7 +31,7 @@ describe('how to play text', () => {
   })
 
   it('no em-dashes anywhere in the copy', () => {
-    const all = [COMBO_LINE, KEYS_LINE, ...HOWTO_KEYS.flatMap((r) => [r.action, r.keys]), ...specialLines().flatMap((l) => [l.label, l.text]), tutorialText(false, 'right'), tutorialText(true, 'right'), tutorialText(true, 'left')]
+    const all = [COMBO_LINE, MOVES_LINE, KEYS_LINE, ...HOWTO_KEYS.flatMap((r) => [r.action, r.keys]), ...specialLines().flatMap((l) => [l.label, l.text]), tutorialText(false, 'right'), tutorialText(true, 'right'), tutorialText(true, 'left')]
     for (const t of all) expect(t).not.toContain('—')
   })
 
@@ -67,6 +67,16 @@ describe('how to play text', () => {
     expect(t).toContain('25')
     expect(BUGGED_LINE.length).toBeLessThanOrEqual(100)
     expect(BUGGED_LINE).not.toContain(String.fromCharCode(0x2014))
+  })
+
+  it('the moves line teaches crouch punch and jump kick in one short line', () => {
+    expect(MOVES_LINE.length).toBeLessThanOrEqual(110)
+    const t = MOVES_LINE.toLowerCase()
+    expect(t).toMatch(/crouch|down/)
+    expect(t).toMatch(/air|jump/)
+    expect(t).toContain('punch')
+    expect(t).toContain('kick')
+    expect(MOVES_LINE).not.toContain(String.fromCharCode(0x2014))
   })
 
   it('the combo line explains the cancel order in one short line', () => {
