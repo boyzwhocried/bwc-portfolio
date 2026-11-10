@@ -2,7 +2,7 @@
 // Local input sampled now is applied DELAY frames later, so both sides can run without waiting
 // as long as packets arrive within about DELAY frames.
 
-export const DELAY = 4
+export const DELAY = 6
 export const REDUNDANCY = 8 // each packet also carries the previous frames, so one lost packet costs nothing
 const MAX_AHEAD = 120 // refuse remote frames this far past our own (garbage or a broken peer)
 const MASK = 0xff // the 8 valid buttons

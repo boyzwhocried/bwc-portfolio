@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createSession, HASH_EVERY, TIMEOUT_MS } from './session'
+import { createSession, HASH_EVERY, TIMEOUT_MS, SEND_EVERY, RESEND_MS } from './session'
 import { DELAY } from './lockstep'
 
 // two sessions wired back to back, instantly
@@ -99,5 +99,38 @@ describe('session', () => {
     flush(0)
     a.sample(0)
     expect(a.advance(1)).toBeNull()
+  })
+
+  it('sends one packet per SEND_EVERY samples, not one per frame', () => {
+    const sent: unknown[] = []
+    const s = createSession(0, (m) => sent.push(m))
+    for (let i = 0; i < SEND_EVERY * 4; i++) s.sample(1)
+    expect(sent).toHaveLength(4)
+  })
+
+  it('throttles stall resends to one per RESEND_MS', () => {
+    const sent: unknown[] = []
+    const s = createSession(0, (m) => sent.push(m))
+    s.sample(0)
+    for (let i = 0; i < DELAY; i++) s.advance(0)
+    sent.length = 0
+    for (let t = 0; t < RESEND_MS; t += 5) s.advance(t) // stalled the whole time
+    expect(sent.length).toBeLessThanOrEqual(1)
+    s.advance(RESEND_MS * 3)
+    expect(sent.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('stays in step with batching when packets arrive late but within the delay', () => {
+    const { a, b, flush } = pair()
+    for (let i = 0; i < 300; i++) {
+      a.sample(i & 15)
+      b.sample(i & 7)
+      flush(i * 16)
+      a.advance(i * 16)
+      b.advance(i * 16)
+    }
+    expect(a.status).toBe('playing')
+    expect(Math.abs(a.frame - b.frame)).toBeLessThanOrEqual(DELAY)
+    expect(a.frame).toBeGreaterThan(200)
   })
 })
