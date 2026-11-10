@@ -35,6 +35,14 @@ export function resolveHits(s: MatchState): MatchState {
     const hu = hurt(s.fighters[j])
     if (!overlaps(hb.x, hu.x) || !overlaps(hb.y, hu.y)) continue
     landed[i] = true
+    hitstop = Math.max(hitstop, move.hitstop)
+    const dstate = s.fighters[j]
+    const dm = dstate.action === 'attack' && dstate.move ? s.defs[j].moves[dstate.move] : null
+    if (dm?.armor && dstate.actionFrame < dm.startup + dm.active) {
+      const hpA = Math.max(0, fs[j].hp - Math.floor(move.damage / 2))
+      fs[j] = { ...fs[j], hp: hpA, action: hpA === 0 ? 'ko' : fs[j].action }
+      continue
+    }
     const blocked = s.fighters[j].action === 'block'
     const dmg = blocked ? Math.floor(move.damage / 10) : move.damage
     const hp = Math.max(0, fs[j].hp - dmg)
@@ -49,7 +57,6 @@ export function resolveHits(s: MatchState): MatchState {
       actionFrame: 0,
       hitConnected: false,
     }
-    hitstop = Math.max(hitstop, move.hitstop)
   }
   for (const i of [0, 1] as const) if (landed[i]) fs[i] = { ...fs[i], hitConnected: true }
   return { ...s, fighters: fs, hitstop }

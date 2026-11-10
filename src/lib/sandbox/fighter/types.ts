@@ -27,6 +27,8 @@ export type MoveDef = {
   knockback: number // world units
   hitstop: number // frames both fighters freeze on contact
   hitbox: { x: number; y: number; w: number; h: number }
+  advance?: number // world units per frame the attacker moves forward during active frames
+  armor?: boolean // absorbs one hit at half damage before the active frames end, without being interrupted
 }
 
 export type FighterDef = {

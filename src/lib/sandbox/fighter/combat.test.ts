@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { BTN, type Inputs, type MatchState } from './types'
 import { initMatch, step, UNIT } from './sim'
-import { TEST_DEF, TEST_PUNCH } from './test-fixtures'
+import { TEST_DEF, TEST_PUNCH, TEST_SPECIAL } from './test-fixtures'
 
 const NONE: Inputs = [0, 0]
 
@@ -92,5 +92,27 @@ describe('combat', () => {
     s = stepN(s, TEST_PUNCH.startup)
     expect(s.fighters[1].hp).toBe(0)
     expect(s.fighters[1].action).toBe('ko')
+  })
+
+  const GUARD = {
+    ...TEST_DEF,
+    moves: { ...TEST_DEF.moves, special: { ...TEST_SPECIAL, armor: true, advance: 512 } },
+  }
+
+  it('an armored move absorbs a hit at half damage without being interrupted', () => {
+    const base = initMatch(1, [TEST_DEF, GUARD])
+    let s: MatchState = { ...base, fighters: [base.fighters[0], { ...base.fighters[1], x: base.fighters[0].x + 30 * UNIT }] }
+    s = step(s, [BTN.PUNCH, BTN.SPECIAL])
+    s = stepN(s, TEST_PUNCH.startup)
+    expect(s.fighters[1].hp).toBe(1000 - Math.floor(TEST_PUNCH.damage / 2))
+    expect(s.fighters[1].action).toBe('attack')
+  })
+
+  it('an advancing move moves the attacker forward during its active frames', () => {
+    const base = initMatch(1, [GUARD, GUARD])
+    let s = step(base, [BTN.SPECIAL, 0])
+    const x0 = s.fighters[0].x
+    s = stepN(s, TEST_SPECIAL.startup + TEST_SPECIAL.active)
+    expect(s.fighters[0].x).toBe(x0 + TEST_SPECIAL.active * 512)
   })
 })

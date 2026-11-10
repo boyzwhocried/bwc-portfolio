@@ -78,6 +78,11 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
     }
   }
 
+  if (action === 'attack' && move) {
+    const m = def.moves[move]
+    if (m.advance && actionFrame >= m.startup && actionFrame < m.startup + m.active) vx = f.facing * m.advance
+  }
+
   // vertical physics
   if (vy !== 0 || y > 0) {
     y += vy
