@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import SandboxModal from './SandboxModal'
 import FighterTouchControls from './FighterTouchControls'
-import { initMatch, step, UNIT } from '@/lib/sandbox/fighter/sim'
+import { initMatch, step, hashState, UNIT } from '@/lib/sandbox/fighter/sim'
 import { INTRO_FRAMES, matchWinner } from '@/lib/sandbox/fighter/match'
 import { advance } from '@/lib/sandbox/fighter/loop'
 import { cpuInput } from '@/lib/sandbox/fighter/cpu'
@@ -22,6 +22,11 @@ import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
 import { PORTRAITS } from '@/lib/sandbox/fighter/art/portraits'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
+import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
+import { openRoom, type RoomHandle } from '@/lib/sandbox/fighter/net/transport'
+import { createSession, statusLine, type Session } from '@/lib/sandbox/fighter/net/session'
+import { makeRoomCode } from '@/lib/sandbox/fighter/net/room'
+import { parseMessage } from '@/lib/sandbox/fighter/net/protocol'
 import { afterMatch, loadSettings, saveSettings, stripVisible, withStrip, type Settings } from '@/lib/sandbox/fighter/settings'
 import type { Inputs, MatchState } from '@/lib/sandbox/fighter/types'
 
@@ -316,6 +321,9 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   }
   const [showTouch, setShowTouch] = useState(false)
   const [rotate, setRotate] = useState(false)
+  const [onlineView, setOnlineView] = useState<OnlineView | null>(null)
+  const onlineRef = useRef<{ room: RoomHandle; role: 'host' | 'guest'; side: 0 | 1; session: Session | null; seed: number; timer: number | null } | null>(null)
+  const [online, setOnline] = useState<{ role: 'host' | 'guest'; live: boolean } | null>(null) // live = the session is still healthy
   const rotateRef = useRef(false)
   const onTouch = useCallback((bits: number) => {
     touchBits.current = bits
@@ -410,7 +418,10 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     if (!canvas || !ctx) return
     ctx.imageSmoothingEnabled = false
     const cache = buildCache()
-    const seed = ((Date.now() & 0x7fffffff) | 1) >>> 0
+    const live = onlineRef.current?.session ? onlineRef.current : null
+    const on = live?.session ?? null
+    const seed = live ? live.seed : ((Date.now() & 0x7fffffff) | 1) >>> 0
+    let sampled = 0
     let s = initMatch(seed, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
     let accum = 0
     let last: number | null = null
@@ -437,16 +448,28 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
       const r = advance(accum, dt)
       accum = r.accum
       for (let i = 0; i < r.steps; i++) {
-        const attract = modeRef.current === 'title'
+        const attract = !on && modeRef.current === 'title'
         let next = s
-        let p1 = humanInput.current
-        if (attract) {
-          const c0 = cpuInput(next, 0, 'normal')
-          next = { ...next, seed: c0.seed }
-          p1 = c0.input
+        if (on) {
+          // one local sample per executed frame; the session decides when both inputs are in
+          if (sampled <= s.frame) {
+            on.sample(humanInput.current)
+            sampled++
+          }
+          const inp = on.advance(performance.now())
+          if (!inp) break
+          next = step(s, inp as Inputs)
+          on.checkpoint(next.frame, hashState(next))
+        } else {
+          let p1 = humanInput.current
+          if (attract) {
+            const c0 = cpuInput(next, 0, 'normal')
+            next = { ...next, seed: c0.seed }
+            p1 = c0.input
+          }
+          const c1 = cpuInput(next, 1, settingsRef.current.cpu)
+          next = step({ ...next, seed: c1.seed }, [p1, c1.input] as Inputs)
         }
-        const c1 = cpuInput(next, 1, settingsRef.current.cpu)
-        next = step({ ...next, seed: c1.seed }, [p1, c1.input] as Inputs)
         // effects step once per sim step, so a rendered frame that runs several steps loses none
         fx = stepFx(fx, detectEvents(s, next), reduceRef.current)
         s = next
@@ -463,6 +486,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           }
         }
       }
+      if (on && on.status !== 'playing' && !reported) {
+        reported = true
+        setOnline((v) => (v ? { ...v, live: false } : v))
+        setResult(statusLine(on.status))
+      }
       draw(ctx, s, cache, fx, reduceRef.current)
       fx = afterDraw(fx)
       raf = requestAnimationFrame(tick)
@@ -473,6 +501,83 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [mode, round])
+
+  const newSeed = () => ((Math.random() * 0x7ffffffe) | 0) + 1
+
+  const closeOnline = useCallback(() => {
+    const o = onlineRef.current
+    onlineRef.current = null
+    if (!o) return
+    if (o.timer !== null) window.clearTimeout(o.timer)
+    o.room.send({ t: 'bye' })
+    window.setTimeout(() => o.room.close(), 250)
+  }, [])
+  useEffect(() => closeOnline, [closeOnline])
+
+  const beginOnline = (seed: number) => {
+    const o = onlineRef.current
+    if (!o) return
+    if (o.timer !== null) {
+      window.clearTimeout(o.timer)
+      o.timer = null
+    }
+    // every in-match message carries the match seed, so stragglers from the previous match are dropped
+    o.session = createSession(o.side, (m) => o.room.send({ ...(m as object), m: seed }))
+    o.seed = seed
+    setOnlineView(null)
+    setOnline({ role: o.role, live: true })
+    setResult(null)
+    setMode('play')
+    setRound((r) => r + 1)
+  }
+
+  const goOnline = (role: 'host' | 'guest', code: string) => {
+    if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
+    closeOnline()
+    const fail = (error: string) => {
+      closeOnline()
+      setOnlineView({ kind: 'menu', error })
+    }
+    const room = openRoom(code, {
+      onStatus: (st) => {
+        if (st === 'error') fail('Gagal tersambung / Could not connect')
+        else if (st === 'ready') setOnlineView((v) => (v && v.kind === 'lobby' ? { ...v, connected: true } : v))
+      },
+      onPeers: (n) => {
+        const o = onlineRef.current
+        if (!o || o.session) return
+        if (role === 'guest' && n > 2) fail('Ruang penuh / Room full')
+        else if (role === 'host' && n === 2) {
+          const seed = newSeed()
+          o.room.send({ t: 'start', seed })
+          beginOnline(seed)
+        }
+      },
+      onMessage: (raw) => {
+        const o = onlineRef.current
+        if (!o) return
+        const m = parseMessage(raw)
+        if (!m) return
+        if (m.t === 'start') {
+          if (role === 'guest') beginOnline(m.seed)
+          return
+        }
+        if (m.t !== 'bye' && (raw as { m?: unknown }).m !== o.seed) return
+        o.session?.receive(raw, performance.now())
+      },
+    })
+    const timer = role === 'guest' ? window.setTimeout(() => fail('Ruang tidak ditemukan / Room not found'), 9000) : null
+    onlineRef.current = { room, role, side: role === 'host' ? 0 : 1, session: null, seed: 0, timer }
+    setOnlineView({ kind: 'lobby', role, code, connected: false })
+  }
+
+  const rematchOnline = () => {
+    const o = onlineRef.current
+    if (!o || o.role !== 'host') return
+    const seed = newSeed()
+    o.room.send({ t: 'start', seed })
+    beginOnline(seed)
+  }
 
   const start = () => {
     if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
@@ -502,10 +607,22 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}
-          {mode === 'title' && !howTo && (
+          {onlineView && (
+            <FighterOnlinePanel
+              view={onlineView}
+              onCreate={() => goOnline('host', makeRoomCode())}
+              onJoin={(c) => goOnline('guest', c)}
+              onCancel={() => {
+                closeOnline()
+                setOnlineView(null)
+              }}
+            />
+          )}
+          {mode === 'title' && !howTo && !onlineView && (
             <div style={overlay}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
               <button onClick={start} autoFocus style={btn}>FIGHT CPU</button>
+              <button onClick={() => setOnlineView({ kind: 'menu' })} style={btn}>ONLINE</button>
               <button onClick={() => setHowTo(true)} style={smallBtn}>HOW TO PLAY</button>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <button
@@ -571,8 +688,14 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             <div style={overlay} role="status" aria-live="polite">
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>{result}</p>
               {resultReady && (
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={start} autoFocus style={btn}>REMATCH</button>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {!online && <button onClick={start} autoFocus style={btn}>REMATCH</button>}
+                  {online?.live && online.role === 'host' && (
+                    <button onClick={rematchOnline} autoFocus style={btn}>REMATCH</button>
+                  )}
+                  {online?.live && online.role === 'guest' && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>Menunggu tuan rumah / Waiting for host</span>
+                  )}
                   <button onClick={onClose} style={btn}>CLOSE</button>
                 </div>
               )}
