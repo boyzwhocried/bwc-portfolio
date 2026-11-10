@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { hudRects, TIMER_RECT, type Rect } from './hud'
+import { hudRects, TIMER_RECT, NAME_FONT_PX, type Rect } from './hud'
+import { FIGHTERS } from './roster'
 
 const W = 320
 const H = 180
@@ -37,5 +38,20 @@ describe('hud layout', () => {
 
   it('the pips box holds two win squares', () => {
     expect(hudRects(0).pips.w).toBeGreaterThanOrEqual(2 * 7 + 4 + 2 * 6)
+  })
+
+  it('bars are thin and names are large', () => {
+    for (const side of [0, 1] as const) {
+      const r = hudRects(side)
+      expect(r.bar.h).toBeLessThanOrEqual(8)
+      expect(NAME_FONT_PX).toBeGreaterThanOrEqual(10)
+      expect(r.name.h).toBeGreaterThanOrEqual(NAME_FONT_PX + 2)
+    }
+  })
+
+  it('the longest fighter name fits its plate in the monospace name font', () => {
+    const longest = Math.max(...Object.values(FIGHTERS).map((f) => f.label.length))
+    const textW = Math.ceil(longest * NAME_FONT_PX * 0.62) + 6 // monospace advance is about 0.6em, plus padding
+    expect(hudRects(0).name.w).toBeGreaterThanOrEqual(textW)
   })
 })
