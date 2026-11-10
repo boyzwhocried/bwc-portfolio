@@ -5,9 +5,9 @@ import { BTN, type MatchState } from './types'
 export type CpuLevel = 'easy' | 'normal'
 
 // Per-frame percentages. Easy is slow and passive; normal is busier and blocks more.
-const RATES: Record<CpuLevel, { approach: number; punch: number; kick: number; special: number; block: number }> = {
-  easy: { approach: 55, punch: 7, kick: 3, special: 2, block: 15 },
-  normal: { approach: 85, punch: 14, kick: 7, special: 4, block: 45 },
+const RATES: Record<CpuLevel, { approach: number; punch: number; kick: number; special: number; block: number; cancel: number }> = {
+  easy: { approach: 55, punch: 7, kick: 3, special: 2, block: 15, cancel: 0 },
+  normal: { approach: 85, punch: 14, kick: 7, special: 4, block: 45, cancel: 6 },
 }
 
 const BUSY = new Set(['attack', 'hitstun', 'blockstun', 'ko'])
@@ -22,9 +22,18 @@ export function cpuInput(s: MatchState, side: 0 | 1, level: CpuLevel): { input: 
 
   const me = s.fighters[side]
   const opp = s.fighters[(1 - side) as 0 | 1]
+  const rate = RATES[level]
+  // a swing that connected can be cancelled into a stronger move (punch, kick, special)
+  if (me.action === 'attack' && me.hitConnected && me.move && me.move !== 'special' && rate.cancel > 0) {
+    const [c1, seedC] = nextRng(seed2)
+    if (c1 % 100 < rate.cancel) {
+      const next = me.move === 'punch' ? (c1 % 2 === 0 ? BTN.KICK : BTN.SPECIAL) : BTN.SPECIAL
+      return { input: next, seed: seedC }
+    }
+    return { input: 0, seed: seedC }
+  }
   if (BUSY.has(me.action)) return none
 
-  const rate = RATES[level]
   const a = r1 % 100
   const b = r2 % 100
   const dist = Math.abs(opp.x - me.x) / UNIT

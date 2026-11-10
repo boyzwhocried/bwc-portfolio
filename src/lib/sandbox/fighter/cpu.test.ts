@@ -57,4 +57,39 @@ describe('cpuInput', () => {
     }
     expect(sawRight).toBe(true)
   })
+
+  describe('combos', () => {
+    const connected = (move: 'punch' | 'kick'): MatchState => {
+      const s = fresh()
+      const f = s.fighters[1]
+      return { ...s, fighters: [s.fighters[0], { ...f, action: 'attack', move, actionFrame: 6, hitConnected: true }] }
+    }
+    const pressed = (s: MatchState, level: 'easy' | 'normal') => {
+      const seen = new Set<number>()
+      for (let seed = 1; seed < 400; seed++) seen.add(cpuInput({ ...s, seed }, 1, level).input)
+      return seen
+    }
+
+    it('normal sometimes cancels a connected punch into a stronger move, never into a punch', () => {
+      const seen = pressed(connected('punch'), 'normal')
+      expect(seen.has(BTN.KICK) || seen.has(BTN.SPECIAL)).toBe(true)
+      expect(seen.has(BTN.PUNCH)).toBe(false)
+    })
+
+    it('a connected kick can only go into the special', () => {
+      const seen = pressed(connected('kick'), 'normal')
+      expect(seen.has(BTN.SPECIAL)).toBe(true)
+      expect(seen.has(BTN.KICK)).toBe(false)
+    })
+
+    it('easy never cancels', () => {
+      expect([...pressed(connected('punch'), 'easy')]).toEqual([0])
+    })
+
+    it('does nothing when the swing has not connected', () => {
+      const s = connected('punch')
+      const whiff = { ...s, fighters: [s.fighters[0], { ...s.fighters[1], hitConnected: false }] } as MatchState
+      expect([...pressed(whiff, 'normal')]).toEqual([0])
+    })
+  })
 })
