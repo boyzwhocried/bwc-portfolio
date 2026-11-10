@@ -5,9 +5,9 @@ import { BTN, type MatchState } from './types'
 export type CpuLevel = 'easy' | 'normal'
 
 // Per-frame percentages. Easy is slow and passive; normal is busier and blocks more.
-const RATES: Record<CpuLevel, { approach: number; punch: number; kick: number; special: number; block: number; cancel: number }> = {
-  easy: { approach: 55, punch: 7, kick: 3, special: 2, block: 15, cancel: 0 },
-  normal: { approach: 85, punch: 14, kick: 7, special: 4, block: 45, cancel: 6 },
+const RATES: Record<CpuLevel, { approach: number; punch: number; kick: number; special: number; block: number; cancel: number; answer: number; hop: number }> = {
+  easy: { approach: 55, punch: 7, kick: 3, special: 2, block: 15, cancel: 0, answer: 20, hop: 0 },
+  normal: { approach: 85, punch: 14, kick: 7, special: 4, block: 45, cancel: 6, answer: 70, hop: 35 },
 }
 
 const BUSY = new Set(['attack', 'hitstun', 'blockstun', 'ko'])
@@ -40,6 +40,16 @@ export function cpuInput(s: MatchState, side: 0 | 1, level: CpuLevel): { input: 
   const moves = s.defs[side].moves
   const reach = (k: 'punch' | 'special') => moves[k].hitbox.x + moves[k].hitbox.w
   const toward = opp.x > me.x ? BTN.RIGHT : BTN.LEFT
+
+  // a special coming at us, at any range: hop over an armored lunge while it winds up, else block
+  if (opp.action === 'attack' && opp.move === 'special') {
+    const sp = s.defs[1 - side].moves.special
+    if (opp.actionFrame < sp.startup + sp.active) {
+      const lunge = sp.hitbox.x + sp.hitbox.w + ((sp.advance ?? 0) * sp.active) / UNIT
+      if (sp.armor && opp.actionFrame < sp.startup && dist <= lunge && b < rate.hop) return { input: BTN.UP, seed: seed2 }
+      if (a < rate.answer) return { input: BTN.BLOCK, seed: seed2 }
+    }
+  }
 
   if (dist <= reach('punch')) {
     if (opp.action === 'attack' && a < rate.block) return { input: BTN.BLOCK, seed: seed2 }
