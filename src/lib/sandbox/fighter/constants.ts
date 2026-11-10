@@ -3,3 +3,4 @@ export const STAGE_W = 320 * UNIT
 export const HALF_W = 12 * UNIT
 export const FIGHTER_H = 80 * UNIT
 export const GRAVITY = 160
+export const BUG_BONUS_PCT = 25

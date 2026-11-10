@@ -38,6 +38,7 @@ export function hashState(s: MatchState): number {
   mix(s.hitstop)
   mix(PHASES.indexOf(s.phase))
   mix(s.phaseFrame)
+  mix(s.introFrames)
   mix(s.roundTimer)
   mix(s.wins[0])
   mix(s.wins[1])
@@ -54,6 +55,7 @@ export function hashState(s: MatchState): number {
     mix(f.actionFrame)
     mix(f.stun)
     mix(f.hitConnected ? 1 : 0)
+    mix(f.bugged ? 1 : 0)
   }
   return h >>> 0
 }

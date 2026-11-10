@@ -3,6 +3,8 @@ import { BTN, type Inputs } from './types'
 import { initMatch, step, hashState, STAGE_W, HALF_W, JUMP_FRAMES } from './sim'
 
 import { TEST_DEF as DEF } from './test-fixtures'
+import { FIGHTERS } from './roster'
+import { cpuInput } from './cpu'
 const fresh = () => initMatch(42, [DEF, DEF])
 const NONE: Inputs = [0, 0]
 
@@ -72,5 +74,34 @@ describe('sim core', () => {
     s = step(s, NONE)
     expect(s.fighters[0].facing).toBe(-1)
     expect(s.fighters[1].facing).toBe(1)
+  })
+
+  it('hash covers introFrames', () => {
+    expect(hashState(initMatch(42, [DEF, DEF], 0))).not.toBe(hashState(initMatch(42, [DEF, DEF], 60)))
+  })
+
+  it('a replay with real combat, marks and armor is deterministic and actually fights', () => {
+    const defs: [typeof DEF, typeof DEF] = [FIGHTERS['si-penyadap'], FIGHTERS['sang-ajudan']]
+    const play = () => {
+      let s = initMatch(7, defs)
+      const hashes: number[] = []
+      let sawMark = false
+      let sawDamage = false
+      for (let f = 0; f < 1800; f++) {
+        // p1 is scripted (walk in, wire special, then punches); p2 stands still for 40 frames, then the CPU takes over so armor and blocks get exercised too
+        const in0 = f < 15 ? BTN.RIGHT : f % 50 === 15 ? BTN.SPECIAL : f % 50 === 30 ? BTN.PUNCH : 0
+        const c1 = cpuInput(s, 1, 'normal')
+        s = step({ ...s, seed: c1.seed }, [in0, f < 40 ? 0 : c1.input])
+        if (s.fighters.some((x) => x.bugged)) sawMark = true
+        if (s.fighters.some((x) => x.hp < 1000)) sawDamage = true
+        hashes.push(hashState(s))
+      }
+      return { hashes, sawMark, sawDamage }
+    }
+    const a = play()
+    const b = play()
+    expect(a.hashes).toEqual(b.hashes)
+    expect(a.sawDamage).toBe(true)
+    expect(a.sawMark).toBe(true)
   })
 })

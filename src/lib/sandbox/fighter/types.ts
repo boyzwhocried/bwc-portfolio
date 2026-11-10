@@ -28,7 +28,8 @@ export type MoveDef = {
   hitstop: number // frames both fighters freeze on contact
   hitbox: { x: number; y: number; w: number; h: number }
   advance?: number // world units per frame the attacker moves forward during active frames
-  armor?: boolean // absorbs one hit at half damage before the active frames end, without being interrupted
+  armor?: boolean // from its first frame until its active frames end, absorbs every hit at half damage without being interrupted
+  mark?: boolean // a hit that is not blocked puts the BUGGED mark on the defender; the next unblocked hit on a marked fighter does extra damage
 }
 
 export type FighterDef = {
@@ -56,6 +57,7 @@ export type FighterState = {
   actionFrame: number // frames since the current attack began
   stun: number // frames of hitstun/blockstun left
   hitConnected: boolean // current swing already hit
+  bugged: boolean // carries the BUGGED mark until the next unblocked hit or the end of the round
 }
 
 export type Phase = 'intro' | 'fight' | 'ko' | 'roundEnd' | 'matchEnd'

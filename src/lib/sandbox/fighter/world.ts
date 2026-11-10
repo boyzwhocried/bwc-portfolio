@@ -25,6 +25,7 @@ export function freshFighters(defs: [FighterDef, FighterDef]): [FighterState, Fi
     actionFrame: 0,
     stun: 0,
     hitConnected: false,
+    bugged: false,
   })
   return [mk(defs[0], 100, 1), mk(defs[1], 220, -1)]
 }

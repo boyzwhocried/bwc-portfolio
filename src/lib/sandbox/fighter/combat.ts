@@ -1,5 +1,5 @@
-import { FIGHTER_H, HALF_W, STAGE_W, UNIT } from './constants'
-import type { FighterState, MatchState, MoveDef } from './types'
+import { BUG_BONUS_PCT, FIGHTER_H, HALF_W, STAGE_W, UNIT } from './constants'
+import type { FighterDef, FighterState, MatchState, MoveDef } from './types'
 
 type Range = [number, number]
 const overlaps = (a: Range, b: Range) => a[0] < b[1] && b[0] < a[1]
@@ -9,6 +9,13 @@ export function hitRect(att: FighterState, m: MoveDef): { x: Range; y: Range } {
   const far = (m.hitbox.x + m.hitbox.w) * UNIT
   const x: Range = att.facing === 1 ? [att.x + near, att.x + far] : [att.x - far, att.x - near]
   return { x, y: [att.y + m.hitbox.y * UNIT, att.y + (m.hitbox.y + m.hitbox.h) * UNIT] }
+}
+
+// True while an armored move absorbs hits: from its first frame until its active frames end.
+export function isArmed(f: FighterState, def: FighterDef): boolean {
+  if (f.action !== 'attack' || !f.move) return false
+  const m = def.moves[f.move]
+  return !!m.armor && f.actionFrame < m.startup + m.active
 }
 
 function isActive(f: FighterState, m: MoveDef): boolean {
@@ -37,19 +44,22 @@ export function resolveHits(s: MatchState): MatchState {
     landed[i] = true
     hitstop = Math.max(hitstop, move.hitstop)
     const dstate = s.fighters[j]
-    const dm = dstate.action === 'attack' && dstate.move ? s.defs[j].moves[dstate.move] : null
-    if (dm?.armor && dstate.actionFrame < dm.startup + dm.active) {
-      const hpA = Math.max(0, fs[j].hp - Math.floor(move.damage / 2))
-      fs[j] = { ...fs[j], hp: hpA, action: hpA === 0 ? 'ko' : fs[j].action }
+    const blocked = dstate.action === 'block'
+    // a hit that is not blocked uses up the BUGGED mark for bonus damage; a marking move then re-marks
+    const base = dstate.bugged && !blocked ? Math.floor((move.damage * (100 + BUG_BONUS_PCT)) / 100) : move.damage
+    const bugged = blocked ? dstate.bugged : !!move.mark
+    if (isArmed(dstate, s.defs[j])) {
+      const hpA = Math.max(0, fs[j].hp - Math.floor(base / 2))
+      fs[j] = { ...fs[j], hp: hpA, bugged, action: hpA === 0 ? 'ko' : fs[j].action }
       continue
     }
-    const blocked = s.fighters[j].action === 'block'
-    const dmg = blocked ? Math.floor(move.damage / 10) : move.damage
+    const dmg = blocked ? Math.floor(move.damage / 10) : base
     const hp = Math.max(0, fs[j].hp - dmg)
     const x = Math.min(STAGE_W - HALF_W, Math.max(HALF_W, fs[j].x + att.facing * move.knockback))
     fs[j] = {
       ...fs[j],
       hp,
+      bugged,
       x,
       action: hp === 0 ? 'ko' : blocked ? 'blockstun' : 'hitstun',
       stun: blocked ? move.blockstun : move.hitstun,

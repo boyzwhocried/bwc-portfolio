@@ -47,4 +47,13 @@ describe('roster', () => {
     expect(m.armor).toBe(true)
     expect(m.advance).toBeGreaterThan(0)
   })
+
+  it('only the wire special marks, and only the guard step has armor', () => {
+    for (const id of FIGHTER_IDS)
+      for (const k of MOVE_KINDS) {
+        const m = FIGHTERS[id].moves[k]
+        expect(!!m.mark).toBe(id === 'si-penyadap' && k === 'special')
+        expect(!!m.armor).toBe(id === 'sang-ajudan' && k === 'special')
+      }
+  })
 })

@@ -16,7 +16,7 @@ export const FIGHTERS: Record<FighterId, FighterDef> = {
     moves: {
       punch: { kind: 'punch', startup: 5, active: 3, recovery: 9, damage: 35, hitstun: 12, blockstun: 8, knockback: 3 * UNIT, hitstop: 3, hitbox: { x: 10, y: 40, w: 28, h: 14 } },
       kick: { kind: 'kick', startup: 8, active: 4, recovery: 15, damage: 75, hitstun: 16, blockstun: 10, knockback: 5 * UNIT, hitstop: 4, hitbox: { x: 10, y: 12, w: 36, h: 16 } },
-      special: { kind: 'special', startup: 14, active: 5, recovery: 24, damage: 60, hitstun: 14, blockstun: 10, knockback: 2 * UNIT, hitstop: 3, hitbox: { x: 10, y: 30, w: 95, h: 8 } },
+      special: { kind: 'special', startup: 14, active: 5, recovery: 24, damage: 60, hitstun: 14, blockstun: 10, knockback: 2 * UNIT, hitstop: 3, hitbox: { x: 10, y: 30, w: 95, h: 8 }, mark: true },
     },
   },
   // Young, stern, stays in front of the hit. The special steps in with armor.
