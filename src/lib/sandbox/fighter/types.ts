@@ -58,6 +58,7 @@ export type FighterState = {
   stun: number // frames of hitstun/blockstun left
   hitConnected: boolean // current swing already hit
   buffered: MoveKind | null // attack pressed during hitstop; used on the first step after the freeze, dropped if it cannot be used then
+  held: number // attack buttons that were down on the previous step; only a new press attacks
   bugged: boolean // carries the BUGGED mark until the next unblocked hit or the end of the round
 }
 

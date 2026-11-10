@@ -208,6 +208,57 @@ describe('combat', () => {
     })
   })
 
+  describe('edge-triggered attacks', () => {
+    const total = TEST_PUNCH.startup + TEST_PUNCH.active + TEST_PUNCH.recovery
+
+    it('a held attack button swings once, not again when the swing ends', () => {
+      let s = far()
+      for (let i = 0; i < total; i++) s = step(s, [BTN.PUNCH, 0])
+      s = step(s, [BTN.PUNCH, 0]) // first free frame, button still held
+      expect(s.fighters[0].action).not.toBe('attack')
+      s = stepN(s, 10, [BTN.PUNCH, 0])
+      expect(s.fighters[0].action).not.toBe('attack')
+    })
+
+    it('releasing and pressing again swings again', () => {
+      let s = far()
+      for (let i = 0; i < total; i++) s = step(s, [BTN.PUNCH, 0])
+      s = step(s, NONE)
+      s = step(s, [BTN.PUNCH, 0])
+      expect(s.fighters[0].action).toBe('attack')
+      expect(s.fighters[0].move).toBe('punch')
+    })
+
+    it('a button held through the hitstop is not buffered as a new press', () => {
+      let s = step(near(), [BTN.PUNCH, 0])
+      s = stepN(s, TEST_PUNCH.startup, [BTN.PUNCH, 0])
+      expect(s.hitstop).toBeGreaterThan(0)
+      s = step(s, [BTN.PUNCH, 0])
+      expect(s.fighters[0].buffered).toBeNull()
+    })
+
+    it('a stronger button held since before the hit does not cancel; releasing and pressing again does', () => {
+      let s = step(near(), [BTN.PUNCH, 0])
+      s = stepN(s, TEST_PUNCH.startup, [BTN.PUNCH | BTN.KICK, 0]) // kick pressed early and held on
+      s = stepN(s, TEST_PUNCH.hitstop + 1, [BTN.PUNCH | BTN.KICK, 0])
+      expect(s.fighters[0].move).toBe('punch')
+      s = step(s, [BTN.PUNCH, 0]) // let go of kick
+      s = step(s, [BTN.PUNCH | BTN.KICK, 0]) // press it again
+      expect(s.fighters[0].move).toBe('kick')
+    })
+
+    it('the held-button memory is part of the state hash', () => {
+      const s = far()
+      const held = { ...s, fighters: [{ ...s.fighters[0], held: BTN.PUNCH }, s.fighters[1]] } as MatchState
+      expect(hashState(held)).not.toBe(hashState(s))
+    })
+
+    it('movement keys are unaffected: holding a direction keeps walking', () => {
+      const s = stepN(far(), 10, [BTN.RIGHT, 0])
+      expect(s.fighters[0].x).toBeGreaterThan(far().fighters[0].x + 5 * UNIT)
+    })
+  })
+
   describe('cancels', () => {
     // p1 lands a punch on p2 (who stands still) and is left on the first frame after hitstop.
     const afterPunchHit = (defInput = 0) => {

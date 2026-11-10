@@ -27,6 +27,7 @@ export function freshFighters(defs: [FighterDef, FighterDef]): [FighterState, Fi
     hitConnected: false,
     bugged: false,
     buffered: null,
+    held: 0,
   })
   return [mk(defs[0], 100, 1), mk(defs[1], 220, -1)]
 }
@@ -34,7 +35,9 @@ export function freshFighters(defs: [FighterDef, FighterDef]): [FighterState, Fi
 // A connected move can be cancelled into a stronger one: punch, then kick, then special.
 const TIER: Record<MoveKind, number> = { punch: 0, kick: 1, special: 2 }
 
-// Attack priority when several buttons are held: special, kick, punch.
+const ATTACK_BITS = BTN.PUNCH | BTN.KICK | BTN.SPECIAL
+
+// Attack priority when several buttons go down together: special, kick, punch.
 function attackPressed(input: number): MoveKind | null {
   if (input & BTN.SPECIAL) return 'special'
   if (input & BTN.KICK) return 'kick'
@@ -44,7 +47,8 @@ function attackPressed(input: number): MoveKind | null {
 
 function stepFighter(f: FighterState, def: FighterDef, input: number): FighterState {
   let { y, vy, action, move, actionFrame, stun, hitConnected } = f
-  const atkInput = attackPressed(input) ?? f.buffered
+  // only a new press attacks: a button still held from the previous step does nothing
+  const atkInput = attackPressed(input & ~f.held) ?? f.buffered
   let vx = 0
 
   // timers
@@ -104,14 +108,14 @@ function stepFighter(f: FighterState, def: FighterDef, input: number): FighterSt
     }
   }
   const x = Math.min(STAGE_W - HALF_W, Math.max(HALF_W, f.x + vx))
-  return { ...f, x, y, vx, vy, action, move, actionFrame, stun, hitConnected, buffered: null }
+  return { ...f, x, y, vx, vy, action, move, actionFrame, stun, hitConnected, buffered: null, held: input & ATTACK_BITS }
 }
 
 // One frame of fighter physics and combat. Round flow lives in match.ts.
 export function stepWorld(s: MatchState, inputs: Inputs): MatchState {
   if (s.hitstop > 0) {
     // inputs are ignored during the freeze, but the last attack press is kept for the first free frame
-    const keep = (f: FighterState, input: number): FighterState => ({ ...f, buffered: attackPressed(input) ?? f.buffered })
+    const keep = (f: FighterState, input: number): FighterState => ({ ...f, buffered: attackPressed(input & ~f.held) ?? f.buffered, held: input & ATTACK_BITS })
     return { ...s, frame: s.frame + 1, hitstop: s.hitstop - 1, fighters: [keep(s.fighters[0], inputs[0]), keep(s.fighters[1], inputs[1])] }
   }
   const a = stepFighter(s.fighters[0], s.defs[0], inputs[0])
