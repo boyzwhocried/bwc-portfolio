@@ -52,6 +52,51 @@ describe('planPublish', () => {
   })
 })
 
+describe('planPublish months', () => {
+  const month = (over: Record<string, unknown> = {}) => ({
+    month: '2026-11',
+    asOf: '2026-11-12',
+    closed: false,
+    cover: 'stuck on one record.',
+    tracks: [{ artist: 'A', track: 'T', note: 'it slaps' }],
+    artists: [{ name: 'A', note: 'all month' }],
+    ...over,
+  })
+  const withMonths = (months: unknown[]) => ({ ...good(), months })
+
+  it('accepts clean months and counts them in the summary', () => {
+    const p = planPublish(withMonths([month()]))
+    expect(p.errors).toEqual([])
+    expect(p.summary).toBe('1 run, 1 month, 0 blurbs, as of 2026-11-12')
+  })
+
+  it('accepts a months-only file', () => {
+    const p = planPublish({ asOf: '2026-11-12', runs: [], months: [month()] })
+    expect(p.errors).toEqual([])
+    expect(p.summary).toBe('0 runs, 1 month, 0 blurbs, as of 2026-11-12')
+  })
+
+  it('rejects, not trims: bad month, long cover, long or em-dash notes, 6th track or artist', () => {
+    const EM = String.fromCharCode(0x2014)
+    const six = Array.from({ length: 6 }, (_, i) => ({ artist: `a${i}`, track: `t${i}`, note: null }))
+    const p = planPublish(
+      withMonths([
+        month({ month: '2026-12', cover: 'a'.repeat(161) }),
+        month({ month: '2026-10', tracks: [{ artist: 'A', track: 'T', note: 'a'.repeat(121) }] }),
+        month({ month: '2026-09', artists: [{ name: 'A', note: `a ${EM} b` }] }),
+        month({ month: '2026-08', tracks: six, artists: six.map((s) => ({ name: s.artist, note: null })) }),
+        month({ month: 'nov' }),
+      ]),
+    )
+    expect(p.payload).toBeNull()
+    const e = p.errors.join(' | ')
+    expect(e).toMatch(/month\(s\) invalid/)
+    expect(e).toMatch(/month cover/)
+    expect(e).toMatch(/month track/)
+    expect(e).toMatch(/month artist/)
+  })
+})
+
 describe('runPublish', () => {
   it('defaults to a dry run and never writes', async () => {
     const upsert = vi.fn()

@@ -17,11 +17,6 @@ const run = (over: Record<string, unknown> = {}) => ({
   cover: 'a loud week that needed somewhere to go.',
   picks: [{ artist: 'Neck Deep', track: 'Sorry', note: 'too loud for a car, play it anyway' }],
   skipped: { count: 202, reasons: [{ reason: 'not followed', count: 202 }] },
-  onRepeat: {
-    tracks: [{ artist: 'FKA Rayne', track: 'Creature of fear' }],
-    artists: ['FKA Rayne', 'Neck Deep'],
-    note: 'stuck on one record all month because it matched the weather.',
-  },
   ...over,
 })
 
@@ -113,28 +108,97 @@ describe('parseCurationLog', () => {
   })
 })
 
-describe('onRepeat (what he was playing when the issue came out)', () => {
-  it('parses tracks, artists and his note; caps lists at 5', () => {
-    const many = Array.from({ length: 7 }, (_, i) => ({ artist: `a${i}`, track: `t${i}` }))
-    const p = parseCurationLog(log({ runs: [run({ onRepeat: { tracks: many, artists: many.map((m) => m.artist), note: 'hi' } })] }))
-    expect(p?.runs[0].onRepeat?.tracks).toHaveLength(5)
-    expect(p?.runs[0].onRepeat?.artists).toHaveLength(5)
-    expect(p?.runs[0].onRepeat?.note).toBe('hi')
+const month = (over: Record<string, unknown> = {}) => ({
+  month: '2026-11',
+  asOf: '2026-11-12',
+  closed: false,
+  cover: 'stuck on one record because it matched the weather.',
+  tracks: [
+    { artist: 'FKA Rayne', track: 'Creature of fear', note: 'sad but it slaps' },
+    { artist: 'Neck Deep', track: 'Sorry', note: null },
+  ],
+  artists: [{ name: 'FKA Rayne', note: 'whole month' }, { name: 'Neck Deep', note: null }],
+  ...over,
+})
+
+describe('months (the on repeat stream)', () => {
+  it('parses a month with his cover, track notes and artist notes', () => {
+    const p = parseCurationLog(log({ months: [month()] }))
+    expect(p?.months).toHaveLength(1)
+    expect(p?.months[0].cover).toBe('stuck on one record because it matched the weather.')
+    expect(p?.months[0].tracks[0]).toEqual({ artist: 'FKA Rayne', track: 'Creature of fear', note: 'sad but it slaps' })
+    expect(p?.months[0].artists[1]).toEqual({ name: 'Neck Deep', note: null })
+    expect(p?.months[0].closed).toBe(false)
   })
 
-  it('is null when absent or empty, and a note over 160 chars or with an em-dash is dropped', () => {
-    expect(parseCurationLog(log({ runs: [run({ onRepeat: undefined })] }))?.runs[0].onRepeat).toBeNull()
-    expect(parseCurationLog(log({ runs: [run({ onRepeat: { tracks: [], artists: [], note: null } })] }))?.runs[0].onRepeat).toBeNull()
-    const long = parseCurationLog(log({ runs: [run({ onRepeat: { tracks: [], artists: ['A'], note: 'a'.repeat(161) } })] }))
-    expect(long?.runs[0].onRepeat?.note).toBeNull()
-    const em = parseCurationLog(log({ runs: [run({ onRepeat: { tracks: [], artists: ['A'], note: `a ${EM} b` } })] }))
-    expect(em?.runs[0].onRepeat?.note).toBeNull()
+  it('has no months by default, and a log of only months is valid', () => {
+    expect(parseCurationLog(log())?.months).toEqual([])
+    const p = parseCurationLog({ asOf: '2026-11-12', runs: [], months: [month()] })
+    expect(p?.runs).toEqual([])
+    expect(p?.months).toHaveLength(1)
   })
 
-  it('reaches the issue view so each issue keeps its own snapshot', () => {
-    const v = curationView(parseCurationLog(log({ runs: [run({ date: '2026-11-01', onRepeat: undefined }), run()] })))!
-    expect(v.latest.onRepeat?.artists).toEqual(['FKA Rayne', 'Neck Deep'])
-    expect(v.past[0].onRepeat).toBeNull()
+  it('drops a month with a bad key or bad asOf, or with nothing in it', () => {
+    const p = parseCurationLog(
+      log({
+        months: [month(), month({ month: '2026-13' }), month({ month: 'nov' }), month({ month: '2026-10', asOf: 'x' }), month({ month: '2026-09', cover: null, tracks: [], artists: [] })],
+      }),
+    )
+    expect(p?.months.map((m) => m.month)).toEqual(['2026-11'])
+  })
+
+  it('caps tracks and artists at 5, notes at 120, cover at 160, and drops em-dashes', () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({ artist: `a${i}`, track: `t${i}`, note: null }))
+    const p = parseCurationLog(
+      log({
+        months: [
+          month({
+            cover: 'a'.repeat(161),
+            tracks: [...many, { artist: 'X', track: 'Y', note: 'a'.repeat(121) }],
+            artists: [{ name: 'A', note: `a ${EM} b` }, ...many.map((m) => ({ name: m.artist, note: null }))],
+          }),
+        ],
+      }),
+    )
+    const m = p!.months[0]
+    expect(m.cover).toBeNull()
+    expect(m.tracks).toHaveLength(5)
+    expect(m.artists).toHaveLength(5)
+    expect(m.artists.some((a) => a.name === 'A')).toBe(false)
+  })
+
+  it('sorts months newest first and ignores the old nested run.onRepeat', () => {
+    const p = parseCurationLog(log({ months: [month({ month: '2026-10' }), month()], runs: [run({ onRepeat: { tracks: [], artists: ['A'], note: 'x' } })] }))
+    expect(p?.months.map((m) => m.month)).toEqual(['2026-11', '2026-10'])
+    expect(p?.runs[0]).not.toHaveProperty('onRepeat')
+  })
+})
+
+describe('onRepeatView', () => {
+  it('leads with the newest month: so far while open, footnote from his top plays', () => {
+    const v = curationView(parseCurationLog(log({ months: [month()] })))!
+    expect(v.onRepeat?.latest.heading).toBe('november 2026')
+    expect(v.onRepeat?.latest.soFar).toBe(true)
+    expect(v.onRepeat?.latest.footnote).toBe('from my top plays, as of 12 nov')
+    expect(v.onRepeat?.past).toEqual([])
+  })
+
+  it('a closed month is not "so far"; older months go to past', () => {
+    const v = curationView(parseCurationLog(log({ months: [month({ month: '2026-10', closed: true, asOf: '2026-10-31' }), month()] })))!
+    expect(v.onRepeat?.latest.month).toBe('2026-11')
+    expect(v.onRepeat?.past.map((m) => [m.heading, m.soFar])).toEqual([['october 2026', false]])
+    expect(v.onRepeat?.past[0].footnote).toBe('from my top plays, as of 31 oct')
+  })
+
+  it('is null with no months, and the curation issues still lead nothing extra', () => {
+    expect(curationView(parseCurationLog(log()))!.onRepeat).toBeNull()
+  })
+
+  it('works with months only: no issue to show', () => {
+    const v = curationView(parseCurationLog({ asOf: '2026-11-12', runs: [], months: [month()] }))!
+    expect(v.latest).toBeNull()
+    expect(v.past).toEqual([])
+    expect(v.legend).toEqual([])
   })
 })
 
@@ -146,23 +210,23 @@ describe('curationView', () => {
   it('leads with the newest issue: number, cover, artists, picks', () => {
     const v = curationView(parseCurationLog(log({ runs: [run({ date: '2026-11-01', cover: null }), run()] })))!
     expect(v.asOf).toBe('as of 12 nov 2026')
-    expect(v.latest.number).toBe(2)
-    expect(v.latest.heading).toBe('6 nov 2026')
-    expect(v.latest.cover).toBe('a loud week that needed somewhere to go.')
-    expect(v.latest.artistsLine).toBe('Bassvictim · Jessie Reyez · Good Charlotte')
-    expect(v.latest.picks).toHaveLength(1)
+    expect(v.latest!.number).toBe(2)
+    expect(v.latest!.heading).toBe('6 nov 2026')
+    expect(v.latest!.cover).toBe('a loud week that needed somewhere to go.')
+    expect(v.latest!.artistsLine).toBe('Bassvictim · Jessie Reyez · Good Charlotte')
+    expect(v.latest!.picks).toHaveLength(1)
     expect(v.past.map((p) => p.number)).toEqual([1])
   })
 
   it('demotes the counts to a footnote with no playlist names', () => {
     const v = curationView(parseCurationLog(log()))!
-    expect(v.latest.footnote).toBe('425 songs in · 4 playlists · 202 skipped')
-    expect(v.latest.footnote).not.toContain('wander')
+    expect(v.latest!.footnote).toBe('425 songs in · 4 playlists · 202 skipped')
+    expect(v.latest!.footnote).not.toContain('wander')
   })
 
   it('omits the skipped part of the footnote when nothing was skipped', () => {
     const v = curationView(parseCurationLog(log({ runs: [run({ skipped: { count: 0, reasons: [] } })] })))!
-    expect(v.latest.footnote).toBe('425 songs in · 4 playlists')
+    expect(v.latest!.footnote).toBe('425 songs in · 4 playlists')
   })
 
   it('tags the latest issue with its 3 biggest playlists and a legend of their captions', () => {
@@ -176,13 +240,13 @@ describe('curationView', () => {
         }),
       ),
     )!
-    expect(v.latest.tags).toEqual(['wander pt.2', 'thrust', 'beam'])
+    expect(v.latest!.tags).toEqual(['wander pt.2', 'thrust', 'beam'])
     expect(v.legend).toEqual([{ playlist: 'wander pt.2', text: 'songs for getting lost on purpose' }])
   })
 
   it('has no artists line when the run lists none', () => {
     const v = curationView(parseCurationLog(log({ runs: [run({ artists: [] })] })))!
-    expect(v.latest.artistsLine).toBeNull()
+    expect(v.latest!.artistsLine).toBeNull()
   })
 })
 

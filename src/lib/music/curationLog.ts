@@ -22,12 +22,16 @@ export interface CurationPick {
   note: string | null // a few words from him about the song
 }
 
-// What he was actually playing when the issue came out: a snapshot of the site's
-// short-term top tracks/artists taken at publish time, plus his own words on why.
-export interface CurationOnRepeat {
-  tracks: { artist: string; track: string }[]
-  artists: string[]
-  note: string | null
+// The monthly "on repeat" stream, the lead of the section: a snapshot of the
+// site's short-term top tracks/artists plus his own words. Open until a later
+// month exists (`closed`).
+export interface CurationMonth {
+  month: string // YYYY-MM
+  asOf: string // YYYY-MM-DD of the snapshot
+  closed: boolean
+  cover: string | null // one line from him about the month
+  tracks: CurationPick[] // max 5
+  artists: { name: string; note: string | null }[] // max 5
 }
 
 export interface CurationRun {
@@ -38,7 +42,6 @@ export interface CurationRun {
   artists: string[] // lead artists of the batch, most songs first
   cover: string | null // one line from him: what this batch felt like
   picks: CurationPick[]
-  onRepeat: CurationOnRepeat | null
   skipped: { count: number; reasons: { reason: string; count: number }[] }
 }
 
@@ -59,6 +62,7 @@ export interface CurationLog {
   rules: string[]
   captions: CurationCaption[]
   runs: CurationRun[] // newest first
+  months: CurationMonth[] // newest first
   blurbs: CurationBlurb[]
 }
 
@@ -68,15 +72,25 @@ export interface IssueView {
   cover: string | null
   artistsLine: string | null
   picks: CurationPick[]
-  onRepeat: CurationOnRepeat | null
   tags: string[] // the 3 biggest playlists
+  footnote: string
+}
+
+export interface MonthView {
+  month: string
+  heading: string // "november 2026"
+  soFar: boolean
+  cover: string | null
+  tracks: CurationPick[]
+  artists: { name: string; note: string | null }[]
   footnote: string
 }
 
 export interface CurationView {
   asOf: string
   rules: string[]
-  latest: IssueView
+  onRepeat: { latest: MonthView; past: MonthView[] } | null
+  latest: IssueView | null
   past: IssueView[]
   legend: CurationCaption[] // captions for the latest issue's tags only
   blurbs: CurationBlurb[]
@@ -88,9 +102,9 @@ const COVER_MAX = 160
 const NOTE_MAX = 120
 const CAPTION_MAX = 100
 const ON_REPEAT_MAX = 5
-const ON_REPEAT_NOTE_MAX = 160
 const TAGS = 3
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -110,15 +124,20 @@ function parsePick(v: unknown): CurationPick | null {
   return { artist: v.artist, track: v.track, note: (v.note as string | undefined) ?? null }
 }
 
-function parseOnRepeat(v: unknown): CurationOnRepeat | null {
-  if (!isObj(v)) return null
-  const tracks = list(v.tracks)
-    .flatMap((t) => (isObj(t) && clean(t.artist) && clean(t.track) ? [{ artist: t.artist, track: t.track }] : []))
-    .slice(0, ON_REPEAT_MAX)
-  const artists = list(v.artists).filter(clean).slice(0, ON_REPEAT_MAX)
-  const note = short(v.note, ON_REPEAT_NOTE_MAX) ? v.note : null
-  if (tracks.length === 0 && artists.length === 0 && !note) return null
-  return { tracks, artists, note }
+function parseMonthArtist(v: unknown): { name: string; note: string | null } | null {
+  if (!isObj(v) || !clean(v.name)) return null
+  if (v.note !== undefined && v.note !== null && !short(v.note, NOTE_MAX)) return null
+  return { name: v.name, note: (v.note as string | undefined) ?? null }
+}
+
+function parseMonth(v: unknown): CurationMonth | null {
+  if (!isObj(v) || typeof v.month !== 'string' || !MONTH_RE.test(v.month)) return null
+  if (typeof v.asOf !== 'string' || !DATE_RE.test(v.asOf)) return null
+  const cover = short(v.cover, COVER_MAX) ? v.cover : null
+  const tracks = list(v.tracks).flatMap((t) => parsePick(t) ?? []).slice(0, ON_REPEAT_MAX)
+  const artists = list(v.artists).flatMap((a) => parseMonthArtist(a) ?? []).slice(0, ON_REPEAT_MAX)
+  if (!cover && tracks.length === 0 && artists.length === 0) return null
+  return { month: v.month, asOf: v.asOf, closed: v.closed === true, cover, tracks, artists }
 }
 
 function parseRun(v: unknown): CurationRun | null {
@@ -138,7 +157,6 @@ function parseRun(v: unknown): CurationRun | null {
     artists: list(v.artists).filter(clean),
     cover: short(v.cover, COVER_MAX) ? v.cover : null,
     picks: list(v.picks).flatMap((p) => parsePick(p) ?? []),
-    onRepeat: parseOnRepeat(v.onRepeat),
     skipped: { count: count(sk.count) ? sk.count : 0, reasons },
   }
 }
@@ -159,12 +177,16 @@ export function parseCurationLog(raw: unknown): CurationLog | null {
   const runs = list(raw.runs)
     .flatMap((r) => parseRun(r) ?? [])
     .sort((a, b) => b.date.localeCompare(a.date))
-  if (runs.length === 0) return null
+  const months = list(raw.months)
+    .flatMap((m) => parseMonth(m) ?? [])
+    .sort((a, b) => b.month.localeCompare(a.month))
+  if (runs.length === 0 && months.length === 0) return null
   return {
     asOf: raw.asOf,
     rules: list(raw.rules).filter(clean),
     captions: list(raw.captions).flatMap((c) => parseCaption(c) ?? []),
     runs,
+    months,
     blurbs: list(raw.blurbs).flatMap((b) => parseBlurb(b) ?? []),
   }
 }
@@ -189,9 +211,24 @@ function issue(r: CurationRun, number: number): IssueView {
     cover: r.cover,
     artistsLine: r.artists.length > 0 ? r.artists.join(' · ') : null,
     picks: r.picks,
-    onRepeat: r.onRepeat,
     tags: r.shelves.slice(0, TAGS).map((s) => s.name),
     footnote: footnote(r),
+  }
+}
+
+const shortDate = (iso: string): string => dateLabel(iso).split(' ').slice(0, 2).join(' ')
+
+function monthView(m: CurationMonth): MonthView {
+  const [y, mm] = m.month.split('-')
+  const long = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+  return {
+    month: m.month,
+    heading: `${long[parseInt(mm, 10) - 1]} ${y}`,
+    soFar: !m.closed,
+    cover: m.cover,
+    tracks: m.tracks,
+    artists: m.artists,
+    footnote: `from my top plays, as of ${shortDate(m.asOf)}`,
   }
 }
 
@@ -199,13 +236,15 @@ export function curationView(log: CurationLog | null): CurationView | null {
   if (!log) return null
   const total = log.runs.length
   const issues = log.runs.map((r, i) => issue(r, total - i)) // runs are newest first
-  const [latest, ...past] = issues
+  const [latest = null, ...past] = issues
+  const [newestMonth, ...olderMonths] = log.months.map(monthView)
   return {
     asOf: `as of ${dateLabel(log.asOf)}`,
     rules: log.rules,
+    onRepeat: newestMonth ? { latest: newestMonth, past: olderMonths } : null,
     latest,
     past,
-    legend: latest.tags.flatMap((t) => log.captions.filter((c) => c.playlist === t)),
+    legend: latest ? latest.tags.flatMap((t) => log.captions.filter((c) => c.playlist === t)) : [],
     blurbs: log.blurbs,
   }
 }
