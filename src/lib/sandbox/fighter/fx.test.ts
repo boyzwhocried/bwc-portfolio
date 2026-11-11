@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { BTN, type Inputs, type MatchState, type FighterDef } from './types'
 import { initMatch, step, UNIT } from './sim'
 import { TEST_DEF, TEST_PUNCH, TEST_SPECIAL } from './test-fixtures'
-import { detectEvents, initFx, stepFx, afterDraw, wireFor, COMBO_WINDOW, HURT_FLASH_FRAMES, WIRE_LINGER, type FxEvent } from './fx'
+import { detectEvents, initFx, stepFx, afterDraw, wireFor, COMBO_WINDOW, HURT_FLASH_FRAMES, WIRE_LINGER, CUE_FRAMES, type FxEvent } from './fx'
 
 const NONE: Inputs = [0, 0]
 const GUARD: FighterDef = { ...TEST_DEF, moves: { ...TEST_DEF.moves, special: { ...TEST_SPECIAL, armor: true } } }
@@ -226,5 +226,52 @@ describe('combo counter', () => {
   it('still counts under reduced motion', () => {
     const fx = stepFx(stepFx(initFx(), [hit(1)], true), [hit(1)], true)
     expect(fx.combo.count).toBe(2)
+  })
+})
+
+describe('stage cues (revive stamp, phone ring)', () => {
+  it('reports a revive the step a fighter spends its revive, with where he stands', () => {
+    const prev = near()
+    const next: MatchState = { ...prev, fighters: [prev.fighters[0], { ...prev.fighters[1], revived: true }] }
+    const ev = detectEvents(prev, next).filter((e) => e.kind === 'revive')
+    expect(ev).toEqual([{ kind: 'revive', target: 1, x: prev.fighters[1].x / UNIT }])
+    expect(detectEvents(next, next).some((e) => e.kind === 'revive')).toBe(false)
+  })
+
+  it('reports each phone ring; odd rings swap the fighter, even rings only rotate the chairs', () => {
+    const prev = near()
+    const odd: MatchState = { ...prev, reshuffles: 1 }
+    const even: MatchState = { ...odd, reshuffles: 2 }
+    expect(detectEvents(prev, odd).filter((e) => e.kind === 'ring')).toEqual([{ kind: 'ring', swapped: true }])
+    expect(detectEvents(odd, even).filter((e) => e.kind === 'ring')).toEqual([{ kind: 'ring', swapped: false }])
+    expect(detectEvents(odd, odd).some((e) => e.kind === 'ring')).toBe(false)
+  })
+
+  it('a revive raises the ULANG stamp over the fighter, which lasts CUE_FRAMES sim frames', () => {
+    let fx = stepFx(initFx(), [{ kind: 'revive', target: 1, x: 200 }], false)
+    expect(fx.cue).toMatchObject({ text: 'ULANG', x: 200, age: 0 })
+    for (let i = 0; i < CUE_FRAMES - 1; i++) fx = stepFx(fx, [], false)
+    expect(fx.cue).not.toBeNull()
+    fx = stepFx(fx, [], false)
+    expect(fx.cue).toBeNull()
+  })
+
+  it('a ring raises a nameplate: PENGGANTI when swapped, ROMBAK when the chairs rotate, and flashes the screen', () => {
+    expect(stepFx(initFx(), [{ kind: 'ring', swapped: true }], false).cue?.text).toBe('PENGGANTI')
+    const fx = stepFx(initFx(), [{ kind: 'ring', swapped: false }], false)
+    expect(fx.cue?.text).toBe('ROMBAK')
+    expect(fx.flash).toBe(1)
+  })
+
+  it('under reduced motion the cue still shows but nothing flashes', () => {
+    const fx = stepFx(initFx(), [{ kind: 'ring', swapped: true }], true)
+    expect(fx.cue?.text).toBe('PENGGANTI')
+    expect(fx.flash).toBe(0)
+  })
+
+  it('cues do not leave sparks or touch the combo', () => {
+    const fx = stepFx(initFx(), [{ kind: 'revive', target: 0, x: 50 }, { kind: 'ring', swapped: true }], false)
+    expect(fx.sparks).toEqual([])
+    expect(fx.combo.count).toBe(0)
   })
 })

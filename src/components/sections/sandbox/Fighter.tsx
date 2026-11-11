@@ -13,7 +13,7 @@ import { poseFor } from '@/lib/sandbox/fighter/pose'
 import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
 import { isArmed } from '@/lib/sandbox/fighter/combat'
 import { sceneFx, sceneRects } from '@/lib/sandbox/fighter/scenes'
-import { COMBO_SHOW, afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
+import { COMBO_SHOW, CUE_FRAMES, afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
 import { BUGGED_LINE, COMBO_LINE, MOVES_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
@@ -316,6 +316,23 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
       ctx.fillStyle = INK
     }
     ctx.fillText(text, W / 2, 36.5)
+  }
+
+  // stage cue: the ULANG stamp over a revived fighter, or the nameplate after a phone ring (blinks out at the end)
+  if (fx.cue && (fx.cue.age < CUE_FRAMES - 14 || Math.floor(fx.cue.age / 3) % 2 === 0)) {
+    const stamp = fx.cue.text === 'ULANG'
+    ctx.font = stamp ? 'bold 12px monospace' : 'bold 8px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    const tw = Math.ceil(ctx.measureText(fx.cue.text).width) + (stamp ? 14 : 10)
+    const th = stamp ? 18 : 12
+    const cx = Math.max(Math.ceil(tw / 2), Math.min(W - Math.ceil(tw / 2), Math.round(fx.cue.x)))
+    const cy = stamp ? 52 - Math.min(fx.cue.age, 6) : 48
+    plate(ctx, cx - Math.floor(tw / 2), cy, tw, th)
+    ctx.fillStyle = stamp ? VERM : INK
+    if (stamp) ctx.fillRect(cx - Math.floor(tw / 2) + 1, cy + 1, tw - 2, th - 2)
+    ctx.fillStyle = stamp ? PAPER : INK
+    ctx.fillText(fx.cue.text, cx, cy + th / 2 + 0.5)
   }
 
   const banner = bannerFor(s)

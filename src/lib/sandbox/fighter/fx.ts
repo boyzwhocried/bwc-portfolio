@@ -14,13 +14,18 @@ export const COMBO_SHOW = 70 // sim frames the combo count stays on screen after
 const SHAKE_HEAVY = 6
 const SHAKE_KO = 10
 const KO_FLASH_FRAMES = 10
+export const CUE_FRAMES = 60 // sim frames a stage cue (stamp / nameplate) stays up
 const TTL = { hit: 8, block: 6, armor: 10, dust: 12 } as const
 
 export type FxEvent =
   | { kind: 'hit' | 'block' | 'armor'; target: 0 | 1; x: number; y: number; damage: number; ko: boolean }
   | { kind: 'land'; target: 0 | 1; x: number }
+  | { kind: 'revive'; target: 0 | 1; x: number } // the one-per-round revive was just spent
+  | { kind: 'ring'; swapped: boolean } // the desk phone rang; odd rings swap a fighter, even rings only rotate the chairs
 
 export type Spark = { kind: 'hit' | 'block' | 'armor' | 'dust'; x: number; y: number; age: number; ttl: number }
+
+export type Cue = { text: 'ULANG' | 'PENGGANTI' | 'ROMBAK'; x: number; age: number }
 
 export type FxState = {
   sparks: Spark[]
@@ -29,10 +34,11 @@ export type FxState = {
   flash: number // rendered frames of the heavy-hit screen flash left; kept until drawn
   koFlash: number // rendered frames of the KO flash left; kept until drawn
   combo: { by: 0 | 1 | null; count: number; age: number } // age = sim frames since the last counted hit
+  cue: Cue | null // stage cue in sim frames: ULANG stamp over a revived fighter, or the phone-ring nameplate
 }
 
 export function initFx(): FxState {
-  return { sparks: [], hurt: [0, 0], shake: 0, flash: 0, koFlash: 0, combo: { by: null, count: 0, age: 0 } }
+  return { sparks: [], hurt: [0, 0], shake: 0, flash: 0, koFlash: 0, combo: { by: null, count: 0, age: 0 }, cue: null }
 }
 
 const mid = (a: [number, number], b: [number, number]) => {
@@ -60,6 +66,10 @@ export function detectEvents(prev: MatchState, next: MatchState): FxEvent[] {
     }
   }
   for (const i of [0, 1] as const) {
+    if (!prev.fighters[i].revived && next.fighters[i].revived) out.push({ kind: 'revive', target: i, x: next.fighters[i].x / UNIT })
+  }
+  if (next.reshuffles > prev.reshuffles) out.push({ kind: 'ring', swapped: next.reshuffles % 2 === 1 })
+  for (const i of [0, 1] as const) {
     if (prev.fighters[i].y > 0 && next.fighters[i].y === 0) out.push({ kind: 'land', target: i, x: next.fighters[i].x / UNIT })
   }
   return out
@@ -71,7 +81,17 @@ export function stepFx(fx: FxState, events: FxEvent[], reduce: boolean): FxState
   const hurt: [number, number] = [Math.max(0, fx.hurt[0] - 1), Math.max(0, fx.hurt[1] - 1)]
   let { shake, flash, koFlash } = fx
   let combo = { ...fx.combo, age: fx.combo.age + 1 }
+  let cue: Cue | null = fx.cue && fx.cue.age + 1 < CUE_FRAMES ? { ...fx.cue, age: fx.cue.age + 1 } : null
   for (const e of events) {
+    if (e.kind === 'revive') {
+      cue = { text: 'ULANG', x: e.x, age: 0 }
+      continue
+    }
+    if (e.kind === 'ring') {
+      cue = { text: e.swapped ? 'PENGGANTI' : 'ROMBAK', x: 160, age: 0 }
+      if (!reduce) flash = 1
+      continue
+    }
     if (e.kind === 'land') {
       sparks = [...sparks, { kind: 'dust', x: e.x, y: 0, age: 0, ttl: TTL.dust }]
       continue
@@ -91,7 +111,7 @@ export function stepFx(fx: FxState, events: FxEvent[], reduce: boolean): FxState
       flash = 1
     }
   }
-  return { sparks, hurt, shake, flash, koFlash, combo }
+  return { sparks, hurt, shake, flash, koFlash, combo, cue }
 }
 
 // Call once after each rendered frame: screen effects count in rendered frames, so a rendered
