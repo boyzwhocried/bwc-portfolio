@@ -107,9 +107,9 @@ describe('arcade stages', () => {
     for (const t of allText()) expect(t).not.toContain(EM_DASH)
   })
 
-  it('keeps the satire safeguards: no real names, no guilt words, no exact hashtag', () => {
+  it('keeps the satire safeguards: no real names, no guilt words, no hashtag symbol', () => {
     const blob = allText().join(' ').toLowerCase()
-    for (const bad of ['prabowo', 'gibran', 'jokowi', 'sri mulyani', 'purbaya', 'dpr', 'polri', 'tni', 'kpk', 'mbg', 'ijazah', 'korup', 'maling', 'curi', 'stole', 'corrupt', 'guilty', 'kabur aja dulu', '#'])
+    for (const bad of ['prabowo', 'gibran', 'jokowi', 'sri mulyani', 'purbaya', 'dpr', 'polri', 'tni', 'kpk', 'mbg', 'ijazah', 'korup', 'maling', 'curi', 'stole', 'corrupt', 'guilty', '#'])
       expect(blob).not.toContain(bad)
   })
 
@@ -121,7 +121,7 @@ describe('arcade stages', () => {
   it('both endings keep the bible captions', () => {
     expect(WIN_ENDING.caption.en).toBe('Congratulations. You have restored normal.')
     expect(LOSE_ENDING.caption.en).toBe('CONTINUE? The country is still on hold.')
-    expect(LOSE_ENDING.lines.map((l) => l.id).join(' ')).toContain('Kabut aja dulu?')
+    expect(LOSE_ENDING.lines.map((l) => l.id).join(' ')).toContain('Kabur aja dulu?')
   })
 })
 

@@ -169,7 +169,7 @@ export const WIN_ENDING: Ending = {
 export const LOSE_ENDING: Ending = {
   lines: [
     { id: 'Kamu terbangun di aula keberangkatan bandara. Semua penerbangan tertulis BOARDING.', en: 'You wake in an airport departure hall. Every flight reads BOARDING.' },
-    { id: 'Ponselmu bergetar: "Kabut aja dulu?"', en: 'Your phone buzzes: "Kabut aja dulu?" (Haze for now? A pun on "cabut", bail.)' },
+    { id: 'Ponselmu bergetar: "Kabur aja dulu?"', en: 'Your phone buzzes: "Kabur aja dulu?" (Just flee for now?)' },
     { id: 'Kabut sudah sampai terminal dan mengantre dengan sopan.', en: 'The haze has reached the terminal and is waiting politely in line.' },
   ],
   caption: { id: 'LANJUT? Negeri ini masih ditahan di telepon.', en: 'CONTINUE? The country is still on hold.' },
