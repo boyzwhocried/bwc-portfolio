@@ -121,7 +121,7 @@ describe('arcade stages', () => {
   it('both endings keep the bible captions', () => {
     expect(WIN_ENDING.caption.en).toBe('Congratulations. You have restored normal.')
     expect(LOSE_ENDING.caption.en).toBe('CONTINUE? The country is still on hold.')
-    expect(LOSE_ENDING.lines.map((l) => l.en).join(' ')).toContain('Bail for now?')
+    expect(LOSE_ENDING.lines.map((l) => l.id).join(' ')).toContain('Kabut aja dulu?')
   })
 })
 
