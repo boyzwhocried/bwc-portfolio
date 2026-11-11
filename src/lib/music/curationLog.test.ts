@@ -85,6 +85,13 @@ describe('curationView', () => {
     expect(v.runs[0].summary).toBe('772 songs in. 40 to rotation, 12 to other playlists. 202 skipped.')
   })
 
+  it('caps the summary at the 5 biggest shelves and counts the rest', () => {
+    const shelves = Array.from({ length: 8 }, (_, i) => ({ name: `s${i}`, count: 10 - i, artists: [] }))
+    const v = curationView(parseCurationLog(log({ runs: [run({ shelves, otherPlaylists: 0, skipped: { count: 0, reasons: [] } })] })))!
+    expect(v.runs[0].summary).toBe('772 songs in. 10 to s0, 9 to s1, 8 to s2, 7 to s3, 6 to s4, and 3 more playlists.')
+    expect(v.runs[0].shelves).toHaveLength(8)
+  })
+
   it('omits the skipped clause when nothing was skipped', () => {
     const v = curationView(parseCurationLog(log({ runs: [run({ skipped: { count: 0, reasons: [] } })] })))!
     expect(v.runs[0].summary).not.toContain('skipped')

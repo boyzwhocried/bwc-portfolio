@@ -47,6 +47,7 @@ export interface CurationView {
 
 const EM_DASH = String.fromCharCode(0x2014)
 const BLURB_MAX = 280
+const SUMMARY_SHELVES = 5
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -70,7 +71,7 @@ function parseRun(v: unknown): CurationRun | null {
   return {
     date: v.date,
     songsIn: v.songsIn,
-    shelves: list(v.shelves).flatMap((s) => parseShelf(s) ?? []),
+    shelves: list(v.shelves).flatMap((s) => parseShelf(s) ?? []).sort((a, b) => b.count - a.count),
     otherPlaylists: v.otherPlaylists,
     repeats: list(v.repeats).flatMap((r) => (isObj(r) && clean(r.artist) && clean(r.track) ? [{ artist: r.artist, track: r.track }] : [])),
     skipped: { count: count(sk.count) ? sk.count : 0, reasons },
@@ -105,7 +106,10 @@ function dateLabel(iso: string): string {
 
 function summarise(r: CurationRun): string {
   const parts = [`${r.songsIn} songs in.`]
-  const dest = r.shelves.map((s) => `${s.count} to ${s.name}`)
+  const top = r.shelves.slice(0, SUMMARY_SHELVES)
+  const dest = top.map((s) => `${s.count} to ${s.name}`)
+  const rest = r.shelves.length - top.length
+  if (rest > 0) dest.push(`and ${rest} more playlist${rest === 1 ? '' : 's'}`)
   if (r.otherPlaylists > 0) dest.push(`${r.otherPlaylists} to other playlists`)
   if (dest.length > 0) parts.push(`${dest.join(', ')}.`)
   if (r.skipped.count > 0) parts.push(`${r.skipped.count} skipped.`)
