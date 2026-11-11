@@ -17,6 +17,7 @@ export function initMatch(seed: number, defs: [FighterDef, FighterDef], introFra
     roundTimer: ROUND_FRAMES,
     wins: [0, 0],
     round: 1,
+    reshuffles: 0,
     fighters: freshFighters(defs),
     defs,
   }
@@ -43,6 +44,7 @@ export function hashState(s: MatchState): number {
   mix(s.wins[0])
   mix(s.wins[1])
   mix(s.round)
+  mix(s.reshuffles)
   for (const f of s.fighters) {
     mix(f.x)
     mix(f.y)

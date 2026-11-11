@@ -1,4 +1,5 @@
 import { FIGHTERS } from '../roster'
+import { RING_FRAMES } from '../match'
 import type { CpuLevel } from '../cpu'
 import type { FighterDef, MoveDef, MoveKind } from '../types'
 
@@ -115,10 +116,10 @@ export const STAGES: readonly ArcadeStage[] = [
     slug: 'ruang-kurs',
     name: { id: 'Ruang Kurs', en: 'The Exchange Room' },
     overlay: 'exchange',
-    opponent: variant(AJUDAN, 'sang-penempatan', 'Sang Penempatan', 1050, 704, { punch: { damage: 45 }, kick: { damage: 85 }, special: { damage: 80 } }),
+    opponent: { ...variant(AJUDAN, 'sang-penempatan', 'Sang Penempatan', 1050, 704, { punch: { damage: 45 }, kick: { damage: 85 }, special: { damage: 80 } }), reshuffle: RING_FRAMES },
     cpu: 'normal',
     gimmick: 'The desk phone rings every 20 seconds: he is swapped for an identical replacement, or the chairs rotate. Penugasan armor breaks only to low attacks.',
-    gimmickReal: true,
+    gimmickReal: true, // phone swap built (def.reshuffle); Penugasan low-attack armor still planned
     pre: [
       { speaker: 'opponent', text: { id: 'Aku ditugaskan di sini. Aku tidak tahu kantor ini ngapain.', en: 'I was assigned here. I do not know what this office does.' } },
       { speaker: 'hero', text: { id: 'Kantornya juga tidak tahu.', en: 'Neither does the office.' } },

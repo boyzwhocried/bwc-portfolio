@@ -3,7 +3,7 @@ import { STAGES, ARCADE_TITLE, DISCLAIMER, TICKER_LINES, WIN_ENDING, LOSE_ENDING
 import { startRun, currentStage, beginFight, finishMatch, takeContinue, giveUp, matchSeed, arcadeMatch, tickerFor, runEnding, CONTINUES } from './run'
 import { FIGHTERS, FIGHTER_IDS } from '../roster'
 import { MOVE_KINDS } from '../types'
-import { stepMatch } from '../match'
+import { stepMatch, ROUND_FRAMES, RING_FRAMES } from '../match'
 import { cpuInput } from '../cpu'
 import { BTN, type MatchState } from '../types'
 import { initMatch, hashState, UNIT } from '../sim'
@@ -318,5 +318,62 @@ describe('stage 4 Stempel Ulang revive', () => {
     const m = initMatch(7, [hero, understudy])
     const flipped = { ...m, fighters: [m.fighters[0], { ...m.fighters[1], revived: true }] as MatchState['fighters'] }
     expect(hashState(flipped)).not.toBe(hashState(m))
+  })
+})
+
+describe('stage 5 phone reshuffle', () => {
+  const hero = FIGHTERS['si-penyadap']
+  const seconded = STAGES[4].opponent
+
+  // a live match one step before the phone rings, opponent mid kick with hp 640
+  function beforeRing(def = seconded, rings = 0): MatchState {
+    const m = initMatch(3, [hero, def])
+    return {
+      ...m,
+      reshuffles: rings,
+      roundTimer: ROUND_FRAMES - (RING_FRAMES - 1),
+      fighters: [m.fighters[0], { ...m.fighters[1], x: m.fighters[0].x + 150 * UNIT, hp: 640, action: 'attack', move: 'kick', actionFrame: 2 }],
+    }
+  }
+
+  it('the phone rings every 20 seconds and only the seconded has one', () => {
+    expect(RING_FRAMES).toBe(20 * 60)
+    expect(seconded.reshuffle).toBe(RING_FRAMES)
+    for (const s of STAGES) if (s.slug !== 'ruang-kurs') expect(s.opponent.reshuffle).toBeUndefined()
+    for (const id of FIGHTER_IDS) expect(FIGHTERS[id].reshuffle).toBeUndefined()
+  })
+
+  it('first ring: he is handed to an identical replacement, mid-move cancelled, hp kept', () => {
+    const s = stepMatch(beforeRing(), [0, 0])
+    expect(s.reshuffles).toBe(1)
+    expect(s.fighters[1].hp).toBe(640)
+    expect(s.fighters[1].action).toBe('idle')
+    expect(s.fighters[1].move).toBeNull()
+  })
+
+  it('second ring: the chairs rotate, the fighter is left alone', () => {
+    const s = stepMatch(beforeRing(seconded, 1), [0, 0])
+    expect(s.reshuffles).toBe(2)
+    expect(s.fighters[1].action).toBe('attack')
+  })
+
+  it('no ring one frame early, and no double ring during hitstop', () => {
+    const early = { ...beforeRing(), roundTimer: ROUND_FRAMES - (RING_FRAMES - 2) }
+    expect(stepMatch(early, [0, 0]).reshuffles).toBe(0)
+    const frozen = { ...beforeRing(), hitstop: 3 }
+    expect(stepMatch(frozen, [0, 0]).reshuffles).toBe(0)
+  })
+
+  it('other opponents never ring', () => {
+    expect(stepMatch(beforeRing(STAGES[2].opponent), [0, 0]).reshuffles).toBe(0)
+  })
+
+  it('a new round starts the phone over', () => {
+    expect(initMatch(1, [hero, seconded]).reshuffles).toBe(0)
+  })
+
+  it('the ring count is part of the state hash', () => {
+    const m = initMatch(1, [hero, seconded])
+    expect(hashState({ ...m, reshuffles: 1 })).not.toBe(hashState(m))
   })
 })

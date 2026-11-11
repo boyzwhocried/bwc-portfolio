@@ -39,6 +39,7 @@ export type FighterDef = {
   walkSpeed: number // world units per frame
   jumpVelocity: number // world units per frame, upward
   moves: Record<MoveKind, MoveDef>
+  reshuffle?: number // frames between phone rings; odd rings swap this fighter for an identical replacement (arcade Ruang Kurs), even rings only rotate the chairs
   revive?: number // the first KO of each round is voided: back up with this much hp (arcade Stempel Ulang)
 }
 
@@ -78,6 +79,7 @@ export type MatchState = {
   roundTimer: number // frames left in the round
   wins: [number, number]
   round: number // 1-based
+  reshuffles: number // phone rings so far this round
   fighters: [FighterState, FighterState]
   defs: [FighterDef, FighterDef]
 }
