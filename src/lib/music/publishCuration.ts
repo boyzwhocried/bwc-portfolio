@@ -18,6 +18,15 @@ export interface UpsertRow {
 
 const arrLen = (v: unknown): number => (Array.isArray(v) ? v.length : 0)
 
+// How many picks (array) or covers (string) the raw file carries across its runs.
+function sumRuns(runs: unknown, field: 'picks' | 'cover'): number {
+  if (!Array.isArray(runs)) return 0
+  return runs.reduce((n: number, r) => {
+    const v = (r as Record<string, unknown> | null)?.[field]
+    return n + (field === 'picks' ? arrLen(v) : v === undefined || v === null ? 0 : 1)
+  }, 0)
+}
+
 export function planPublish(raw: unknown): PublishPlan {
   const parsed = parseCurationLog(raw)
   if (!parsed) {
@@ -29,6 +38,9 @@ export function planPublish(raw: unknown): PublishPlan {
     ['run', arrLen(src.runs), parsed.runs.length],
     ['blurb', arrLen(src.blurbs), parsed.blurbs.length],
     ['rule', arrLen(src.rules), parsed.rules.length],
+    ['caption', arrLen(src.captions), parsed.captions.length],
+    ['pick', sumRuns(src.runs, 'picks'), parsed.runs.reduce((n, r) => n + r.picks.length, 0)],
+    ['cover', sumRuns(src.runs, 'cover'), parsed.runs.reduce((n, r) => n + (r.cover ? 1 : 0), 0)],
   ]
   for (const [what, before, after] of checks) {
     if (before !== after) errors.push(`${before - after} ${what}(s) invalid (bad shape, em-dash, or missing source)`)

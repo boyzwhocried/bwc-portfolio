@@ -35,6 +35,18 @@ describe('planPublish', () => {
     expect(p.errors.join(' ')).toMatch(/rule/)
   })
 
+  it('rejects a too-long cover, pick note or caption instead of trimming it', () => {
+    const bad = good() as Record<string, unknown>
+    ;(bad.runs as Record<string, unknown>[])[0].cover = 'a'.repeat(161)
+    ;(bad.runs as Record<string, unknown>[])[0].picks = [{ artist: 'A', track: 'T', note: 'a'.repeat(121) }]
+    bad.captions = [{ playlist: 'x', text: 'a'.repeat(101) }]
+    const p = planPublish(bad)
+    expect(p.payload).toBeNull()
+    expect(p.errors.join(' ')).toMatch(/cover/)
+    expect(p.errors.join(' ')).toMatch(/pick/)
+    expect(p.errors.join(' ')).toMatch(/caption/)
+  })
+
   it('errors on a file with no valid run', () => {
     expect(planPublish({ asOf: '2026-11-12', runs: [] }).errors.length).toBeGreaterThan(0)
   })

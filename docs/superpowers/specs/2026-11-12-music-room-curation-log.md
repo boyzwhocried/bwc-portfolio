@@ -11,14 +11,21 @@ The obsession read is a top-tracks readout any account would produce. Replace it
 - Public: counts, playlist names, **and artist names** added. Not public: Instagram source info, run ids, caps, held-back internals.
 - A playlist is named only if Spotify marks it public in the mirror (all 31 router targets are; a run's songs go to genre-style playlists like wander, thrust, beam, not the site shelf, so a shelf-only rule would have named nothing). Non-public or removed playlists fold into a count; a `hide_playlists` list in the notes file hides any public one. Only the lead artist of each song is named.
 
+## Zine shape (Verrel feedback, same day)
+
+Counts and bare playlist names said nothing ("wtf wander pt.2 means"). Each run is an **issue**: cover line + up to 5 liner-note picks in his words, "in this batch" top artists, a small "where they went" legend (his one-line caption per playlist, top 3 only), counts demoted to a footnote, older issues behind a toggle. His words only; no lyrics; the skill asks one short question per run to get them.
+
 ## Data: new `spotify_cache` key `curation_log`
 
 ```
 { asOf: 'YYYY-MM-DD',
   rules: string[],                       // his standing rules, short
+  captions: [{ playlist, text }],        // what a playlist name means (<=100)
   runs: [{ date, songsIn, shelves: [{ name, count, artists: string[] }],
            otherPlaylists: number,       // songs placed in non-shelf playlists
-           repeats: [{ artist, track }], // kept on repeat (hand-supplied)
+           artists: string[],                // top lead artists of the batch
+           cover: string | null,         // his one line (<=160)
+           picks: [{ artist, track, note }], // liner notes (note <=120)
            skipped: { count, reasons: [{ reason, count }] } }],   // newest first
   blurbs: [{ artist, album?, text, source }] }   // text <= 280 chars, source required
 ```
