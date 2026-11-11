@@ -672,8 +672,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           )}
           {rotate && (
             <div role="alert" style={{ ...overlay, top: 0, bottom: 0, justifyContent: 'center', background: INK, zIndex: 5 }}>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: VERM, textAlign: 'center' }}>{ROTATE_LINE.id}</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, opacity: 0.8, textAlign: 'center' }}>{ROTATE_LINE.en}</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: VERM, textAlign: 'center' }}>{ROTATE_LINE}</p>
             </div>
           )}
           {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}

@@ -1,7 +1,7 @@
 // Phones play this in landscape. Android Chrome can lock it (fullscreen first); iPhone Safari cannot,
 // so a portrait touch device gets a rotate screen instead.
 
-export const ROTATE_LINE = { id: 'Putar ponselmu ke samping', en: 'Rotate your phone sideways' }
+export const ROTATE_LINE = 'Rotate your phone sideways'
 
 export function needsRotate(touch: boolean, width: number, height: number): boolean {
   return touch && height > width

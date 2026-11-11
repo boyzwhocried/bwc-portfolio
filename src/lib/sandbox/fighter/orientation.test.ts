@@ -55,9 +55,9 @@ describe('tryLandscape', () => {
 })
 
 describe('ROTATE_LINE', () => {
-  it('is Indonesian with an English subtitle and no em-dash', () => {
-    expect(ROTATE_LINE.id.length).toBeGreaterThan(0)
-    expect(ROTATE_LINE.en.length).toBeGreaterThan(0)
-    expect(ROTATE_LINE.id + ROTATE_LINE.en).not.toContain(String.fromCharCode(0x2014))
+  it('is a single English platform line with no em-dash', () => {
+    expect(typeof ROTATE_LINE).toBe('string')
+    expect(ROTATE_LINE).toBe('Rotate your phone sideways')
+    expect(ROTATE_LINE).not.toContain(String.fromCharCode(0x2014))
   })
 })
