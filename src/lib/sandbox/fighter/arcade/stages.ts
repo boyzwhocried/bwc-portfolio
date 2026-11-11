@@ -102,7 +102,7 @@ export const STAGES: readonly ArcadeStage[] = [
     slug: 'loket-antrean',
     name: { id: 'Loket Antrean', en: 'The Queue Counter' },
     overlay: 'queue',
-    opponent: { ...variant(PENYADAP, 'sang-pengganti', 'Sang Pengganti', 1000, 704, { punch: { damage: 40 }, kick: { startup: 7 } }), revive: 1 },
+    opponent: { ...variant(PENYADAP, 'sang-pengganti', 'Sang Pengganti', 1100, 704, { punch: { damage: 45 }, kick: { startup: 7 } }), revive: 1 },
     cpu: 'normal',
     gimmick: 'Stempel Ulang: first KO is stamped ULANG (REDO) and he stands back up at 1 HP; the second KO is final. Do not use the words VOID or INVALID on screen: the news moved (see the 2026-11-12 sensitivity note).',
     gimmickReal: true, // built: def.revive
@@ -116,7 +116,7 @@ export const STAGES: readonly ArcadeStage[] = [
     slug: 'ruang-kurs',
     name: { id: 'Ruang Kurs', en: 'The Exchange Room' },
     overlay: 'exchange',
-    opponent: { ...variant(AJUDAN, 'sang-penempatan', 'Sang Penempatan', 1050, 704, { punch: { damage: 45 }, kick: { damage: 85 }, special: { damage: 80 } }), reshuffle: RING_FRAMES },
+    opponent: { ...variant(AJUDAN, 'sang-penempatan', 'Sang Penempatan', 950, 672, { punch: { damage: 40 }, kick: { damage: 75 }, special: { damage: 70 } }), reshuffle: RING_FRAMES },
     cpu: 'normal',
     gimmick: 'The desk phone rings every 20 seconds: he is swapped for an identical replacement, or the chairs rotate. Penugasan armor breaks only to low attacks.',
     gimmickReal: true, // phone swap built (def.reshuffle); Penugasan low-attack armor still planned
@@ -130,7 +130,7 @@ export const STAGES: readonly ArcadeStage[] = [
     slug: 'gerbang-kubah',
     name: { id: 'Gerbang Kubah', en: 'The Dome Gate' },
     overlay: 'dome',
-    opponent: { ...variant(PENYADAP, 'panitia-tetap', 'Panitia Tetap', 1400, 640, { punch: { damage: 45 }, kick: { damage: 85 }, special: { damage: 80, armor: true } }), boss: true },
+    opponent: { ...variant(PENYADAP, 'panitia-tetap', 'Panitia Tetap', 1150, 640, { punch: { damage: 40 }, kick: { damage: 75 }, special: { damage: 70, armor: true } }), boss: true },
     cpu: 'normal',
     boss: true,
     gimmick: 'Three phases: Pernyataan, Rombak (hit the chair in office), Tinjau Abadi (a revive that only a hit under a live ticker headline ends).',
