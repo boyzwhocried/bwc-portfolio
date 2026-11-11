@@ -9,6 +9,8 @@ import { STAGE_FOREST, FLOOR_Y } from './stage-forest'
 import { PORTRAITS } from './portraits'
 import { PORTRAIT_PX } from '../hud'
 import { FIGHTER_IDS } from '../roster'
+import { OPPONENT_ART, OPPONENT_PORTRAITS } from './opponents'
+import { STAGES } from '../arcade/stages'
 
 const FIGHTERS: Record<string, FighterArt> = { 'si-penyadap': PENYADAP, 'sang-ajudan': AJUDAN }
 const MIN_FRAMES: Record<string, number> = { idle: 2, walk: 4, punch: 3, kick: 3, special: 3, hit: 2, block: 1, jump: 1, ko: 2 }
@@ -58,7 +60,7 @@ describe('fighter art data', () => {
 
   it('only archetype slug files live in art/', () => {
     const dir = dirname(fileURLToPath(import.meta.url))
-    expect(readdirSync(dir).sort()).toEqual(['art.test.ts', 'portraits.ts', 'sang-ajudan.ts', 'si-penyadap.ts', 'sprite.ts', 'stage-forest.ts'])
+    expect(readdirSync(dir).sort()).toEqual(['art.test.ts', 'opponents.ts', 'portraits.ts', 'sang-ajudan.ts', 'si-penyadap.ts', 'sprite.ts', 'stage-forest.ts'])
   })
 
   it('every fighter has a fully opaque, palette-only portrait of the size the hud expects', () => {
@@ -69,5 +71,46 @@ describe('fighter art data', () => {
       expect(p.rows.length).toBe(p.h)
       for (const r of p.rows) expect(r).toMatch(new RegExp('^[ipv]{' + p.w + '}$'))
     }
+  })
+})
+
+describe('arcade opponent art', () => {
+  const ids = STAGES.map((x) => x.opponent.id)
+
+  it('has a body set and a portrait for every stage opponent, and nothing else', () => {
+    expect(Object.keys(OPPONENT_ART).sort()).toEqual([...ids].sort())
+    expect(Object.keys(OPPONENT_PORTRAITS).sort()).toEqual([...ids].sort())
+  })
+
+  it('follows the same sprite contract as the heroes: palette only, sizes, all animations', () => {
+    for (const id of ids) {
+      const art = OPPONENT_ART[id]
+      expect([art.head.w, art.head.h]).toEqual([24, 24])
+      for (const n of ANIM_NAMES) {
+        expect(art.frames[n].length, id + ' ' + n).toBeGreaterThanOrEqual(MIN_FRAMES[n])
+        for (const f of art.frames[n]) {
+          expect([f.w, f.h]).toEqual([80, 80])
+          expect(f.rows.length).toBe(80)
+          for (const r of f.rows) expect(r).toMatch(/^[.ipv]{80}$/)
+        }
+      }
+      for (const sp of allSprites(art)) expect(sp.rows.join('')).toMatch(/^[.ipv]*$/)
+    }
+  })
+
+  it('portraits are fully opaque and the size the hud expects', () => {
+    for (const id of ids) {
+      const p = OPPONENT_PORTRAITS[id]
+      expect([p.w, p.h]).toEqual([PORTRAIT_PX, PORTRAIT_PX])
+      for (const r of p.rows) expect(r).toMatch(new RegExp('^[ipv]{' + p.w + '}$'))
+    }
+  })
+
+  it('every opponent looks different from the others and from both heroes', () => {
+    const sig = (a: FighterArt) => a.frames.idle[0].rows.join('')
+    const all = [...ids.map((id) => sig(OPPONENT_ART[id])), sig(PENYADAP), sig(AJUDAN)]
+    expect(new Set(all).size).toBe(all.length)
+    const heads = [...ids.map((id) => OPPONENT_ART[id].head.rows.join('')), PENYADAP.head.rows.join(''), AJUDAN.head.rows.join('')]
+    expect(new Set(heads).size).toBe(heads.length)
   })
 })
