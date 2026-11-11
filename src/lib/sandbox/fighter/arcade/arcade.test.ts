@@ -4,7 +4,7 @@ import { startRun, currentStage, beginFight, finishMatch, takeContinue, giveUp, 
 import { FIGHTERS, FIGHTER_IDS } from '../roster'
 import { MOVE_KINDS } from '../types'
 import { stepMatch, ROUND_FRAMES, RING_FRAMES } from '../match'
-import { bossPhase, reviewOpen, REVIEW_CYCLE, REVIEW_OPEN } from '../boss'
+import { bossPhase, reviewOpen, chairSide, seatPct, bossPlate, OFF_SEAT_PCT, REVIEW_CYCLE, REVIEW_OPEN } from '../boss'
 import { cpuInput } from '../cpu'
 import { BTN, type MatchState } from '../types'
 import { initMatch, hashState, UNIT } from '../sim'
@@ -444,6 +444,57 @@ describe('stage 6 Panitia Tetap boss', () => {
     expect(at(700).fighters[1].action).toBe('idle')
     expect(at(1300).reshuffles).toBe(0)
     expect(at(300).reshuffles).toBe(0)
+  })
+
+  it('phase 2: the chair in office alternates sides with each reshuffle, and only full-damage hits come from that side', () => {
+    expect(chairSide(0)).toBe(-1)
+    expect(chairSide(1)).toBe(1)
+    expect(chairSide(2)).toBe(-1)
+    expect(chairSide(3)).toBe(1)
+    expect(OFF_SEAT_PCT).toBe(25)
+    // boss at x = 100, chair on the left (reshuffles 0)
+    expect(seatPct(2, 90, 100, 0)).toBe(100)
+    expect(seatPct(2, 110, 100, 0)).toBe(OFF_SEAT_PCT)
+    expect(seatPct(2, 110, 100, 1)).toBe(100)
+    expect(seatPct(2, 90, 100, 1)).toBe(OFF_SEAT_PCT)
+    expect(seatPct(2, 100, 100, 1)).toBe(100) // dead centre counts as in office
+    for (const phase of [1, 3] as const) expect(seatPct(phase, 110, 100, 0)).toBe(100)
+  })
+
+  it('phase 2 sim: a hit from the wrong side of the boss does a quarter damage; from the chair side, full', () => {
+    const dealt = (s: MatchState) => 700 - hit(s).fighters[1].hp
+    const full = hero.moves.punch.damage
+    const quarter = Math.floor((full * OFF_SEAT_PCT) / 100)
+    // hero starts left of the boss
+    expect(dealt({ ...live(700, 100), reshuffles: 0 })).toBe(full)
+    expect(dealt({ ...live(700, 100), reshuffles: 1 })).toBe(quarter)
+    // hero crosses over to the right of the boss
+    const flipped = (reshuffles: number): MatchState => {
+      const m = live(700, 100)
+      return { ...m, reshuffles, fighters: [{ ...m.fighters[0], x: m.fighters[1].x + 30 * UNIT }, m.fighters[1]] }
+    }
+    expect(dealt(flipped(0))).toBe(quarter)
+    expect(dealt(flipped(1))).toBe(full)
+  })
+
+  it('the boss plate names the phase; in phase 2 its arrows point at the side of the chair in office', () => {
+    expect(bossPlate(1, false, 0)).toBe('PERNYATAAN')
+    expect(bossPlate(2, false, 0)).toBe('<< ROMBAK')
+    expect(bossPlate(2, false, 1)).toBe('ROMBAK >>')
+    expect(bossPlate(3, false, 0)).toBe('TINJAU ABADI')
+    expect(bossPlate(3, true, 0)).toBe('LIVE: HIT NOW')
+    for (const t of [bossPlate(2, false, 0), bossPlate(2, false, 1)]) expect(t).not.toContain(EM_DASH)
+  })
+
+  it('the seat rule only applies in phase 2 and only to the boss', () => {
+    const full = hero.moves.punch.damage
+    expect(1300 - hit({ ...live(1300, 100), reshuffles: 1 }).fighters[1].hp).toBe(full)
+    expect(300 - hit({ ...live(300, 100), reshuffles: 1 }).fighters[1].hp).toBe(full)
+    const m = initMatch(5, [FIGHTERS['sang-ajudan'], hero])
+    const near = { ...m, reshuffles: 1, fighters: [{ ...m.fighters[0], x: m.fighters[1].x - 30 * UNIT }, m.fighters[1]] as MatchState['fighters'] }
+    let n = stepMatch({ ...near, phase: 'fight', introFrames: 0 }, [BTN.PUNCH, 0])
+    for (let i = 0; i < 8; i++) n = stepMatch(n, [0, 0])
+    expect(n.fighters[1].hp).toBeLessThan(hero.hp)
   })
 
   it('only the boss is a boss', () => {

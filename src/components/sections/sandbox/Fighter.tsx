@@ -25,7 +25,7 @@ import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
 import FighterArcadePanel, { FighterQuickPick, type ArcadeView } from './FighterArcadePanel'
-import { bossPhase, reviewOpen } from '@/lib/sandbox/fighter/boss'
+import { bossPhase, bossPlate, reviewOpen } from '@/lib/sandbox/fighter/boss'
 import { fitScale } from '@/lib/sandbox/fighter/scale'
 import { arcadeMatch, beginFight, currentStage, finishMatch, giveUp, startRun, takeContinue, type ArcadeRun } from '@/lib/sandbox/fighter/arcade/run'
 import { openRoom, type RoomHandle } from '@/lib/sandbox/fighter/net/transport'
@@ -301,7 +301,7 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
   if (s.defs[1].boss && (s.phase === 'fight' || s.phase === 'ko')) {
     const phase = bossPhase(s.fighters[1].hp, s.defs[1].hp)
     const open = phase === 3 && reviewOpen(ROUND_FRAMES - s.roundTimer)
-    const text = open ? 'LIVE: HIT NOW' : phase === 1 ? 'PERNYATAAN' : phase === 2 ? 'ROMBAK' : 'TINJAU ABADI'
+    const text = bossPlate(phase, open, s.reshuffles)
     ctx.font = 'bold 8px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

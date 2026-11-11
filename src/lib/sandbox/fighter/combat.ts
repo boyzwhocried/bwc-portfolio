@@ -1,3 +1,4 @@
+import { bossPhase, seatPct } from './boss'
 import { BUG_BONUS_PCT, CROUCH_H, FIGHTER_H, HALF_W, STAGE_W, UNIT } from './constants'
 import type { FighterDef, FighterState, MatchState, MoveDef } from './types'
 
@@ -51,14 +52,17 @@ export function resolveHits(s: MatchState): MatchState {
     const dstate = s.fighters[j]
     const blocked = dstate.action === 'block'
     // a hit that is not blocked uses up the BUGGED mark for bonus damage; a marking move then re-marks
-    const base = dstate.bugged && !blocked ? Math.floor((move.damage * (100 + BUG_BONUS_PCT)) / 100) : move.damage
+    // the boss's phase 2 chair rule: only hits from the side of the chair in office land in full
+    const seat = s.defs[j].boss ? seatPct(bossPhase(dstate.hp, s.defs[j].hp), att.x, dstate.x, s.reshuffles) : 100
+    const raw = Math.floor((move.damage * seat) / 100)
+    const base = dstate.bugged && !blocked ? Math.floor((raw * (100 + BUG_BONUS_PCT)) / 100) : raw
     const bugged = blocked ? dstate.bugged : !!move.mark
     if (isArmed(dstate, s.defs[j])) {
       const hpA = Math.max(0, fs[j].hp - Math.floor(base / 2))
       fs[j] = { ...fs[j], hp: hpA, bugged, action: hpA === 0 ? 'ko' : fs[j].action }
       continue
     }
-    const dmg = blocked ? Math.floor(move.damage / 10) : base
+    const dmg = blocked ? Math.floor(raw / 10) : base
     const hp = Math.max(0, fs[j].hp - dmg)
     const x = Math.min(STAGE_W - HALF_W, Math.max(HALF_W, fs[j].x + att.facing * move.knockback))
     fs[j] = {
