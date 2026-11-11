@@ -29,6 +29,16 @@ function nextRound(s: MatchState): MatchState {
   }
 }
 
+// A fighter whose def has `revive` gets up once per round instead of being KO'd.
+function revive(s: MatchState): MatchState {
+  const fs = s.fighters.map((f, i) => {
+    const rev = s.defs[i].revive
+    if (rev === undefined || f.revived || f.hp > 0) return f
+    return { ...f, hp: rev, revived: true, action: f.y > 0 ? 'jump' : 'idle', move: null, actionFrame: 0, stun: 0, hitConnected: false, buffered: null, vx: 0 } as typeof f
+  }) as MatchState['fighters']
+  return fs[0] === s.fighters[0] && fs[1] === s.fighters[1] ? s : { ...s, fighters: fs }
+}
+
 export function stepMatch(s: MatchState, inputs: Inputs): MatchState {
   const base = { ...s, frame: s.frame + 1 }
   switch (s.phase) {
@@ -40,7 +50,7 @@ export function stepMatch(s: MatchState, inputs: Inputs): MatchState {
     }
     case 'fight': {
       const frozen = s.hitstop > 0
-      let n = stepWorld(s, inputs)
+      let n = revive(stepWorld(s, inputs))
       if (!frozen) n = { ...n, roundTimer: n.roundTimer - 1 }
       const [a, b] = n.fighters
       const koA = a.hp <= 0

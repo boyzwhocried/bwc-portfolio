@@ -5,7 +5,9 @@ import { FIGHTERS, FIGHTER_IDS } from '../roster'
 import { MOVE_KINDS } from '../types'
 import { stepMatch } from '../match'
 import { cpuInput } from '../cpu'
-import { BTN } from '../types'
+import { BTN, type MatchState } from '../types'
+import { initMatch, hashState, UNIT } from '../sim'
+import { freshFighters } from '../world'
 
 const EM_DASH = String.fromCharCode(0x2014)
 
@@ -261,4 +263,60 @@ describe('arcade opponents play', () => {
       expect(sawAttack).toBe(true)
     })
   }
+})
+
+describe('stage 4 Stempel Ulang revive', () => {
+  const hero = FIGHTERS['si-penyadap']
+  const understudy = STAGES[3].opponent
+
+  // hero punches an opponent that has `hp` left, standing in range; returns the state after the hit lands
+  function punchFinisher(m: MatchState, hp: number): MatchState {
+    let s: MatchState = { ...m, fighters: [m.fighters[0], { ...m.fighters[1], x: m.fighters[0].x + 30 * UNIT, hp }] }
+    s = stepMatch(s, [BTN.PUNCH, 0])
+    for (let i = 0; i < hero.moves.punch.startup + 2; i++) s = stepMatch(s, [0, 0])
+    return s
+  }
+
+  it('only the understudy revives, once, at 1 hp', () => {
+    expect(understudy.revive).toBe(1)
+    for (const s of STAGES) if (s.slug !== 'loket-antrean') expect(s.opponent.revive).toBeUndefined()
+    for (const id of FIGHTER_IDS) expect(FIGHTERS[id].revive).toBeUndefined()
+  })
+
+  it('the first KO is voided: back up at 1 hp, round still live, no win recorded', () => {
+    const m = initMatch(7, [hero, understudy])
+    const s = punchFinisher(m, 10)
+    expect(s.phase).toBe('fight')
+    expect(s.fighters[1].hp).toBe(1)
+    expect(s.fighters[1].revived).toBe(true)
+    expect(s.fighters[1].action).not.toBe('ko')
+    expect(s.wins).toEqual([0, 0])
+  })
+
+  it('the second KO is final', () => {
+    const m = initMatch(7, [hero, understudy])
+    let s = punchFinisher(m, 10)
+    for (let i = 0; i < 40; i++) s = stepMatch(s, [0, 0]) // let recovery end
+    s = punchFinisher(s, 1)
+    expect(s.phase).toBe('ko')
+    expect(s.wins[0]).toBe(1)
+  })
+
+  it('a normal opponent never revives', () => {
+    const m = initMatch(7, [hero, FIGHTERS['sang-ajudan']])
+    const s = punchFinisher(m, 10)
+    expect(s.phase).toBe('ko')
+    expect(s.fighters[1].revived).toBe(false)
+  })
+
+  it('a new round gives the revive back', () => {
+    const f = freshFighters([hero, understudy])
+    expect(f[1].revived).toBe(false)
+  })
+
+  it('the revive flag is part of the state hash so online peers cannot drift on it', () => {
+    const m = initMatch(7, [hero, understudy])
+    const flipped = { ...m, fighters: [m.fighters[0], { ...m.fighters[1], revived: true }] as MatchState['fighters'] }
+    expect(hashState(flipped)).not.toBe(hashState(m))
+  })
 })

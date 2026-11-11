@@ -39,6 +39,7 @@ export type FighterDef = {
   walkSpeed: number // world units per frame
   jumpVelocity: number // world units per frame, upward
   moves: Record<MoveKind, MoveDef>
+  revive?: number // the first KO of each round is voided: back up with this much hp (arcade Stempel Ulang)
 }
 
 export type Action = 'idle' | 'walk' | 'jump' | 'block' | 'attack' | 'hitstun' | 'blockstun' | 'ko' | 'crouch'
@@ -60,6 +61,7 @@ export type FighterState = {
   hitConnected: boolean // current swing already hit
   buffered: MoveKind | null // attack pressed during hitstop; used on the first step after the freeze, dropped if it cannot be used then
   held: number // attack buttons that were down on the previous step; only a new press attacks
+  revived: boolean // the one revive of this round is spent
   bugged: boolean // carries the BUGGED mark until the next unblocked hit or the end of the round
 }
 

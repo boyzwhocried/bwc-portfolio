@@ -26,6 +26,7 @@ export function freshFighters(defs: [FighterDef, FighterDef]): [FighterState, Fi
     stun: 0,
     hitConnected: false,
     bugged: false,
+    revived: false,
     buffered: null,
     held: 0,
   })

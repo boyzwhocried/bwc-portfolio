@@ -56,6 +56,7 @@ export function hashState(s: MatchState): number {
     mix(f.stun)
     mix(f.hitConnected ? 1 : 0)
     mix(f.bugged ? 1 : 0)
+    mix(f.revived ? 1 : 0)
     mix(f.held)
     mix(f.buffered ? MOVE_KINDS.indexOf(f.buffered) : -1)
   }
