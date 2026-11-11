@@ -53,3 +53,91 @@ export function buildObsessionLog(snapshots: HistorySnapshot[]): ObsessionLogEnt
 export function logIsWorthShowing(entries: ObsessionLogEntry[]): boolean {
   return entries.length >= 2
 }
+
+// ---- narration (varied phrasing, no LLM) ---------------------------------------
+//
+// The flat "month: subject" row reads the same every month. This assembles one
+// line per month from computed facts already on the entry: how long the streak
+// has run, whether the subject just changed, and (when a real site event lands
+// in the same month) a quiet cross-reference. Deterministic, no invented facts.
+
+export interface TimelineEvent {
+  month: string // YYYY-MM
+  label: string // e.g. "he shipped the personal os wiki"
+}
+
+export interface LogLine {
+  month: string
+  text: string
+}
+
+function displaySubject(e: ObsessionLogEntry): string {
+  if (e.kind === 'album') return `${e.subject}, ${e.artist}`
+  return e.subject ?? ''
+}
+
+const NONE_LINES = [
+  'the rotation stayed wide open this month, nothing over a third of it.',
+  'no single thing owned the month; it stayed scattered across a lot of records.',
+  'a spread month: plenty played, nothing that took over.',
+]
+
+const FIRST_LINES = (subject: string) => [
+  `${subject} took the month.`,
+  `this is the month ${subject} showed up and took over.`,
+  `${subject} came in and claimed it.`,
+]
+
+const CHANGED_LINES = (subject: string) => [
+  `the grip changed hands this month: ${subject} took over.`,
+  `whatever ran things before let go; ${subject} is what's running now.`,
+  `a new obsession took the wheel: ${subject}.`,
+]
+
+function streakLine(subject: string, streak: number): string {
+  if (streak === 2) return `second month running: still ${subject}.`
+  return `still ${subject}, ${streak} months deep now.`
+}
+
+function monthContext(month: string, events: TimelineEvent[]): string | null {
+  const hit = events.find((e) => e.month === month)
+  return hit ? hit.label : null
+}
+
+export function narrateLog(entries: ObsessionLogEntry[], events: TimelineEvent[] = []): LogLine[] {
+  const out: LogLine[] = []
+  let streak = 0
+  let prevSubject: string | null = null
+
+  entries.forEach((e, i) => {
+    let text: string
+
+    if (e.kind === 'none' || !e.subject) {
+      text = NONE_LINES[i % NONE_LINES.length]
+      streak = 0
+      prevSubject = null
+    } else {
+      const subject = displaySubject(e)
+      const sameAsPrev = e.subject === prevSubject
+      streak = sameAsPrev ? streak + 1 : 1
+
+      if (streak >= 2) {
+        text = streakLine(subject, streak)
+      } else if (prevSubject) {
+        const pool = CHANGED_LINES(subject)
+        text = pool[i % pool.length]
+      } else {
+        const pool = FIRST_LINES(subject)
+        text = pool[i % pool.length]
+      }
+      prevSubject = e.subject
+    }
+
+    const context = monthContext(e.month, events)
+    if (context) text += ` that's also the month ${context}.`
+
+    out.push({ month: e.month, text })
+  })
+
+  return out
+}

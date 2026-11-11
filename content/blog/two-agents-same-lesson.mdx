@@ -1,0 +1,27 @@
+---
+title: "i built two agent systems and learned the same lesson twice"
+date: "2026-08-18"
+tags: ["ai", "agents", "building", "engineering"]
+summary: "one system watches markets, one runs a small agent company. different domains, same architecture mistake made and fixed twice."
+published: true
+---
+
+over a few months i ended up building two unrelated autonomous-agent systems. one reads market data and reasons about positions. the other coordinates a small team of AI agents doing work like a tiny company would. different problems entirely. i still made the same mistake on both.
+
+## the mistake
+
+early on, both systems let the "thinking" layer touch the "doing" layer directly. the part that reasons about what should happen and the part that actually executes it were tangled together, because separating them felt like overhead when the prototype was three files.
+
+it works, right up until it doesn't. the first time a bad piece of reasoning nearly triggered a bad action, hexagonal boundaries stopped being a nice-to-have.
+
+## the fix, twice
+
+on the market-reasoning system: analysis code is not allowed to import execution code, full stop, enforced by a lint rule that fails the build if it happens. nothing reaches an external action without a stored decision object that a separate risk layer had to approve first. the veto is structural, not a convention someone might forget.
+
+on the agent-coordination system: same idea, different words. a "foreman" plans and assigns work; it never executes anything itself. the agents that execute report back through a narrow interface. the foreman can be wrong about a plan and nothing breaks, because being wrong about a plan and being wrong about an action are now two different failure modes instead of one.
+
+## why this took two tries
+
+the first time, i told myself the domain was different enough that the lesson from the trading system wouldn't transfer to the agent-coordination one. it did, immediately, in the same shape. thinking and doing want to merge back together under any time pressure, in any domain, unless something makes it structurally annoying for them to.
+
+now it's the first thing i build: the seam, before the feature.

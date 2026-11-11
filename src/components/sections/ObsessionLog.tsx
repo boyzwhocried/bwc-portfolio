@@ -1,7 +1,13 @@
 'use client'
 
 import { useMemo } from 'react'
-import { buildObsessionLog, logIsWorthShowing, type HistorySnapshot } from '@/lib/music/obsessionLog'
+import {
+  buildObsessionLog,
+  logIsWorthShowing,
+  narrateLog,
+  type HistorySnapshot,
+  type TimelineEvent,
+} from '@/lib/music/obsessionLog'
 
 // Month-by-month record of what owned the rotation, from spotify_history.
 // Deliberately hidden until a second month of history exists; it activates
@@ -14,8 +20,15 @@ function monthLabel(month: string): string {
   return `${MONTHS[parseInt(m, 10) - 1]} ${y}`
 }
 
-export default function ObsessionLog({ history }: { history: HistorySnapshot[] }) {
+export default function ObsessionLog({
+  history,
+  events = [],
+}: {
+  history: HistorySnapshot[]
+  events?: TimelineEvent[]
+}) {
   const entries = useMemo(() => buildObsessionLog(history), [history])
+  const lines = useMemo(() => narrateLog(entries, events), [entries, events])
   if (!logIsWorthShowing(entries)) return null
 
   return (
@@ -32,25 +45,18 @@ export default function ObsessionLog({ history }: { history: HistorySnapshot[] }
       >
         the obsession log
       </div>
-      <div className="flex flex-col" style={{ maxWidth: '46ch' }}>
-        {entries
+      <div className="flex flex-col" style={{ maxWidth: '52ch' }}>
+        {lines
           .slice()
           .reverse()
-          .map((e) => (
-            <div
-              key={e.month}
-              className="flex items-baseline justify-between gap-6"
-              style={{ padding: '7px 0', borderBottom: '1px solid var(--rule)' }}
-            >
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', flexShrink: 0 }}>
-                {monthLabel(e.month)}
-              </span>
-              <span
-                className="truncate"
-                style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 14, color: 'var(--fg)' }}
-              >
-                {e.subject ? `${e.subject}${e.artist && e.artist !== e.subject ? `, ${e.artist}` : ''}` : 'no single obsession'}
-              </span>
+          .map((l) => (
+            <div key={l.month} style={{ padding: '10px 0', borderBottom: '1px solid var(--rule)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-text)', marginBottom: 4 }}>
+                {monthLabel(l.month)}
+              </div>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 14, lineHeight: 1.5, color: 'var(--fg)' }}>
+                {l.text}
+              </div>
             </div>
           ))}
       </div>

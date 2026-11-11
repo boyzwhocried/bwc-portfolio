@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { CachedTrack } from '@/types'
-import { buildObsessionLog, logIsWorthShowing, type ObsessionLogEntry } from './obsessionLog'
+import { buildObsessionLog, logIsWorthShowing, narrateLog, type ObsessionLogEntry, type TimelineEvent } from './obsessionLog'
 
 const track = (name: string, artist: string, album: string): CachedTrack => ({
   name,
@@ -80,5 +80,72 @@ describe('logIsWorthShowing', () => {
 
   it('hides an empty log', () => {
     expect(logIsWorthShowing([])).toBe(false)
+  })
+})
+
+describe('narrateLog', () => {
+  const album = (month: string, subject: string, artist: string): ObsessionLogEntry =>
+    ({ month, subject, artist, kind: 'album' })
+  const artist = (month: string, name: string): ObsessionLogEntry =>
+    ({ month, subject: name, artist: name, kind: 'artist' })
+  const none = (month: string): ObsessionLogEntry =>
+    ({ month, subject: null, artist: null, kind: 'none' })
+
+  it('is empty for an empty log', () => {
+    expect(narrateLog([])).toEqual([])
+  })
+
+  it('marks a first appearance and a second-month streak differently', () => {
+    const lines = narrateLog([
+      album('2026-05', 'Tsunami Sea', 'Spiritbox'),
+      album('2026-06', 'Tsunami Sea', 'Spiritbox'),
+    ])
+    expect(lines).toHaveLength(2)
+    expect(lines[0].text).not.toEqual(lines[1].text)
+    expect(lines[1].text.toLowerCase()).toMatch(/second month|two months|still/)
+  })
+
+  it('gives a long streak (3+) different phrasing than a fresh 2-month streak', () => {
+    const lines = narrateLog([
+      album('2026-04', 'Tsunami Sea', 'Spiritbox'),
+      album('2026-05', 'Tsunami Sea', 'Spiritbox'),
+      album('2026-06', 'Tsunami Sea', 'Spiritbox'),
+    ])
+    expect(lines[1].text).not.toEqual(lines[2].text)
+  })
+
+  it('marks a subject change from the prior month distinctly from a repeat', () => {
+    const lines = narrateLog([
+      artist('2026-05', 'Koyo'),
+      album('2026-06', 'Tsunami Sea', 'Spiritbox'),
+    ])
+    expect(lines[1].text).toContain('Tsunami Sea')
+    expect(lines[1].text).not.toContain('Koyo')
+  })
+
+  it('handles a none month without crashing and without inventing a subject', () => {
+    const lines = narrateLog([album('2026-05', 'Tsunami Sea', 'Spiritbox'), none('2026-06')])
+    expect(lines[1].text).not.toMatch(/null|undefined/)
+  })
+
+  it('varies none-month phrasing across two consecutive none months', () => {
+    const lines = narrateLog([none('2026-05'), none('2026-06')])
+    expect(lines[0].text).not.toEqual(lines[1].text)
+  })
+
+  it('appends timeline context only for the matching month', () => {
+    const events: TimelineEvent[] = [{ month: '2026-06', label: 'he shipped the personal os wiki' }]
+    const lines = narrateLog([album('2026-05', 'Tsunami Sea', 'Spiritbox'), album('2026-06', 'Injury Episode', 'Static Dress')], events)
+    expect(lines[0].text).not.toContain('shipped')
+    expect(lines[1].text).toContain('he shipped the personal os wiki')
+  })
+
+  it('never emits an em-dash', () => {
+    const events: TimelineEvent[] = [{ month: '2026-06', label: 'he shipped the personal os wiki' }]
+    const lines = narrateLog(
+      [none('2026-04'), artist('2026-05', 'Koyo'), album('2026-06', 'Tsunami Sea', 'Spiritbox')],
+      events,
+    )
+    for (const l of lines) expect(l.text).not.toContain('—')
   })
 })

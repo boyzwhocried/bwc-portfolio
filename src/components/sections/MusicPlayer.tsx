@@ -15,7 +15,7 @@ import DriftingSquares from '@/components/ui/DriftingSquares'
 import PlaylistModal, { type PlaylistFallback } from '@/components/sections/PlaylistModal'
 import MusicObsession from '@/components/sections/MusicObsession'
 import ObsessionLog from '@/components/sections/ObsessionLog'
-import type { HistorySnapshot } from '@/lib/music/obsessionLog'
+import type { HistorySnapshot, TimelineEvent } from '@/lib/music/obsessionLog'
 import { useFadeUp } from '@/lib/motion'
 
 const POLL_PLAYING = 30_000
@@ -123,7 +123,15 @@ function SegToggle<T extends string>({
   )
 }
 
-export default function MusicPlayer({ music, history = [] }: { music: MusicData; history?: HistorySnapshot[] }) {
+export default function MusicPlayer({
+  music,
+  history = [],
+  events = [],
+}: {
+  music: MusicData
+  history?: HistorySnapshot[]
+  events?: TimelineEvent[]
+}) {
   const fade = useFadeUp()
   const [live, setLive] = useState<SpotifyLive | null>(null)
   const [loading, setLoading] = useState(true)
@@ -290,7 +298,7 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
         )}
 
         {/* THE OBSESSION LOG: month timeline from spotify_history; self-activates at 2+ months */}
-        <ObsessionLog history={history} />
+        <ObsessionLog history={history} events={events} />
 
         {/* TOP TRACKS + ARTISTS, shared range toggle */}
         {(music.topTracks || music.topArtists) && (
