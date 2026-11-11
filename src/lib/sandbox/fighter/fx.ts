@@ -25,7 +25,7 @@ export type FxEvent =
 
 export type Spark = { kind: 'hit' | 'block' | 'armor' | 'dust'; x: number; y: number; age: number; ttl: number }
 
-export type Cue = { text: 'ULANG' | 'PENGGANTI' | 'ROMBAK'; x: number; age: number }
+export type Cue = { text: 'REDO' | 'PENGGANTI' | 'ROMBAK'; x: number; age: number }
 
 export type FxState = {
   sparks: Spark[]
@@ -34,7 +34,7 @@ export type FxState = {
   flash: number // rendered frames of the heavy-hit screen flash left; kept until drawn
   koFlash: number // rendered frames of the KO flash left; kept until drawn
   combo: { by: 0 | 1 | null; count: number; age: number } // age = sim frames since the last counted hit
-  cue: Cue | null // stage cue in sim frames: ULANG stamp over a revived fighter, or the phone-ring nameplate
+  cue: Cue | null // stage cue in sim frames: REDO stamp over a revived fighter, or the phone-ring nameplate
 }
 
 export function initFx(): FxState {
@@ -84,7 +84,7 @@ export function stepFx(fx: FxState, events: FxEvent[], reduce: boolean): FxState
   let cue: Cue | null = fx.cue && fx.cue.age + 1 < CUE_FRAMES ? { ...fx.cue, age: fx.cue.age + 1 } : null
   for (const e of events) {
     if (e.kind === 'revive') {
-      cue = { text: 'ULANG', x: e.x, age: 0 }
+      cue = { text: 'REDO', x: e.x, age: 0 }
       continue
     }
     if (e.kind === 'ring') {

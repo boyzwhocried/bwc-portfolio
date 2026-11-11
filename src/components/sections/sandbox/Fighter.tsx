@@ -318,9 +318,9 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
     ctx.fillText(text, W / 2, 36.5)
   }
 
-  // stage cue: the ULANG stamp over a revived fighter, or the nameplate after a phone ring (blinks out at the end)
+  // stage cue: the REDO stamp over a revived fighter, or the nameplate after a phone ring (blinks out at the end)
   if (fx.cue && (fx.cue.age < CUE_FRAMES - 14 || Math.floor(fx.cue.age / 3) % 2 === 0)) {
-    const stamp = fx.cue.text === 'ULANG'
+    const stamp = fx.cue.text === 'REDO'
     ctx.font = stamp ? 'bold 12px monospace' : 'bold 8px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

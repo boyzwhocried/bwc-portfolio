@@ -247,9 +247,9 @@ describe('stage cues (revive stamp, phone ring)', () => {
     expect(detectEvents(odd, odd).some((e) => e.kind === 'ring')).toBe(false)
   })
 
-  it('a revive raises the ULANG stamp over the fighter, which lasts CUE_FRAMES sim frames', () => {
+  it('a revive raises the REDO stamp over the fighter, which lasts CUE_FRAMES sim frames', () => {
     let fx = stepFx(initFx(), [{ kind: 'revive', target: 1, x: 200 }], false)
-    expect(fx.cue).toMatchObject({ text: 'ULANG', x: 200, age: 0 })
+    expect(fx.cue).toMatchObject({ text: 'REDO', x: 200, age: 0 })
     for (let i = 0; i < CUE_FRAMES - 1; i++) fx = stepFx(fx, [], false)
     expect(fx.cue).not.toBeNull()
     fx = stepFx(fx, [], false)
