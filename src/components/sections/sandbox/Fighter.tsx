@@ -25,6 +25,7 @@ import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
 import FighterArcadePanel, { FighterQuickPick, type ArcadeView } from './FighterArcadePanel'
+import { createAudio, soundsFor } from '@/lib/sandbox/fighter/audio'
 import { bossPhase, bossPlate, reviewOpen } from '@/lib/sandbox/fighter/boss'
 import { fitScale } from '@/lib/sandbox/fighter/scale'
 import { arcadeMatch, beginFight, currentStage, finishMatch, giveUp, startRun, takeContinue, type ArcadeRun } from '@/lib/sandbox/fighter/arcade/run'
@@ -387,6 +388,10 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const [arcadeView, setArcadeView] = useState<ArcadeView | null>(null)
   const arcadeRef = useRef<ArcadeRun | null>(null)
   const [quickPick, setQuickPick] = useState(false)
+  const audioRef = useRef<ReturnType<typeof createAudio> | null>(null)
+  useEffect(() => {
+    audioRef.current = createAudio()
+  }, [])
   const quickIdsRef = useRef<[FighterId, FighterId]>(IDS) // quick match vs CPU: [human hero, CPU]
   const onTouch = useCallback((bits: number) => {
     touchBits.current = bits
@@ -541,7 +546,9 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           next = step({ ...next, seed: c1.seed }, [p1, c1.input] as Inputs)
         }
         // effects step once per sim step, so a rendered frame that runs several steps loses none
-        fx = stepFx(fx, detectEvents(s, next), reduceRef.current)
+        const events = detectEvents(s, next)
+        if (settingsRef.current.sound && modeRef.current === 'play') for (const n of soundsFor(events)) audioRef.current?.play(n)
+        fx = stepFx(fx, events, reduceRef.current)
         s = next
         if (s.phase === 'matchEnd') {
           endTicks++
@@ -667,6 +674,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     setArcadeView(r)
   }
   const arcadeFight = () => {
+    audioRef.current?.unlock()
     const r = arcadeRef.current
     if (!r) return
     setRun(beginFight(r))
@@ -686,6 +694,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     start()
   }
   const start = () => {
+    audioRef.current?.unlock()
     if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
     setResult(null)
     setMode('play')
@@ -753,6 +762,16 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
                   style={smallBtn}
                 >
                   CPU: {settings.cpu.toUpperCase()}
+                </button>
+                <button
+                  onClick={() => {
+                    audioRef.current?.unlock()
+                    update({ sound: !settings.sound })
+                  }}
+                  aria-label={'Sound: ' + (settings.sound ? 'on' : 'off') + '. Activate to change.'}
+                  style={smallBtn}
+                >
+                  SOUND: {settings.sound ? 'ON' : 'OFF'}
                 </button>
                 <button
                   onClick={() => update({ hand: settings.hand === 'right' ? 'left' : 'right' })}

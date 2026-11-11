@@ -1,10 +1,10 @@
 import type { Hand } from './input'
 import type { CpuLevel } from './cpu'
 
-export type Settings = { hand: Hand; cpu: CpuLevel; tutorialSeen: boolean; strip: boolean; matches: number }
+export type Settings = { hand: Hand; cpu: CpuLevel; tutorialSeen: boolean; strip: boolean; matches: number; sound: boolean }
 export type StorageLike = { getItem(k: string): string | null; setItem(k: string, v: string): void }
 
-export const DEFAULT_SETTINGS: Settings = { hand: 'right', cpu: 'easy', tutorialSeen: false, strip: true, matches: 0 }
+export const DEFAULT_SETTINGS: Settings = { hand: 'right', cpu: 'easy', tutorialSeen: false, strip: true, matches: 0, sound: true }
 export const STRIP_MATCHES = 3 // the controls strip shows for this many finished matches
 const KEY = 'fighter:settings:v1'
 
@@ -28,6 +28,7 @@ export function loadSettings(storage: StorageLike | null = defaultStorage()): Se
       tutorialSeen: typeof o.tutorialSeen === 'boolean' ? o.tutorialSeen : DEFAULT_SETTINGS.tutorialSeen,
       strip: typeof o.strip === 'boolean' ? o.strip : DEFAULT_SETTINGS.strip,
       matches: typeof o.matches === 'number' && Number.isInteger(o.matches) && o.matches >= 0 ? o.matches : DEFAULT_SETTINGS.matches,
+      sound: typeof o.sound === 'boolean' ? o.sound : DEFAULT_SETTINGS.sound,
     }
   } catch {
     return { ...DEFAULT_SETTINGS }

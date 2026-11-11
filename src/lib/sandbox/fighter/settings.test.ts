@@ -40,7 +40,7 @@ describe('settings', () => {
 
   it('round trips', () => {
     const st = mem()
-    const v = { hand: 'left', cpu: 'normal', tutorialSeen: true, strip: false, matches: 2 } as const
+    const v = { hand: 'left', cpu: 'normal', tutorialSeen: true, strip: false, matches: 2, sound: false } as const
     saveSettings(v, st)
     expect(loadSettings(st)).toEqual(v)
   })
@@ -51,7 +51,14 @@ describe('settings', () => {
   })
 
   it('defaults match the spec: right hand, easy CPU, tutorial unseen', () => {
-    expect(DEFAULT_SETTINGS).toEqual({ hand: 'right', cpu: 'easy', tutorialSeen: false, strip: true, matches: 0 })
+    expect(DEFAULT_SETTINGS).toEqual({ hand: 'right', cpu: 'easy', tutorialSeen: false, strip: true, matches: 0, sound: true })
+  })
+
+  it('sound is on by default and only a real boolean changes it', () => {
+    expect(DEFAULT_SETTINGS.sound).toBe(true)
+    expect(loadSettings(mem(JSON.stringify({ sound: false }))).sound).toBe(false)
+    expect(loadSettings(mem(JSON.stringify({ sound: 'off' }))).sound).toBe(true)
+    expect(loadSettings(mem(JSON.stringify({ hand: 'left' }))).sound).toBe(true)
   })
 
   it('old saved settings without the strip fields load with the defaults', () => {
