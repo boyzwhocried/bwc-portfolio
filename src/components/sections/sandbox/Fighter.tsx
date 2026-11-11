@@ -24,6 +24,7 @@ import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
 import FighterArcadePanel, { type ArcadeView } from './FighterArcadePanel'
+import { fitScale } from '@/lib/sandbox/fighter/scale'
 import { arcadeMatch, beginFight, currentStage, finishMatch, giveUp, startRun, takeContinue, type ArcadeRun } from '@/lib/sandbox/fighter/arcade/run'
 import { openRoom, type RoomHandle } from '@/lib/sandbox/fighter/net/transport'
 import { createSession, statusLine, type Session } from '@/lib/sandbox/fighter/net/session'
@@ -385,11 +386,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     }
   }, [showTouch])
 
-  // integer scale to fit the wrapper
+  // scale to fill the wrapper: whole numbers when close, a fraction on phones
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
-    const fit = () => setScale(Math.max(1, Math.floor(Math.min(el.clientWidth / W, el.clientHeight / H))))
+    const fit = () => setScale(fitScale(el.clientWidth, el.clientHeight))
     fit()
     const ro = new ResizeObserver(fit)
     ro.observe(el)
@@ -628,7 +629,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const showStrip = stripVisible(settings, showTouch)
 
   return (
-    <SandboxModal title="FIGHTER" onClose={onClose} fullscreen panelBg={INK} panelFg={PAPER} borderColor={INK} titleFont="var(--font-mono)">
+    <SandboxModal title="FIGHTER" onClose={onClose} fullscreen bare={showTouch} panelBg={INK} panelFg={PAPER} borderColor={INK} titleFont="var(--font-mono)">
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: INK }}>
         <div ref={wrapRef} style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: INK }}>
           <canvas
@@ -639,6 +640,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             aria-label="Pixel fighting game: Si Penyadap versus Sang Ajudan in a burning forest"
             style={{ width: W * scale, height: H * scale, imageRendering: 'pixelated', display: 'block' }}
           />
+          {showTouch && (
+            <button onClick={onClose} aria-label="close" style={{ position: 'absolute', top: 6, right: 6, zIndex: 6, minWidth: 44, minHeight: 44, background: INK, color: PAPER, border: `1px solid ${PAPER}`, opacity: 0.7, fontFamily: 'var(--font-mono)', fontSize: 14, cursor: 'pointer' }}>
+              ✕
+            </button>
+          )}
           {rotate && (
             <div role="alert" style={{ ...overlay, top: 0, bottom: 0, justifyContent: 'center', background: INK, zIndex: 5 }}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: VERM, textAlign: 'center' }}>{ROTATE_LINE.id}</p>

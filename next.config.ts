@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import path from "node:path";
 
 const nextConfig: NextConfig = {
+  // dev only: lets a phone or friend on Tailscale load the dev server (Next 16 403s /_next/* from other hosts)
+  allowedDevOrigins: ["100.70.98.21"],
   // pin the workspace root: a stray C:\Users\Verrel\package-lock.json makes Turbopack
   // infer the wrong root and warn on every build. this repo is the root.
   turbopack: {

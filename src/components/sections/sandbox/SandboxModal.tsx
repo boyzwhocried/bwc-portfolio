@@ -25,6 +25,7 @@ export default function SandboxModal({
   titleFont = 'var(--font-display)',
   titleRight,
   fullscreen = false,
+  bare = false,
 }: {
   title: React.ReactNode
   onClose: () => void
@@ -36,6 +37,7 @@ export default function SandboxModal({
   titleFont?: string
   titleRight?: React.ReactNode
   fullscreen?: boolean
+  bare?: boolean // no header bar (the caller draws its own close button)
 }) {
   const reduce = useReducedMotion()
 
@@ -97,24 +99,26 @@ export default function SandboxModal({
           boxShadow: fullscreen ? 'none' : `7px 7px 0 ${borderColor}`,
         }}
       >
-        <div
-          className="flex items-center justify-between"
-          style={{ borderBottom: `1px solid ${borderColor}`, padding: '8px 14px', gap: 12, flexShrink: 0 }}
-        >
-          <span style={{ fontFamily: titleFont, fontWeight: 700, fontSize: 15, letterSpacing: '0.01em' }}>
-            {title}
-          </span>
-          <div className="flex items-center" style={{ gap: 12 }}>
-            {titleRight}
-            <button
-              onClick={onClose}
-              aria-label="close"
-              style={{ background: 'none', border: 'none', fontFamily: 'var(--font-mono)', fontSize: 13, cursor: 'pointer', color: 'inherit' }}
-            >
-              ✕
-            </button>
+        {!bare && (
+          <div
+            className="flex items-center justify-between"
+            style={{ borderBottom: `1px solid ${borderColor}`, padding: '8px 14px', gap: 12, flexShrink: 0 }}
+          >
+            <span style={{ fontFamily: titleFont, fontWeight: 700, fontSize: 15, letterSpacing: '0.01em' }}>
+              {title}
+            </span>
+            <div className="flex items-center" style={{ gap: 12 }}>
+              {titleRight}
+              <button
+                onClick={onClose}
+                aria-label="close"
+                style={{ background: 'none', border: 'none', fontFamily: 'var(--font-mono)', fontSize: 13, cursor: 'pointer', color: 'inherit' }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         <div style={{ overflow: fullscreen ? 'hidden' : 'auto', flex: fullscreen ? 1 : undefined, minHeight: 0 }}>{children}</div>
       </motion.div>
     </motion.div>,
