@@ -23,6 +23,8 @@ import { PORTRAITS } from '@/lib/sandbox/fighter/art/portraits'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
+import FighterArcadePanel, { type ArcadeView } from './FighterArcadePanel'
+import { arcadeMatch, beginFight, currentStage, finishMatch, giveUp, startRun, takeContinue, type ArcadeRun } from '@/lib/sandbox/fighter/arcade/run'
 import { openRoom, type RoomHandle } from '@/lib/sandbox/fighter/net/transport'
 import { createSession, statusLine, type Session } from '@/lib/sandbox/fighter/net/session'
 import { makeRoomCode } from '@/lib/sandbox/fighter/net/room'
@@ -103,7 +105,7 @@ function bannerFor(s: MatchState): string {
   if (s.phase === 'ko') return 'KO'
   if (s.phase === 'matchEnd') {
     const w = matchWinner(s)
-    return w === 'draw' ? 'DRAW' : (w === 'p1' ? FIGHTERS[IDS[0]].label : FIGHTERS[IDS[1]].label).toUpperCase() + ' WINS'
+    return w === 'draw' ? 'DRAW' : (w === 'p1' ? s.defs[0].label : s.defs[1].label).toUpperCase() + ' WINS'
   }
   return ''
 }
@@ -162,7 +164,7 @@ function drawSpark(ctx: CanvasRenderingContext2D, p: Spark) {
   }
 }
 
-function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean) {
+function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean, ids: [FighterId, FighterId]) {
   ctx.save()
   if (fx.shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 4), Math.round((Math.random() - 0.5) * 4))
   ctx.drawImage(cache.stage, 0, 0)
@@ -173,7 +175,7 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
   }
 
   s.fighters.forEach((f, i) => {
-    const id = IDS[i]
+    const id = ids[i]
     const pose = poseFor(f, s.defs[i], s.frame, s.phase === 'ko' ? s.phaseFrame : 99)
     const dir = f.facing === 1 ? 0 : 1
     const cx = Math.round(f.x / UNIT)
@@ -243,7 +245,7 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
     ctx.fillText(s.defs[i].label.toUpperCase(), r.name.x + 3, r.name.y + r.name.h / 2 + 0.5)
     // portrait faces inward: the left fighter's looks right, the right fighter's looks left
     plate(ctx, r.portrait.x, r.portrait.y, r.portrait.w, r.portrait.h)
-    ctx.drawImage(cache.fighters[IDS[i]].portrait[i === 0 ? 0 : 1], r.portrait.x + 1, r.portrait.y + 1)
+    ctx.drawImage(cache.fighters[ids[i]].portrait[i === 0 ? 0 : 1], r.portrait.x + 1, r.portrait.y + 1)
     plate(ctx, r.pips.x, r.pips.y, r.pips.w, r.pips.h)
     for (let k = 0; k < 2; k++) {
       ctx.fillStyle = k < s.wins[i] ? VERM : PAPER
@@ -325,6 +327,8 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const onlineRef = useRef<{ room: RoomHandle; role: 'host' | 'guest'; side: 0 | 1; session: Session | null; seed: number; timer: number | null } | null>(null)
   const [online, setOnline] = useState<{ role: 'host' | 'guest'; live: boolean } | null>(null) // live = the session is still healthy
   const rotateRef = useRef(false)
+  const [arcadeView, setArcadeView] = useState<ArcadeView | null>(null)
+  const arcadeRef = useRef<ArcadeRun | null>(null)
   const onTouch = useCallback((bits: number) => {
     touchBits.current = bits
   }, [])
@@ -422,7 +426,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     const on = live?.session ?? null
     const seed = live ? live.seed : ((Date.now() & 0x7fffffff) | 1) >>> 0
     let sampled = 0
-    let s = initMatch(seed, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
+    const run = !live && arcadeRef.current?.status === 'fight' ? arcadeRef.current : null
+    // arcade: the hero fights on the left; the placeholder opponent borrows the other fighter's art
+    const ids: [FighterId, FighterId] = run ? [run.hero, run.hero === 'si-penyadap' ? 'sang-ajudan' : 'si-penyadap'] : IDS
+    const cpuLevel = run ? currentStage(run).cpu : settingsRef.current.cpu
+    let s = run ? arcadeMatch(run) : initMatch(seed, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
     let accum = 0
     let last: number | null = null
     let raf = 0
@@ -467,7 +475,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             next = { ...next, seed: c0.seed }
             p1 = c0.input
           }
-          const c1 = cpuInput(next, 1, settingsRef.current.cpu)
+          const c1 = cpuInput(next, 1, cpuLevel)
           next = step({ ...next, seed: c1.seed }, [p1, c1.input] as Inputs)
         }
         // effects step once per sim step, so a rendered frame that runs several steps loses none
@@ -478,7 +486,16 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
           if (attract && endTicks > 180) {
             endTicks = 0
             s = initMatch(((s.seed * 1103515245 + 12345) >>> 0) | 1, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
-          } else if (!attract && !reported) {
+          } else if (run && !reported) {
+            // let the winner banner show for a beat, then hand the result to the arcade screens
+            if (endTicks > 90) {
+              reported = true
+              const w = matchWinner(s)
+              const next = finishMatch(run, w === 'p1' ? 'p1' : w === 'p2' ? 'p2' : 'draw')
+              arcadeRef.current = next
+              setArcadeView(next)
+            }
+          } else if (!attract && !run && !reported) {
             reported = true
             const w = matchWinner(s)
             update(afterMatch(settingsRef.current))
@@ -491,7 +508,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
         setOnline((v) => (v ? { ...v, live: false } : v))
         setResult(statusLine(on.status))
       }
-      draw(ctx, s, cache, fx, reduceRef.current)
+      draw(ctx, s, cache, fx, reduceRef.current, ids)
       fx = afterDraw(fx)
       raf = requestAnimationFrame(tick)
     }
@@ -579,6 +596,28 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     beginOnline(seed)
   }
 
+  const openArcade = () => {
+    if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
+    setArcadeView('pick')
+  }
+  const setRun = (r: ArcadeRun | null) => {
+    arcadeRef.current = r
+    setArcadeView(r)
+  }
+  const arcadeFight = () => {
+    const r = arcadeRef.current
+    if (!r) return
+    setRun(beginFight(r))
+    setResult(null)
+    setMode('play')
+    setRound((n) => n + 1)
+  }
+  const arcadeExit = () => {
+    setRun(null)
+    setMode('title')
+    setRound((n) => n + 1)
+  }
+
   const start = () => {
     if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
     setResult(null)
@@ -607,6 +646,16 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {mode === 'play' && showTouch && <FighterTouchControls hand={settings.hand} onChange={onTouch} />}
+          {arcadeView && arcadeView !== 'pick' && arcadeView.status === 'fight' ? null : arcadeView && (
+            <FighterArcadePanel
+              view={arcadeView}
+              onPick={(hero) => setRun(startRun(hero))}
+              onFight={arcadeFight}
+              onContinue={() => arcadeRef.current && setRun(takeContinue(arcadeRef.current))}
+              onGiveUp={() => arcadeRef.current && setRun(giveUp(arcadeRef.current))}
+              onExit={arcadeExit}
+            />
+          )}
           {onlineView && (
             <FighterOnlinePanel
               view={onlineView}
@@ -618,10 +667,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
               }}
             />
           )}
-          {mode === 'title' && !howTo && !onlineView && (
+          {mode === 'title' && !howTo && !onlineView && !arcadeView && (
             <div style={overlay}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
               <button onClick={start} autoFocus style={btn}>FIGHT CPU</button>
+              <button onClick={openArcade} style={btn}>ARCADE</button>
               <button onClick={() => setOnlineView({ kind: 'menu' })} style={btn}>ONLINE</button>
               <button onClick={() => setHowTo(true)} style={smallBtn}>HOW TO PLAY</button>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>

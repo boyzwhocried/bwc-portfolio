@@ -6,6 +6,7 @@ const ALLOWED = new Set(['#1a1a1a', '#ece7de', '#e84c28'])
 const FILES = [
   'src/components/sections/sandbox/Fighter.tsx',
   'src/components/sections/sandbox/FighterTouchControls.tsx',
+  'src/components/sections/sandbox/FighterArcadePanel.tsx',
   'src/lib/sandbox/fighter/art/sprite.ts',
 ]
 
