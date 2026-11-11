@@ -12,7 +12,7 @@ import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
 import { poseFor } from '@/lib/sandbox/fighter/pose'
 import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
 import { isArmed } from '@/lib/sandbox/fighter/combat'
-import { stageFx } from '@/lib/sandbox/fighter/stagefx'
+import { sceneFx, sceneRects } from '@/lib/sandbox/fighter/scenes'
 import { COMBO_SHOW, afterDraw, detectEvents, initFx, stepFx, wireFor, type FxState, type Spark } from '@/lib/sandbox/fighter/fx'
 import { BUGGED_LINE, COMBO_LINE, MOVES_LINE, HOWTO_KEYS, KEYS_LINE, specialLines, tutorialText } from '@/lib/sandbox/fighter/howto'
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
@@ -86,7 +86,21 @@ function toPair(s: Sprite): Pair {
   return [right, left]
 }
 
-function buildCache(ids: ArtIds): Cache {
+function stageCanvas(scene: number): HTMLCanvasElement {
+  const rects = sceneRects(scene)
+  if (rects.length === 0) return toCanvas(STAGE_FOREST)
+  const c = document.createElement('canvas')
+  c.width = STAGE_FOREST.w
+  c.height = STAGE_FOREST.h
+  const ctx = c.getContext('2d')!
+  for (const r of rects) {
+    ctx.fillStyle = PALETTE[r.c]
+    ctx.fillRect(r.x, r.y, r.w, r.h)
+  }
+  return c
+}
+
+function buildCache(ids: ArtIds, scene: number): Cache {
   const fighters = {} as Cache['fighters']
   for (const id of ids) {
     const a = ART[id]
@@ -94,7 +108,7 @@ function buildCache(ids: ArtIds): Cache {
     for (const n of ANIM_NAMES) frames[n] = a.frames[n].map(toPair)
     fighters[id] = { frames, smear: toPair(a.smear), portrait: toPair(PORTRAIT_ART[id]) }
   }
-  return { stage: toCanvas(STAGE_FOREST), fighters }
+  return { stage: stageCanvas(scene), fighters }
 }
 
 function plate(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
@@ -169,12 +183,12 @@ function drawSpark(ctx: CanvasRenderingContext2D, p: Spark) {
   }
 }
 
-function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean, ids: ArtIds) {
+function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean, ids: ArtIds, scene: number) {
   ctx.save()
   if (fx.shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 4), Math.round((Math.random() - 0.5) * 4))
   ctx.drawImage(cache.stage, 0, 0)
   // animated fire and embers over the baked stage; frozen on frame 0 under reduced motion
-  for (const p of stageFx(reduce ? 0 : s.frame)) {
+  for (const p of sceneFx(scene, reduce ? 0 : s.frame)) {
     ctx.fillStyle = p.color
     ctx.fillRect(p.x, p.y, 1, 1)
   }
@@ -454,7 +468,8 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     const run = !live && arcadeRef.current?.status === 'fight' ? arcadeRef.current : null
     // arcade: the hero fights on the left; the placeholder opponent borrows the other fighter's art
     const ids: ArtIds = run ? [run.hero, currentStage(run).opponent.id] : IDS
-    const cache = buildCache(ids)
+    const scene = run ? run.stage : 0
+    const cache = buildCache(ids, scene)
     const cpuLevel = run ? currentStage(run).cpu : settingsRef.current.cpu
     let s = run ? arcadeMatch(run) : initMatch(seed, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
     let accum = 0
@@ -534,7 +549,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
         setOnline((v) => (v ? { ...v, live: false } : v))
         setResult(statusLine(on.status))
       }
-      draw(ctx, s, cache, fx, reduceRef.current, ids)
+      draw(ctx, s, cache, fx, reduceRef.current, ids, scene)
       fx = afterDraw(fx)
       raf = requestAnimationFrame(tick)
     }
