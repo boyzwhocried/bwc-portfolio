@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import type { MusicData } from '@/types'
 import { buildObsessionReport, themesFor } from '@/lib/music/obsession'
+import { readIsWorthShowing } from '@/lib/music/curationLog'
 import { useFadeUp } from '@/lib/motion'
 
 // "the read": a deterministic narrative about the listener, assembled by
@@ -23,7 +24,7 @@ export default function MusicObsession({ music }: { music: MusicData }) {
   const fade = useFadeUp()
   const report = useMemo(() => buildObsessionReport(music), [music])
   const themes = useMemo(() => themesFor(report, music.obsessionThemes), [report, music.obsessionThemes])
-  if (!report) return null
+  if (!report || !readIsWorthShowing(report)) return null
 
   return (
     <motion.div

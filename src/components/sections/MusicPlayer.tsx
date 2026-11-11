@@ -14,8 +14,7 @@ import type {
 import DriftingSquares from '@/components/ui/DriftingSquares'
 import PlaylistModal, { type PlaylistFallback } from '@/components/sections/PlaylistModal'
 import MusicObsession from '@/components/sections/MusicObsession'
-import ObsessionLog from '@/components/sections/ObsessionLog'
-import type { HistorySnapshot } from '@/lib/music/obsessionLog'
+import CurationLog from '@/components/sections/CurationLog'
 import { useFadeUp } from '@/lib/motion'
 
 const POLL_PLAYING = 30_000
@@ -123,7 +122,7 @@ function SegToggle<T extends string>({
   )
 }
 
-export default function MusicPlayer({ music, history = [] }: { music: MusicData; history?: HistorySnapshot[] }) {
+export default function MusicPlayer({ music }: { music: MusicData }) {
   const fade = useFadeUp()
   const [live, setLive] = useState<SpotifyLive | null>(null)
   const [loading, setLoading] = useState(true)
@@ -289,8 +288,8 @@ export default function MusicPlayer({ music, history = [] }: { music: MusicData;
           </p>
         )}
 
-        {/* THE OBSESSION LOG: month timeline from spotify_history; self-activates at 2+ months */}
-        <ObsessionLog history={history} />
+        {/* THE CURATION LOG: published from the spotify-curation skill, only when Verrel says yes; hides when empty */}
+        <CurationLog log={music.curationLog} />
 
         {/* TOP TRACKS + ARTISTS, shared range toggle */}
         {(music.topTracks || music.topArtists) && (
