@@ -4,6 +4,7 @@ import { startRun, currentStage, beginFight, finishMatch, takeContinue, giveUp, 
 import { FIGHTERS, FIGHTER_IDS } from '../roster'
 import { MOVE_KINDS } from '../types'
 import { stepMatch, ROUND_FRAMES, RING_FRAMES } from '../match'
+import { bossPhase, reviewOpen, REVIEW_CYCLE, REVIEW_OPEN } from '../boss'
 import { cpuInput } from '../cpu'
 import { BTN, type MatchState } from '../types'
 import { initMatch, hashState, UNIT } from '../sim'
@@ -375,5 +376,77 @@ describe('stage 5 phone reshuffle', () => {
   it('the ring count is part of the state hash', () => {
     const m = initMatch(1, [hero, seconded])
     expect(hashState({ ...m, reshuffles: 1 })).not.toBe(hashState(m))
+  })
+})
+
+describe('stage 6 Panitia Tetap boss', () => {
+  const hero = FIGHTERS['si-penyadap']
+  const boss = STAGES[5].opponent
+
+  function live(hp: number, elapsed: number, over: Partial<MatchState['fighters'][1]> = {}): MatchState {
+    const m = initMatch(5, [hero, boss])
+    return {
+      ...m,
+      roundTimer: ROUND_FRAMES - elapsed,
+      fighters: [m.fighters[0], { ...m.fighters[1], x: m.fighters[0].x + 30 * UNIT, hp, ...over }],
+    }
+  }
+  // hero throws a punch that lands; returns state after the hit
+  function hit(s: MatchState): MatchState {
+    let n = stepMatch(s, [BTN.PUNCH, 0])
+    for (let i = 0; i < hero.moves.punch.startup + 2; i++) n = stepMatch(n, [0, 0])
+    return n
+  }
+
+  it('phases follow hp thirds: statement, reshuffle, eternal review', () => {
+    expect(boss.boss).toBe(true)
+    expect(bossPhase(1400, 1400)).toBe(1)
+    expect(bossPhase(934, 1400)).toBe(1)
+    expect(bossPhase(933, 1400)).toBe(2)
+    expect(bossPhase(467, 1400)).toBe(2)
+    expect(bossPhase(466, 1400)).toBe(3)
+    expect(bossPhase(1, 1400)).toBe(3)
+  })
+
+  it('the headline window is open for 3 seconds of every 10', () => {
+    expect(REVIEW_CYCLE).toBe(600)
+    expect(REVIEW_OPEN).toBe(180)
+    expect(reviewOpen(0)).toBe(true)
+    expect(reviewOpen(179)).toBe(true)
+    expect(reviewOpen(180)).toBe(false)
+    expect(reviewOpen(599)).toBe(false)
+    expect(reviewOpen(600)).toBe(true)
+  })
+
+  it('phase 1: the statement special has armor (We Are Listening)', () => {
+    expect(boss.moves.special.armor).toBe(true)
+  })
+
+  it('phase 3: a KO with the headline down is voided, back up at 1 hp, as many times as it takes', () => {
+    let s = hit(live(10, 400)) // 400 % 600 = 400, window closed
+    expect(s.phase).toBe('fight')
+    expect(s.fighters[1].hp).toBe(1)
+    s = hit(live(5, 1000)) // fresh hero again; 1000 % 600 = 400, closed again
+    expect(s.phase).toBe('fight')
+    expect(s.fighters[1].hp).toBe(1)
+  })
+
+  it('phase 3: a hit while the headline is up ends it for good', () => {
+    const s = hit(live(10, 620)) // 620 % 600 = 20, window open
+    expect(s.phase).toBe('ko')
+    expect(s.wins[0]).toBe(1)
+  })
+
+  it('phase 2: the table reshuffles every 5 seconds, cancelling what it was doing; phase 1 and 3 do not', () => {
+    const attacking = { action: 'attack' as const, move: 'kick' as const, actionFrame: 2 }
+    const at = (hp: number) => stepMatch({ ...live(hp, 299, attacking), fighters: [live(hp, 299).fighters[0], { ...live(hp, 299, attacking).fighters[1], x: live(hp, 299).fighters[0].x + 150 * UNIT }] }, [0, 0])
+    expect(at(700).reshuffles).toBe(1)
+    expect(at(700).fighters[1].action).toBe('idle')
+    expect(at(1300).reshuffles).toBe(0)
+    expect(at(300).reshuffles).toBe(0)
+  })
+
+  it('only the boss is a boss', () => {
+    for (const s of STAGES) if (s.slug !== 'gerbang-kubah') expect(s.opponent.boss).toBeUndefined()
   })
 })

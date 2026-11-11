@@ -1,4 +1,5 @@
 import { freshFighters, stepWorld } from './world'
+import { BOSS_RING_FRAMES, bossPhase, reviewOpen } from './boss'
 import type { Inputs, MatchState } from './types'
 
 export const INTRO_FRAMES = 60
@@ -34,7 +35,12 @@ function nextRound(s: MatchState): MatchState {
 // A fighter whose def has `revive` gets up once per round instead of being KO'd.
 function revive(s: MatchState): MatchState {
   const fs = s.fighters.map((f, i) => {
-    const rev = s.defs[i].revive
+    const def = s.defs[i]
+    if (def.boss && f.hp <= 0 && !reviewOpen(ROUND_FRAMES - s.roundTimer)) {
+      // the matter is under review: back up at 1 hp, as often as it takes, until a hit lands under a live headline
+      return { ...f, hp: 1, action: f.y > 0 ? 'jump' : 'idle', move: null, actionFrame: 0, stun: 0, hitConnected: false, buffered: null, vx: 0 } as typeof f
+    }
+    const rev = def.revive
     if (rev === undefined || f.revived || f.hp > 0) return f
     return { ...f, hp: rev, revived: true, action: f.y > 0 ? 'jump' : 'idle', move: null, actionFrame: 0, stun: 0, hitConnected: false, buffered: null, vx: 0 } as typeof f
   }) as MatchState['fighters']
@@ -46,13 +52,20 @@ function revive(s: MatchState): MatchState {
 // even rings only rotate the chairs, which is cosmetic.
 function ring(s: MatchState): MatchState {
   const elapsed = ROUND_FRAMES - s.roundTimer
-  if (elapsed <= 0 || !s.defs.some((d) => d.reshuffle !== undefined)) return s
-  if (!s.defs.some((d) => d.reshuffle !== undefined && elapsed % d.reshuffle === 0)) return s
+  const every = (i: number): number | undefined => {
+    const d = s.defs[i]
+    if (d.boss) return bossPhase(s.fighters[i].hp, d.hp) === 2 ? BOSS_RING_FRAMES : undefined // the table only reshuffles in phase 2
+    return d.reshuffle
+  }
+  const due = (i: number) => {
+    const e = every(i)
+    return e !== undefined && elapsed % e === 0
+  }
+  if (elapsed <= 0 || !(due(0) || due(1))) return s
   const reshuffles = s.reshuffles + 1
   if (reshuffles % 2 === 0) return { ...s, reshuffles }
   const fs = s.fighters.map((f, i) => {
-    const every = s.defs[i].reshuffle
-    if (every === undefined || elapsed % every !== 0) return f
+    if (!due(i)) return f
     return { ...f, action: f.y > 0 ? 'jump' : 'idle', move: null, actionFrame: 0, stun: 0, hitConnected: false, buffered: null, vx: 0 } as typeof f
   }) as MatchState['fighters']
   return { ...s, reshuffles, fighters: fs }

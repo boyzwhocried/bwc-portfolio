@@ -130,11 +130,11 @@ export const STAGES: readonly ArcadeStage[] = [
     slug: 'gerbang-kubah',
     name: { id: 'Gerbang Kubah', en: 'The Dome Gate' },
     overlay: 'dome',
-    opponent: variant(PENYADAP, 'panitia-tetap', 'Panitia Tetap', 1400, 640, { punch: { damage: 45 }, kick: { damage: 85 }, special: { damage: 80 } }),
+    opponent: { ...variant(PENYADAP, 'panitia-tetap', 'Panitia Tetap', 1400, 640, { punch: { damage: 45 }, kick: { damage: 85 }, special: { damage: 80, armor: true } }), boss: true },
     cpu: 'normal',
     boss: true,
     gimmick: 'Three phases: Pernyataan, Rombak (hit the chair in office), Tinjau Abadi (a revive that only a hit under a live ticker headline ends).',
-    gimmickReal: true,
+    gimmickReal: true, // built: boss.ts (armored statement, phase 2 reshuffle, phase 3 headline finisher); chair-in-office targeting still planned
     pre: [
       { speaker: 'opponent', text: { id: 'Keberatan Anda sudah diterima, dicatat, dan diserahkan ke kelompok kerja.', en: 'Your concerns have been received, recorded and assigned to a working group.' } },
       { speaker: 'hero', text: { id: 'Siapa anggota kelompok kerjanya?', en: 'Who is in the working group?' } },

@@ -5,7 +5,7 @@ import { useReducedMotion } from 'framer-motion'
 import SandboxModal from './SandboxModal'
 import FighterTouchControls from './FighterTouchControls'
 import { initMatch, step, hashState, UNIT } from '@/lib/sandbox/fighter/sim'
-import { INTRO_FRAMES, matchWinner } from '@/lib/sandbox/fighter/match'
+import { INTRO_FRAMES, ROUND_FRAMES, matchWinner } from '@/lib/sandbox/fighter/match'
 import { advance } from '@/lib/sandbox/fighter/loop'
 import { cpuInput } from '@/lib/sandbox/fighter/cpu'
 import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
@@ -24,6 +24,7 @@ import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
 import FighterArcadePanel, { type ArcadeView } from './FighterArcadePanel'
+import { bossPhase, reviewOpen } from '@/lib/sandbox/fighter/boss'
 import { fitScale } from '@/lib/sandbox/fighter/scale'
 import { arcadeMatch, beginFight, currentStage, finishMatch, giveUp, startRun, takeContinue, type ArcadeRun } from '@/lib/sandbox/fighter/arcade/run'
 import { openRoom, type RoomHandle } from '@/lib/sandbox/fighter/net/transport'
@@ -277,6 +278,27 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
     ctx.fillText(label, bx + 7, 56.5)
+  }
+
+  // boss plate: which phase, and in phase 3 whether the headline is up (the only time a hit finishes it)
+  if (s.defs[1].boss && (s.phase === 'fight' || s.phase === 'ko')) {
+    const phase = bossPhase(s.fighters[1].hp, s.defs[1].hp)
+    const open = phase === 3 && reviewOpen(ROUND_FRAMES - s.roundTimer)
+    const text = open ? 'SIARAN LANGSUNG / LIVE: HIT NOW' : phase === 1 ? 'PERNYATAAN' : phase === 2 ? 'ROMBAK' : 'TINJAU ABADI'
+    ctx.font = 'bold 8px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    const tw = Math.ceil(ctx.measureText(text).width) + 10
+    const bx = Math.round((W - tw) / 2)
+    plate(ctx, bx, 30, tw, 12)
+    if (open) {
+      ctx.fillStyle = VERM
+      ctx.fillRect(bx + 1, 31, tw - 2, 10)
+      ctx.fillStyle = PAPER
+    } else {
+      ctx.fillStyle = INK
+    }
+    ctx.fillText(text, W / 2, 36.5)
   }
 
   const banner = bannerFor(s)

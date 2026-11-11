@@ -39,6 +39,7 @@ export type FighterDef = {
   walkSpeed: number // world units per frame
   jumpVelocity: number // world units per frame, upward
   moves: Record<MoveKind, MoveDef>
+  boss?: boolean // Panitia Tetap: three hp phases, see boss.ts
   reshuffle?: number // frames between phone rings; odd rings swap this fighter for an identical replacement (arcade Ruang Kurs), even rings only rotate the chairs
   revive?: number // the first KO of each round is voided: back up with this much hp (arcade Stempel Ulang)
 }
