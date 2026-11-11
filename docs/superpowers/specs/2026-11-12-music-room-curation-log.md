@@ -49,3 +49,14 @@ The sync edge function only upserts its own keys, so `curation_log` survives it.
 ## Rules kept
 
 No em-dashes; 3 colors only; explicit `git add`; commits end with the Co-Authored-By line.
+
+## Months: the monthly "on repeat" leads (Verrel, 2026-11-12)
+
+On repeat is what he actually listens to, so it leads the section; curation issues follow as "new in the library".
+
+- New top-level `months` in `curation_log`: `[{ month: 'YYYY-MM', asOf: 'YYYY-MM-DD', closed, cover (<=160) | null, tracks: [{artist, track, note <=120 | null}] (max 5), artists: [{name, note <=120 | null}] (max 5) }]`, newest first. Auto data: site `short_term` top plays at build time; words: his. A month with no cover, tracks or artists is dropped.
+- `closed` once a later month exists; the open month renders "(so far)". Past months sit behind a "past months" toggle. Footnote: "from my top plays, as of 12 nov".
+- The nested `runs[].onRepeat` is gone (replaced, not migrated: nothing had been published). `parseCurationLog` accepts a log with months and no runs.
+- Gate: `planPublish` rejects instead of trimming bad months, long/em-dash covers or notes, a 6th track or artist; counts months in the summary.
+- Builder: `plan_months` in `scripts/bwc_curation_log.py` carries published months forward (his words survive), refreshes the current month from the fresh snapshot, freezes closed months, and lets `notes.months.<YYYY-MM>` override words (matched by artist/track name, case-insensitive).
+- Skill: step 13 (staged in `working/skill-patches/spotify-curation.md`) asks for words when the month is missing or stale (> ~2 weeks); publish only on his yes.
