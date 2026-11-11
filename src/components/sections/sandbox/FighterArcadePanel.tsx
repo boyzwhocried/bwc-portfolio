@@ -19,7 +19,37 @@ const btn: React.CSSProperties = {
 }
 const ghost: React.CSSProperties = { ...btn, background: INK, color: PAPER }
 
-// Indonesian first, English as the subtitle underneath.
+type Row = { id: string; en: string; speaker?: 'opponent' | 'hero'; big?: boolean; accent?: boolean }
+
+// Story text: the whole Indonesian block first, then the whole English translation under it.
+function Story({ rows }: { rows: Row[] }) {
+  const block = (lang: 'id' | 'en') => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 460 }}>
+      {rows.map((r) => (
+        <div key={r.en} style={r.speaker ? { borderLeft: `2px solid ${r.speaker === 'opponent' ? VERM : PAPER}`, paddingLeft: 8 } : undefined}>
+          <p
+            style={
+              lang === 'id'
+                ? { ...mono, fontSize: r.big ? 15 : 12, fontWeight: r.big ? 700 : 400, color: r.accent ? VERM : PAPER }
+                : { ...mono, fontSize: r.big ? 12 : 10, opacity: 0.75 }
+            }
+          >
+            {lang === 'id' ? r.id : r.en}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+  return (
+    <>
+      {block('id')}
+      <div style={{ width: 40, borderTop: `1px solid ${PAPER}`, opacity: 0.4 }} />
+      {block('en')}
+    </>
+  )
+}
+
+// A single name or title: Indonesian name, English under it.
 function Bi({ id, en, big, accent }: { id: string; en: string; big?: boolean; accent?: boolean }) {
   return (
     <div style={{ maxWidth: 460 }}>
@@ -48,7 +78,7 @@ export default function FighterArcadePanel({
     return (
       <div style={wrap} role="dialog" aria-label="Arcade: choose your fighter">
         <Bi id={ARCADE_TITLE.id.toUpperCase()} en={ARCADE_TITLE.en} big accent />
-        <p style={{ ...mono, fontSize: 11 }}>Pilih petarung / Choose your fighter</p>
+        <p style={{ ...mono, fontSize: 11 }}>Choose your fighter</p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
           {FIGHTER_IDS.map((id, i) => (
             <button key={id} onClick={() => onPick(id)} autoFocus={i === 0} style={btn}>
@@ -56,8 +86,8 @@ export default function FighterArcadePanel({
             </button>
           ))}
         </div>
-        <Bi id={DISCLAIMER.id} en={DISCLAIMER.en} />
-        <button onClick={onExit} style={ghost}>KEMBALI / BACK</button>
+        <Story rows={[DISCLAIMER]} />
+        <button onClick={onExit} style={ghost}>BACK</button>
       </div>
     )
   }
@@ -67,15 +97,12 @@ export default function FighterArcadePanel({
   if (ending) {
     return (
       <div style={wrap} role="dialog" aria-label={run.status === 'won' ? 'Arcade ending: won' : 'Arcade ending: lost'}>
-        {ending.lines.map((l) => (
-          <Bi key={l.en} id={l.id} en={l.en} />
-        ))}
-        <Bi id={ending.caption.id} en={ending.caption.en} big accent />
+        <Story rows={[...ending.lines, { ...ending.caption, big: true, accent: true }]} />
         <p style={{ ...mono, fontSize: 11 }}>
-          Amplop / Envelopes: {run.envelopes}/6
+          Envelopes: {run.envelopes}/6
         </p>
-        <button onClick={onExit} autoFocus style={btn}>JUDUL / TITLE</button>
-        <Bi id={DISCLAIMER.id} en={DISCLAIMER.en} />
+        <button onClick={onExit} autoFocus style={btn}>TITLE</button>
+        <Story rows={[DISCLAIMER]} />
       </div>
     )
   }
@@ -83,10 +110,10 @@ export default function FighterArcadePanel({
   if (run.status === 'continue') {
     return (
       <div style={wrap} role="dialog" aria-label="Arcade: continue?">
-        <Bi id="LANJUT?" en={'CONTINUE? ' + run.continuesLeft + ' left'} big accent />
+        <p style={{ ...mono, fontSize: 15, fontWeight: 700, color: VERM }}>{'CONTINUE? ' + run.continuesLeft + ' left'}</p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button onClick={onContinue} autoFocus style={btn}>LANJUT / CONTINUE</button>
-          <button onClick={onGiveUp} style={ghost}>MENYERAH / GIVE UP</button>
+          <button onClick={onContinue} autoFocus style={btn}>CONTINUE</button>
+          <button onClick={onGiveUp} style={ghost}>GIVE UP</button>
         </div>
       </div>
     )
@@ -97,18 +124,15 @@ export default function FighterArcadePanel({
   const ticker = tickerFor(run)
   return (
     <div style={wrap} role="dialog" aria-label={'Arcade stage ' + (run.stage + 1) + ': ' + stage.name.en}>
-      <p style={{ ...mono, fontSize: 10, letterSpacing: '0.1em', opacity: 0.75 }}>LANTAI / FLOOR {run.stage + 1} OF 6 &middot; AMPLOP / ENVELOPES {run.envelopes}</p>
+      <p style={{ ...mono, fontSize: 10, letterSpacing: '0.1em', opacity: 0.75 }}>FLOOR {run.stage + 1} OF 6 &middot; ENVELOPES {run.envelopes}</p>
       <Bi id={stage.name.id.toUpperCase()} en={stage.name.en} big accent />
       <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>
         {FIGHTERS[run.hero].label} vs {stage.opponent.label}
       </p>
-      {stage.pre.map((p) => (
-        <div key={p.text.en} style={{ borderLeft: `2px solid ${p.speaker === 'opponent' ? VERM : PAPER}`, paddingLeft: 8 }}>
-          <Bi id={p.text.id} en={p.text.en} />
-        </div>
-      ))}
-      <button onClick={onFight} autoFocus style={btn}>LAWAN / FIGHT</button>
-      <p style={{ ...mono, fontSize: 10, opacity: 0.6 }}>{ticker.id} / {ticker.en}</p>
+      <Story rows={stage.pre.map((p) => ({ id: p.text.id, en: p.text.en, speaker: p.speaker }))} />
+      <button onClick={onFight} autoFocus style={btn}>FIGHT</button>
+      <p style={{ ...mono, fontSize: 10, opacity: 0.6 }}>{ticker.id}</p>
+      <p style={{ ...mono, fontSize: 9, opacity: 0.5 }}>{ticker.en}</p>
     </div>
   )
 }

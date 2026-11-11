@@ -287,7 +287,7 @@ function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: Fx
   if (s.defs[1].boss && (s.phase === 'fight' || s.phase === 'ko')) {
     const phase = bossPhase(s.fighters[1].hp, s.defs[1].hp)
     const open = phase === 3 && reviewOpen(ROUND_FRAMES - s.roundTimer)
-    const text = open ? 'SIARAN LANGSUNG / LIVE: HIT NOW' : phase === 1 ? 'PERNYATAAN' : phase === 2 ? 'ROMBAK' : 'TINJAU ABADI'
+    const text = open ? 'LIVE: HIT NOW' : phase === 1 ? 'PERNYATAAN' : phase === 2 ? 'ROMBAK' : 'TINJAU ABADI'
     ctx.font = 'bold 8px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -583,13 +583,13 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     }
     const room = openRoom(code, {
       onStatus: (st) => {
-        if (st === 'error') fail('Gagal tersambung / Could not connect')
+        if (st === 'error') fail('Could not connect')
         else if (st === 'ready') setOnlineView((v) => (v && v.kind === 'lobby' ? { ...v, connected: true } : v))
       },
       onPeers: (n) => {
         const o = onlineRef.current
         if (!o || o.session) return
-        if (role === 'guest' && n > 2) fail('Ruang penuh / Room full')
+        if (role === 'guest' && n > 2) fail('Room full')
         else if (role === 'host' && n === 2) {
           const seed = newSeed()
           o.room.send({ t: 'start', seed })
@@ -609,7 +609,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
         o.session?.receive(raw, performance.now())
       },
     })
-    const timer = role === 'guest' ? window.setTimeout(() => fail('Ruang tidak ditemukan / Room not found'), 9000) : null
+    const timer = role === 'guest' ? window.setTimeout(() => fail('Room not found'), 9000) : null
     onlineRef.current = { room, role, side: role === 'host' ? 0 : 1, session: null, seed: 0, timer }
     setOnlineView({ kind: 'lobby', role, code, connected: false })
   }
@@ -775,7 +775,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
                     <button onClick={rematchOnline} autoFocus style={btn}>REMATCH</button>
                   )}
                   {online?.live && online.role === 'guest' && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>Menunggu tuan rumah / Waiting for host</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>Waiting for host</span>
                   )}
                   <button onClick={onClose} style={btn}>CLOSE</button>
                 </div>

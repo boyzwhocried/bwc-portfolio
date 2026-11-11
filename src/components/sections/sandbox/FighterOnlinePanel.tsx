@@ -42,7 +42,7 @@ export default function FighterOnlinePanel({
       <div style={wrap} role="dialog" aria-label="Online lobby">
         {view.role === 'host' ? (
           <>
-            <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>Kode ruang / Room code</p>
+            <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>Room code</p>
             <p style={{ ...mono, fontSize: 30, fontWeight: 700, letterSpacing: '0.3em', color: VERM }} aria-label={'Room code ' + view.code.split('').join(' ')}>{view.code}</p>
             <button
               style={btn}
@@ -50,7 +50,7 @@ export default function FighterOnlinePanel({
                 void navigator.clipboard?.writeText(view.code).then(() => setCopied(true), () => undefined)
               }}
             >
-              {copied ? 'DISALIN / COPIED' : 'SALIN / COPY'}
+              {copied ? 'COPIED' : 'COPY'}
             </button>
             <p style={{ ...mono, fontSize: 11 }} role="status">
               {view.connected ? 'Menunggu teman... / Waiting for a friend...' : 'Menyambung... / Connecting...'}
@@ -63,15 +63,15 @@ export default function FighterOnlinePanel({
             <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>Kamu Sang Ajudan (kanan) / You are Sang Ajudan (right)</p>
           </>
         )}
-        <button style={btn} onClick={onCancel}>BATAL / CANCEL</button>
+        <button style={btn} onClick={onCancel}>CANCEL</button>
       </div>
     )
   }
 
   return (
     <div style={wrap} role="dialog" aria-label="Play online">
-      <h2 style={{ ...mono, fontSize: 14, letterSpacing: '0.08em' }}>MAIN ONLINE / PLAY ONLINE</h2>
-      <button style={btn} onClick={onCreate} autoFocus>BUAT RUANG / CREATE ROOM</button>
+      <h2 style={{ ...mono, fontSize: 14, letterSpacing: '0.08em' }}>PLAY ONLINE</h2>
+      <button style={btn} onClick={onCreate} autoFocus>CREATE ROOM</button>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -89,10 +89,10 @@ export default function FighterOnlinePanel({
           spellCheck={false}
           style={input}
         />
-        <button type="submit" style={{ ...btn, opacity: code ? 1 : 0.5 }} disabled={!code}>GABUNG / JOIN</button>
+        <button type="submit" style={{ ...btn, opacity: code ? 1 : 0.5 }} disabled={!code}>JOIN</button>
       </form>
       {view.error && <p style={{ ...mono, fontSize: 11, color: VERM }} role="alert">{view.error}</p>}
-      <button style={btn} onClick={onCancel}>KEMBALI / BACK</button>
+      <button style={btn} onClick={onCancel}>BACK</button>
     </div>
   )
 }
