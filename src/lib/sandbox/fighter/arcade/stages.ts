@@ -104,7 +104,7 @@ export const STAGES: readonly ArcadeStage[] = [
     overlay: 'queue',
     opponent: { ...variant(PENYADAP, 'sang-pengganti', 'Sang Pengganti', 1000, 704, { punch: { damage: 40 }, kick: { startup: 7 } }), revive: 1 },
     cpu: 'normal',
-    gimmick: 'Stempel Ulang: first KO is stamped VOID, RE-ISSUED and he stands back up at 1 HP; the second KO is final.',
+    gimmick: 'Stempel Ulang: first KO is stamped ULANG (REDO) and he stands back up at 1 HP; the second KO is final. Do not use the words VOID or INVALID on screen: the news moved (see the 2026-11-12 sensitivity note).',
     gimmickReal: true, // built: def.revive
     pre: [
       { speaker: 'opponent', text: { id: 'Aku sudah antre bertahun-tahun.', en: 'I have been next in line for years.' } },

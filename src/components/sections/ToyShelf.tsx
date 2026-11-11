@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import CrtTerminal from './CrtTerminal'
 import DriftingSquares from '@/components/ui/DriftingSquares'
@@ -17,7 +18,8 @@ import ThePress from './sandbox/ThePress'
 import TheProof from './sandbox/TheProof'
 import TheImpose from './sandbox/TheImpose'
 import TheVerse from './sandbox/TheVerse'
-import Fighter from './sandbox/Fighter'
+// the game and its sprite data are large: fetch them only when someone opens it
+const Fighter = dynamic(() => import('./sandbox/Fighter'), { ssr: false })
 
 const SHADOW = '4px 4px 0 #b3ada0'
 const SHADOW_INK = '4px 4px 0 var(--ink)'

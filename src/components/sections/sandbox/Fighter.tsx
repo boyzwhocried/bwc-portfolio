@@ -18,6 +18,7 @@ import { BUGGED_LINE, COMBO_LINE, MOVES_LINE, HOWTO_KEYS, KEYS_LINE, specialLine
 import { PALETTE, ANIM_NAMES, type AnimName, type FighterArt, type Sprite } from '@/lib/sandbox/fighter/art/sprite'
 import { ART as PENYADAP } from '@/lib/sandbox/fighter/art/si-penyadap'
 import { ART as AJUDAN } from '@/lib/sandbox/fighter/art/sang-ajudan'
+import { OPPONENT_ART, OPPONENT_PORTRAITS } from '@/lib/sandbox/fighter/art/opponents'
 import { STAGE_FOREST, FLOOR_Y } from '@/lib/sandbox/fighter/art/stage-forest'
 import { PORTRAITS } from '@/lib/sandbox/fighter/art/portraits'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
@@ -40,13 +41,15 @@ const INK = '#1a1a1a'
 const PAPER = '#ece7de'
 const VERM = '#e84c28'
 const CROUCH_DRAW_H = 46 // a crouched sprite is drawn squashed to this height, feet on the floor
-const ART: Record<FighterId, FighterArt> = { 'si-penyadap': PENYADAP, 'sang-ajudan': AJUDAN }
+const ART: Record<string, FighterArt> = { 'si-penyadap': PENYADAP, 'sang-ajudan': AJUDAN, ...OPPONENT_ART }
+const PORTRAIT_ART: Record<string, Sprite> = { ...PORTRAITS, ...OPPONENT_PORTRAITS }
 const IDS: [FighterId, FighterId] = ['si-penyadap', 'sang-ajudan']
+type ArtIds = [string, string]
 
 type Pair = [HTMLCanvasElement, HTMLCanvasElement] // [facing right, facing left]
 type Cache = {
   stage: HTMLCanvasElement
-  fighters: Record<FighterId, { frames: Record<AnimName, Pair[]>; smear: Pair; portrait: Pair }>
+  fighters: Record<string, { frames: Record<AnimName, Pair[]>; smear: Pair; portrait: Pair }>
 }
 
 function toCanvas(s: Sprite): HTMLCanvasElement {
@@ -83,13 +86,13 @@ function toPair(s: Sprite): Pair {
   return [right, left]
 }
 
-function buildCache(): Cache {
+function buildCache(ids: ArtIds): Cache {
   const fighters = {} as Cache['fighters']
-  for (const id of IDS) {
+  for (const id of ids) {
     const a = ART[id]
     const frames = {} as Record<AnimName, Pair[]>
     for (const n of ANIM_NAMES) frames[n] = a.frames[n].map(toPair)
-    fighters[id] = { frames, smear: toPair(a.smear), portrait: toPair(PORTRAITS[id]) }
+    fighters[id] = { frames, smear: toPair(a.smear), portrait: toPair(PORTRAIT_ART[id]) }
   }
   return { stage: toCanvas(STAGE_FOREST), fighters }
 }
@@ -166,7 +169,7 @@ function drawSpark(ctx: CanvasRenderingContext2D, p: Spark) {
   }
 }
 
-function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean, ids: [FighterId, FighterId]) {
+function draw(ctx: CanvasRenderingContext2D, s: MatchState, cache: Cache, fx: FxState, reduce: boolean, ids: ArtIds) {
   ctx.save()
   if (fx.shake > 0) ctx.translate(Math.round((Math.random() - 0.5) * 4), Math.round((Math.random() - 0.5) * 4))
   ctx.drawImage(cache.stage, 0, 0)
@@ -444,14 +447,14 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
     ctx.imageSmoothingEnabled = false
-    const cache = buildCache()
     const live = onlineRef.current?.session ? onlineRef.current : null
     const on = live?.session ?? null
     const seed = live ? live.seed : ((Date.now() & 0x7fffffff) | 1) >>> 0
     let sampled = 0
     const run = !live && arcadeRef.current?.status === 'fight' ? arcadeRef.current : null
     // arcade: the hero fights on the left; the placeholder opponent borrows the other fighter's art
-    const ids: [FighterId, FighterId] = run ? [run.hero, run.hero === 'si-penyadap' ? 'sang-ajudan' : 'si-penyadap'] : IDS
+    const ids: ArtIds = run ? [run.hero, currentStage(run).opponent.id] : IDS
+    const cache = buildCache(ids)
     const cpuLevel = run ? currentStage(run).cpu : settingsRef.current.cpu
     let s = run ? arcadeMatch(run) : initMatch(seed, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
     let accum = 0
