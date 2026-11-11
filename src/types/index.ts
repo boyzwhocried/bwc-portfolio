@@ -1,3 +1,4 @@
+import type { CurationLog } from '@/lib/music/curationLog'
 export interface Project {
   id: string
   slug: string
@@ -132,6 +133,7 @@ export interface MusicData {
   thisMonth: PlaylistFeature | null
   ofInsta: PlaylistFeature | null
   obsessionThemes: ObsessionThemesPayload | null
+  curationLog: CurationLog | null
   playlistDetails: Record<string, PlaylistDetail> | null
   updatedAt: string | null
 }

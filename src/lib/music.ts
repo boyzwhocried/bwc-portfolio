@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { parseCurationLog } from '@/lib/music/curationLog'
 import type { CachedTrack, MusicData } from '@/types'
 
 const EMPTY: MusicData = {
@@ -9,6 +10,7 @@ const EMPTY: MusicData = {
   thisMonth: null,
   ofInsta: null,
   obsessionThemes: null,
+  curationLog: null,
   playlistDetails: null,
   updatedAt: null,
 }
@@ -36,6 +38,7 @@ export async function getMusicData(): Promise<MusicData> {
     thisMonth: payload('playlist_this_month'),
     ofInsta: payload('playlist_of_insta'),
     obsessionThemes: payload('obsession_themes'),
+    curationLog: parseCurationLog(payload('curation_log')),
     playlistDetails: payload('playlist_details'),
     updatedAt,
   }

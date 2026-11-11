@@ -14,6 +14,7 @@ import type {
 import DriftingSquares from '@/components/ui/DriftingSquares'
 import PlaylistModal, { type PlaylistFallback } from '@/components/sections/PlaylistModal'
 import MusicObsession from '@/components/sections/MusicObsession'
+import CurationLog from '@/components/sections/CurationLog'
 import ObsessionLog from '@/components/sections/ObsessionLog'
 import type { HistorySnapshot, TimelineEvent } from '@/lib/music/obsessionLog'
 import { useFadeUp } from '@/lib/motion'
@@ -296,6 +297,9 @@ export default function MusicPlayer({
             the rest of the room is syncing from spotify. check back shortly.
           </p>
         )}
+
+        {/* THE CURATION LOG: on repeat leads, then new in the library. Published from the spotify-curation skill only on Verrel's yes; hides when empty */}
+        <CurationLog log={music.curationLog} />
 
         {/* THE OBSESSION LOG: month timeline from spotify_history; self-activates at 2+ months */}
         <ObsessionLog history={history} events={events} />
