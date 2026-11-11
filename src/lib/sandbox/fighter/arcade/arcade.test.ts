@@ -1,0 +1,264 @@
+import { describe, it, expect } from 'vitest'
+import { STAGES, ARCADE_TITLE, DISCLAIMER, TICKER_LINES, WIN_ENDING, LOSE_ENDING, type Bilingual } from './stages'
+import { startRun, currentStage, beginFight, finishMatch, takeContinue, giveUp, matchSeed, arcadeMatch, tickerFor, runEnding, CONTINUES } from './run'
+import { FIGHTERS, FIGHTER_IDS } from '../roster'
+import { MOVE_KINDS } from '../types'
+import { stepMatch } from '../match'
+import { cpuInput } from '../cpu'
+import { BTN } from '../types'
+
+const EM_DASH = String.fromCharCode(0x2014)
+
+function allText(): string[] {
+  const out: string[] = []
+  const add = (b: Bilingual) => out.push(b.id, b.en)
+  add(ARCADE_TITLE)
+  add(DISCLAIMER)
+  TICKER_LINES.forEach(add)
+  for (const e of [WIN_ENDING, LOSE_ENDING]) {
+    e.lines.forEach(add)
+    add(e.caption)
+  }
+  for (const s of STAGES) {
+    add(s.name)
+    add(s.defeat)
+    s.pre.forEach((p) => add(p.text))
+  }
+  return out
+}
+
+describe('arcade stages', () => {
+  it('has the six stages of the bible in order, ending on the standing committee boss', () => {
+    expect(STAGES.map((s) => s.slug)).toEqual(['hutan-kabut', 'jalan-raya-tuntutan', 'dapur-rapat', 'loket-antrean', 'ruang-kurs', 'gerbang-kubah'])
+    expect(STAGES.map((s) => s.opponent.label)).toEqual(['Sang Juru Bicara', 'Si Pelabel', 'Sang Katering', 'Sang Pengganti', 'Sang Penempatan', 'Panitia Tetap'])
+    expect(STAGES.map((s) => !!s.boss)).toEqual([false, false, false, false, false, true])
+  })
+
+  it('opponent ids are unique slugs and never collide with a playable fighter', () => {
+    const ids = STAGES.map((s) => s.opponent.id)
+    expect(new Set(ids).size).toBe(6)
+    for (const id of ids) {
+      expect(id).toMatch(/^[a-z]+(-[a-z]+)*$/)
+      expect((FIGHTER_IDS as readonly string[]).includes(id)).toBe(false)
+    }
+  })
+
+  it('every opponent has a legal moveset: frames >= 1, special at most 2x kick, no stolen hero mechanics', () => {
+    for (const s of STAGES) {
+      const d = s.opponent
+      expect(d.hp).toBeGreaterThan(0)
+      expect(d.walkSpeed).toBeGreaterThan(0)
+      for (const k of MOVE_KINDS) {
+        const m = d.moves[k]
+        expect(m.kind).toBe(k)
+        expect(m.startup).toBeGreaterThanOrEqual(1)
+        expect(m.active).toBeGreaterThanOrEqual(1)
+        expect(m.recovery).toBeGreaterThanOrEqual(1)
+        expect(m.damage).toBeGreaterThan(0)
+      }
+      expect(d.moves.special.damage).toBeLessThanOrEqual(d.moves.kick.damage * 2)
+      expect(d.moves.punch.hitstop).toBe(5)
+      expect(d.moves.kick.hitstop).toBe(6)
+    }
+  })
+
+  it('the ladder climbs: hp never drops from one stage to the next and the boss has the most', () => {
+    const hps = STAGES.map((s) => s.opponent.hp)
+    for (let i = 1; i < hps.length; i++) expect(hps[i]).toBeGreaterThanOrEqual(hps[i - 1])
+    expect(hps[5]).toBeGreaterThan(hps[4])
+  })
+
+  it('cpu level is easy for the first two stages and normal after', () => {
+    expect(STAGES.map((s) => s.cpu)).toEqual(['easy', 'easy', 'normal', 'normal', 'normal', 'normal'])
+  })
+
+  it('each stage names an overlay and tags whether its gimmick is real code or cosmetic', () => {
+    for (const s of STAGES) {
+      expect(s.overlay.length).toBeGreaterThan(0)
+      expect(typeof s.gimmickReal).toBe('boolean')
+    }
+    expect(STAGES.filter((s) => s.gimmickReal).map((s) => s.slug)).toEqual(['loket-antrean', 'ruang-kurs', 'gerbang-kubah'])
+  })
+
+  it('pre-fight dialogue fits the box: two lines, three for the boss, opponent opens', () => {
+    for (const s of STAGES) {
+      expect(s.pre.length).toBeGreaterThanOrEqual(2)
+      expect(s.pre.length).toBeLessThanOrEqual(s.boss ? 3 : 2)
+      expect(s.pre[0].speaker).toBe('opponent')
+    }
+  })
+
+  it('every text is bilingual and short enough for the dialog box', () => {
+    for (const t of allText()) {
+      expect(t.trim().length).toBeGreaterThan(0)
+      expect(t.length).toBeLessThanOrEqual(110)
+      expect(t).not.toContain('\n')
+    }
+  })
+
+  it('has the eight ticker lines', () => {
+    expect(TICKER_LINES).toHaveLength(8)
+  })
+
+  it('no em-dash anywhere in the arcade copy', () => {
+    for (const t of allText()) expect(t).not.toContain(EM_DASH)
+  })
+
+  it('keeps the satire safeguards: no real names, no guilt words, no exact hashtag', () => {
+    const blob = allText().join(' ').toLowerCase()
+    for (const bad of ['prabowo', 'gibran', 'jokowi', 'sri mulyani', 'purbaya', 'dpr', 'polri', 'tni', 'kpk', 'mbg', 'ijazah', 'korup', 'maling', 'curi', 'stole', 'corrupt', 'guilty', 'kabur aja dulu', '#'])
+      expect(blob).not.toContain(bad)
+  })
+
+  it('the satire disclaimer says fictional in both languages', () => {
+    expect(DISCLAIMER.en.toLowerCase()).toContain('fiction')
+    expect(DISCLAIMER.id.toLowerCase()).toContain('fiksi')
+  })
+
+  it('both endings keep the bible captions', () => {
+    expect(WIN_ENDING.caption.en).toBe('Congratulations. You have restored normal.')
+    expect(LOSE_ENDING.caption.en).toBe('CONTINUE? The country is still on hold.')
+    expect(LOSE_ENDING.lines.map((l) => l.en).join(' ')).toContain('Bail for now?')
+  })
+})
+
+describe('arcade run', () => {
+  it('starts at stage 1 in the pre-fight screen with full continues and no envelopes', () => {
+    const r = startRun('si-penyadap')
+    expect(r.hero).toBe('si-penyadap')
+    expect(r.stage).toBe(0)
+    expect(r.status).toBe('pre')
+    expect(r.continuesLeft).toBe(CONTINUES)
+    expect(r.envelopes).toBe(0)
+    expect(currentStage(r).slug).toBe('hutan-kabut')
+  })
+
+  it('beginFight moves pre to fight and nothing else', () => {
+    const r = startRun('sang-ajudan')
+    expect(beginFight(r)).toEqual({ ...r, status: 'fight' })
+    expect(beginFight(beginFight(r))).toEqual(beginFight(r))
+  })
+
+  it('winning advances a stage, resets attempt, and collects one envelope', () => {
+    let r = beginFight(startRun('si-penyadap'))
+    r = finishMatch(r, 'p1')
+    expect(r.stage).toBe(1)
+    expect(r.status).toBe('pre')
+    expect(r.envelopes).toBe(1)
+    expect(r.attempt).toBe(0)
+  })
+
+  it('winning the sixth stage ends the run as a win with six envelopes', () => {
+    let r = startRun('si-penyadap')
+    for (let i = 0; i < 6; i++) r = finishMatch(beginFight(r), 'p1')
+    expect(r.status).toBe('won')
+    expect(r.envelopes).toBe(6)
+    expect(runEnding(r)).toBe(WIN_ENDING)
+  })
+
+  it('losing offers a continue; using it replays the same stage with a new attempt', () => {
+    let r = beginFight(startRun('si-penyadap'))
+    r = finishMatch(r, 'p2')
+    expect(r.status).toBe('continue')
+    expect(r.stage).toBe(0)
+    expect(r.envelopes).toBe(0)
+    r = takeContinue(r)
+    expect(r.status).toBe('pre')
+    expect(r.stage).toBe(0)
+    expect(r.continuesLeft).toBe(CONTINUES - 1)
+    expect(r.attempt).toBe(1)
+  })
+
+  it('a draw counts as a loss', () => {
+    const r = finishMatch(beginFight(startRun('sang-ajudan')), 'draw')
+    expect(r.status).toBe('continue')
+  })
+
+  it('out of continues, a loss ends the run as lost', () => {
+    let r = startRun('si-penyadap')
+    for (let i = 0; i < CONTINUES; i++) r = takeContinue(finishMatch(beginFight(r), 'p2'))
+    expect(r.continuesLeft).toBe(0)
+    r = finishMatch(beginFight(r), 'p2')
+    expect(r.status).toBe('lost')
+    expect(runEnding(r)).toBe(LOSE_ENDING)
+  })
+
+  it('giveUp on the continue screen ends the run as lost', () => {
+    const r = giveUp(finishMatch(beginFight(startRun('si-penyadap')), 'p2'))
+    expect(r.status).toBe('lost')
+  })
+
+  it('actions in the wrong status change nothing', () => {
+    const fresh = startRun('si-penyadap')
+    expect(finishMatch(fresh, 'p1')).toBe(fresh)
+    expect(takeContinue(fresh)).toBe(fresh)
+    expect(giveUp(fresh)).toBe(fresh)
+    const done = finishMatch(finishMatch(beginFight(fresh), 'p2'), 'p1')
+    expect(done.status).toBe('continue')
+    expect(beginFight(done)).toBe(done)
+  })
+
+  it('runEnding is null while the run is live', () => {
+    expect(runEnding(startRun('si-penyadap'))).toBeNull()
+  })
+
+  it('the run never mutates its input', () => {
+    const r = startRun('si-penyadap')
+    const copy = JSON.stringify(r)
+    finishMatch(beginFight(r), 'p1')
+    expect(JSON.stringify(r)).toBe(copy)
+  })
+
+  it('match seed is deterministic and differs by stage and attempt', () => {
+    const a = startRun('si-penyadap')
+    expect(matchSeed(a)).toBe(matchSeed(startRun('si-penyadap')))
+    const b = finishMatch(beginFight(a), 'p1')
+    expect(matchSeed(b)).not.toBe(matchSeed(a))
+    const c = takeContinue(finishMatch(beginFight(a), 'p2'))
+    expect(matchSeed(c)).not.toBe(matchSeed(a))
+    expect(Number.isInteger(matchSeed(a))).toBe(true)
+  })
+
+  it('arcadeMatch pits the chosen hero on the left against the stage opponent', () => {
+    const r = startRun('sang-ajudan')
+    const m = arcadeMatch(r)
+    expect(m.defs[0]).toBe(FIGHTERS['sang-ajudan'])
+    expect(m.defs[1]).toBe(STAGES[0].opponent)
+    expect(m.seed).toBe(matchSeed(r))
+    expect(m.fighters[1].hp).toBe(STAGES[0].opponent.hp)
+  })
+
+  it('ticker cycles through all eight lines by stage and attempt', () => {
+    const seen = new Set<string>()
+    let r = startRun('si-penyadap')
+    for (let i = 0; i < 6; i++) {
+      seen.add(tickerFor(r).en)
+      r = finishMatch(beginFight(r), 'p1')
+    }
+    expect(seen.size).toBeGreaterThanOrEqual(5)
+    for (const t of seen) expect(TICKER_LINES.map((l) => l.en)).toContain(t)
+  })
+})
+
+describe('arcade opponents play', () => {
+  // A cpu-driven hero against each stage opponent must finish by the round timer, never hang or throw.
+  for (const [i, s] of STAGES.entries()) {
+    it(`stage ${i + 1} (${s.opponent.label}) runs to match end under cpu control`, () => {
+      let m = arcadeMatch(startRun('si-penyadap'))
+      m = { ...m, defs: [FIGHTERS['si-penyadap'], STAGES[i].opponent], fighters: [m.fighters[0], { ...m.fighters[1], hp: STAGES[i].opponent.hp }] }
+      let frames = 0
+      let sawAttack = false
+      while (m.phase !== 'matchEnd' && frames < 3 * (99 * 60 + 400)) {
+        const a = cpuInput(m, 0, 'normal')
+        m = { ...m, seed: a.seed }
+        const b = cpuInput(m, 1, s.cpu)
+        m = { ...m, seed: b.seed }
+        m = stepMatch(m, [a.input, b.input])
+        if (m.fighters[1].action === 'attack' || (b.input & (BTN.PUNCH | BTN.KICK | BTN.SPECIAL)) !== 0) sawAttack = true
+        frames++
+      }
+      expect(m.phase).toBe('matchEnd')
+      expect(sawAttack).toBe(true)
+    })
+  }
+})
