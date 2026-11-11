@@ -22,6 +22,14 @@ export interface CurationPick {
   note: string | null // a few words from him about the song
 }
 
+// What he was actually playing when the issue came out: a snapshot of the site's
+// short-term top tracks/artists taken at publish time, plus his own words on why.
+export interface CurationOnRepeat {
+  tracks: { artist: string; track: string }[]
+  artists: string[]
+  note: string | null
+}
+
 export interface CurationRun {
   date: string // YYYY-MM-DD
   songsIn: number
@@ -30,6 +38,7 @@ export interface CurationRun {
   artists: string[] // lead artists of the batch, most songs first
   cover: string | null // one line from him: what this batch felt like
   picks: CurationPick[]
+  onRepeat: CurationOnRepeat | null
   skipped: { count: number; reasons: { reason: string; count: number }[] }
 }
 
@@ -59,6 +68,7 @@ export interface IssueView {
   cover: string | null
   artistsLine: string | null
   picks: CurationPick[]
+  onRepeat: CurationOnRepeat | null
   tags: string[] // the 3 biggest playlists
   footnote: string
 }
@@ -77,6 +87,8 @@ const BLURB_MAX = 280
 const COVER_MAX = 160
 const NOTE_MAX = 120
 const CAPTION_MAX = 100
+const ON_REPEAT_MAX = 5
+const ON_REPEAT_NOTE_MAX = 160
 const TAGS = 3
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -98,6 +110,17 @@ function parsePick(v: unknown): CurationPick | null {
   return { artist: v.artist, track: v.track, note: (v.note as string | undefined) ?? null }
 }
 
+function parseOnRepeat(v: unknown): CurationOnRepeat | null {
+  if (!isObj(v)) return null
+  const tracks = list(v.tracks)
+    .flatMap((t) => (isObj(t) && clean(t.artist) && clean(t.track) ? [{ artist: t.artist, track: t.track }] : []))
+    .slice(0, ON_REPEAT_MAX)
+  const artists = list(v.artists).filter(clean).slice(0, ON_REPEAT_MAX)
+  const note = short(v.note, ON_REPEAT_NOTE_MAX) ? v.note : null
+  if (tracks.length === 0 && artists.length === 0 && !note) return null
+  return { tracks, artists, note }
+}
+
 function parseRun(v: unknown): CurationRun | null {
   if (!isObj(v) || typeof v.date !== 'string' || !DATE_RE.test(v.date)) return null
   if (!count(v.songsIn) || !count(v.otherPlaylists)) return null
@@ -115,6 +138,7 @@ function parseRun(v: unknown): CurationRun | null {
     artists: list(v.artists).filter(clean),
     cover: short(v.cover, COVER_MAX) ? v.cover : null,
     picks: list(v.picks).flatMap((p) => parsePick(p) ?? []),
+    onRepeat: parseOnRepeat(v.onRepeat),
     skipped: { count: count(sk.count) ? sk.count : 0, reasons },
   }
 }
@@ -165,6 +189,7 @@ function issue(r: CurationRun, number: number): IssueView {
     cover: r.cover,
     artistsLine: r.artists.length > 0 ? r.artists.join(' · ') : null,
     picks: r.picks,
+    onRepeat: r.onRepeat,
     tags: r.shelves.slice(0, TAGS).map((s) => s.name),
     footnote: footnote(r),
   }

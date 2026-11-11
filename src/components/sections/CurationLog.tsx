@@ -97,6 +97,27 @@ export default function CurationLog({ log }: { log: CurationLogData | null }) {
         </ul>
       )}
 
+      {latest.onRepeat && (
+        <div style={{ marginTop: '1.5rem', maxWidth: '62ch' }}>
+          <div style={{ ...label, marginBottom: 6 }}>on repeat then</div>
+          {latest.onRepeat.note && (
+            <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--fg)', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+              {latest.onRepeat.note}
+            </p>
+          )}
+          {latest.onRepeat.tracks.length > 0 && (
+            <p style={{ ...mono, marginTop: 4 }}>
+              {latest.onRepeat.tracks.map((t) => `${t.track}, ${t.artist}`).join(' · ')}
+            </p>
+          )}
+          {latest.onRepeat.artists.length > 0 && (
+            <p style={{ fontSize: 13, fontStyle: 'italic', lineHeight: 1.7, color: 'var(--muted)' }}>
+              {latest.onRepeat.artists.join(' · ')}
+            </p>
+          )}
+        </div>
+      )}
+
       {view.legend.length > 0 && (
         <div style={{ marginTop: '1.25rem', maxWidth: '62ch' }}>
           <div style={{ ...label, marginBottom: 6 }}>where they went</div>

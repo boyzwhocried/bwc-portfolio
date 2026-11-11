@@ -19,10 +19,11 @@ export interface UpsertRow {
 const arrLen = (v: unknown): number => (Array.isArray(v) ? v.length : 0)
 
 // How many picks (array) or covers (string) the raw file carries across its runs.
-function sumRuns(runs: unknown, field: 'picks' | 'cover'): number {
+function sumRuns(runs: unknown, field: 'picks' | 'cover' | 'onRepeatNote'): number {
   if (!Array.isArray(runs)) return 0
   return runs.reduce((n: number, r) => {
-    const v = (r as Record<string, unknown> | null)?.[field]
+    const rec = r as Record<string, unknown> | null
+    const v = field === 'onRepeatNote' ? (rec?.onRepeat as Record<string, unknown> | undefined)?.note : rec?.[field]
     return n + (field === 'picks' ? arrLen(v) : v === undefined || v === null ? 0 : 1)
   }, 0)
 }
@@ -40,6 +41,7 @@ export function planPublish(raw: unknown): PublishPlan {
     ['rule', arrLen(src.rules), parsed.rules.length],
     ['caption', arrLen(src.captions), parsed.captions.length],
     ['pick', sumRuns(src.runs, 'picks'), parsed.runs.reduce((n, r) => n + r.picks.length, 0)],
+    ['on-repeat note', sumRuns(src.runs, 'onRepeatNote'), parsed.runs.reduce((n, r) => n + (r.onRepeat?.note ? 1 : 0), 0)],
     ['cover', sumRuns(src.runs, 'cover'), parsed.runs.reduce((n, r) => n + (r.cover ? 1 : 0), 0)],
   ]
   for (const [what, before, after] of checks) {

@@ -17,6 +17,11 @@ const run = (over: Record<string, unknown> = {}) => ({
   cover: 'a loud week that needed somewhere to go.',
   picks: [{ artist: 'Neck Deep', track: 'Sorry', note: 'too loud for a car, play it anyway' }],
   skipped: { count: 202, reasons: [{ reason: 'not followed', count: 202 }] },
+  onRepeat: {
+    tracks: [{ artist: 'FKA Rayne', track: 'Creature of fear' }],
+    artists: ['FKA Rayne', 'Neck Deep'],
+    note: 'stuck on one record all month because it matched the weather.',
+  },
   ...over,
 })
 
@@ -105,6 +110,31 @@ describe('parseCurationLog', () => {
   it('sorts runs newest first', () => {
     const p = parseCurationLog(log({ runs: [run({ date: '2026-11-01' }), run({ date: '2026-11-06' })] }))
     expect(p?.runs.map((r) => r.date)).toEqual(['2026-11-06', '2026-11-01'])
+  })
+})
+
+describe('onRepeat (what he was playing when the issue came out)', () => {
+  it('parses tracks, artists and his note; caps lists at 5', () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({ artist: `a${i}`, track: `t${i}` }))
+    const p = parseCurationLog(log({ runs: [run({ onRepeat: { tracks: many, artists: many.map((m) => m.artist), note: 'hi' } })] }))
+    expect(p?.runs[0].onRepeat?.tracks).toHaveLength(5)
+    expect(p?.runs[0].onRepeat?.artists).toHaveLength(5)
+    expect(p?.runs[0].onRepeat?.note).toBe('hi')
+  })
+
+  it('is null when absent or empty, and a note over 160 chars or with an em-dash is dropped', () => {
+    expect(parseCurationLog(log({ runs: [run({ onRepeat: undefined })] }))?.runs[0].onRepeat).toBeNull()
+    expect(parseCurationLog(log({ runs: [run({ onRepeat: { tracks: [], artists: [], note: null } })] }))?.runs[0].onRepeat).toBeNull()
+    const long = parseCurationLog(log({ runs: [run({ onRepeat: { tracks: [], artists: ['A'], note: 'a'.repeat(161) } })] }))
+    expect(long?.runs[0].onRepeat?.note).toBeNull()
+    const em = parseCurationLog(log({ runs: [run({ onRepeat: { tracks: [], artists: ['A'], note: `a ${EM} b` } })] }))
+    expect(em?.runs[0].onRepeat?.note).toBeNull()
+  })
+
+  it('reaches the issue view so each issue keeps its own snapshot', () => {
+    const v = curationView(parseCurationLog(log({ runs: [run({ date: '2026-11-01', onRepeat: undefined }), run()] })))!
+    expect(v.latest.onRepeat?.artists).toEqual(['FKA Rayne', 'Neck Deep'])
+    expect(v.past[0].onRepeat).toBeNull()
   })
 })
 
