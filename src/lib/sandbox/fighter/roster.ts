@@ -5,6 +5,12 @@ import type { FighterDef } from './types'
 export const FIGHTER_IDS = ['si-penyadap', 'sang-ajudan'] as const
 export type FighterId = (typeof FIGHTER_IDS)[number]
 
+// Quick match vs CPU: the picked hero fights on the left, the CPU takes the other fighter.
+export function quickPair(hero: FighterId): [FighterId, FighterId] {
+  const other = FIGHTER_IDS.find((id) => id !== hero) ?? hero
+  return [hero, other]
+}
+
 export const FIGHTERS: Record<FighterId, FighterDef> = {
   // Slim, patient, long reach. The special is a ranged wire poke.
   'si-penyadap': {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { FIGHTERS, FIGHTER_IDS } from './roster'
+import { FIGHTERS, FIGHTER_IDS, quickPair } from './roster'
 import { BTN, MOVE_KINDS } from './types'
 import { initMatch, step, UNIT } from './sim'
 
@@ -81,5 +81,20 @@ describe('roster', () => {
     for (let i = 0; i < pair[0].moves.punch.startup; i++) s = step(s, [0, 0])
     expect(s.hitstop).toBe(5)
     expect(s.fighters[1].stun).toBe(pair[0].moves.punch.hitstun)
+  })
+})
+
+describe('quickPair', () => {
+  it('puts the picked hero on the left and the other fighter on the right', () => {
+    expect(quickPair('si-penyadap')).toEqual(['si-penyadap', 'sang-ajudan'])
+    expect(quickPair('sang-ajudan')).toEqual(['sang-ajudan', 'si-penyadap'])
+  })
+
+  it('never pairs a fighter with itself', () => {
+    for (const id of FIGHTER_IDS) {
+      const [a, b] = quickPair(id)
+      expect(a).toBe(id)
+      expect(b).not.toBe(id)
+    }
   })
 })

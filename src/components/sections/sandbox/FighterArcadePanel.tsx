@@ -59,6 +59,24 @@ function Bi({ id, en, big, accent }: { id: string; en: string; big?: boolean; ac
   )
 }
 
+// Hero pick for quick match vs CPU: same look as the arcade pick view, no story text.
+export function FighterQuickPick({ onPick, onBack }: { onPick: (hero: FighterId) => void; onBack: () => void }) {
+  return (
+    <div style={wrap} role="dialog" aria-label="Fight CPU: choose your fighter">
+      <Bi id="FIGHT CPU" en="Quick match" big accent />
+      <p style={{ ...mono, fontSize: 11 }}>Choose your fighter. The CPU takes the other.</p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {FIGHTER_IDS.map((id, i) => (
+          <button key={id} onClick={() => onPick(id)} autoFocus={i === 0} style={btn}>
+            {FIGHTERS[id].label.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      <button onClick={onBack} style={ghost}>BACK</button>
+    </div>
+  )
+}
+
 export default function FighterArcadePanel({
   view,
   onPick,

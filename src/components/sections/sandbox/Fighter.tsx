@@ -8,7 +8,7 @@ import { initMatch, step, hashState, UNIT } from '@/lib/sandbox/fighter/sim'
 import { INTRO_FRAMES, ROUND_FRAMES, matchWinner } from '@/lib/sandbox/fighter/match'
 import { advance } from '@/lib/sandbox/fighter/loop'
 import { cpuInput } from '@/lib/sandbox/fighter/cpu'
-import { FIGHTERS, type FighterId } from '@/lib/sandbox/fighter/roster'
+import { FIGHTERS, quickPair, type FighterId } from '@/lib/sandbox/fighter/roster'
 import { poseFor } from '@/lib/sandbox/fighter/pose'
 import { hudRects, TIMER_RECT, NAME_FONT_PX } from '@/lib/sandbox/fighter/hud'
 import { isArmed } from '@/lib/sandbox/fighter/combat'
@@ -24,7 +24,7 @@ import { PORTRAITS } from '@/lib/sandbox/fighter/art/portraits'
 import { GAME_KEYS, keysToInput } from '@/lib/sandbox/fighter/input'
 import { needsRotate, tryLandscape, ROTATE_LINE } from '@/lib/sandbox/fighter/orientation'
 import FighterOnlinePanel, { type OnlineView } from './FighterOnlinePanel'
-import FighterArcadePanel, { type ArcadeView } from './FighterArcadePanel'
+import FighterArcadePanel, { FighterQuickPick, type ArcadeView } from './FighterArcadePanel'
 import { bossPhase, reviewOpen } from '@/lib/sandbox/fighter/boss'
 import { fitScale } from '@/lib/sandbox/fighter/scale'
 import { arcadeMatch, beginFight, currentStage, finishMatch, giveUp, startRun, takeContinue, type ArcadeRun } from '@/lib/sandbox/fighter/arcade/run'
@@ -43,7 +43,7 @@ const VERM = '#e84c28'
 const CROUCH_DRAW_H = 46 // a crouched sprite is drawn squashed to this height, feet on the floor
 const ART: Record<string, FighterArt> = { 'si-penyadap': PENYADAP, 'sang-ajudan': AJUDAN, ...OPPONENT_ART }
 const PORTRAIT_ART: Record<string, Sprite> = { ...PORTRAITS, ...OPPONENT_PORTRAITS }
-const IDS: [FighterId, FighterId] = ['si-penyadap', 'sang-ajudan']
+const IDS: [FighterId, FighterId] = ['si-penyadap', 'sang-ajudan'] // title attract loop and online sides
 type ArtIds = [string, string]
 
 type Pair = [HTMLCanvasElement, HTMLCanvasElement] // [facing right, facing left]
@@ -386,6 +386,8 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
   const rotateRef = useRef(false)
   const [arcadeView, setArcadeView] = useState<ArcadeView | null>(null)
   const arcadeRef = useRef<ArcadeRun | null>(null)
+  const [quickPick, setQuickPick] = useState(false)
+  const quickIdsRef = useRef<[FighterId, FighterId]>(IDS) // quick match vs CPU: [human hero, CPU]
   const onTouch = useCallback((bits: number) => {
     touchBits.current = bits
   }, [])
@@ -484,11 +486,13 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     let sampled = 0
     const run = !live && arcadeRef.current?.status === 'fight' ? arcadeRef.current : null
     // arcade: the hero fights on the left; the placeholder opponent borrows the other fighter's art
-    const ids: ArtIds = run ? [run.hero, currentStage(run).opponent.id] : IDS
+    // quick match uses the picked pair; the title attract loop and online keep the fixed pair
+    const pair: [FighterId, FighterId] = !live && !run && mode === 'play' ? quickIdsRef.current : IDS
+    const ids: ArtIds = run ? [run.hero, currentStage(run).opponent.id] : pair
     const scene = run ? run.stage : 0
     const cache = buildCache(ids, scene)
     const cpuLevel = run ? currentStage(run).cpu : settingsRef.current.cpu
-    let s = run ? arcadeMatch(run) : initMatch(seed, [FIGHTERS[IDS[0]], FIGHTERS[IDS[1]]], INTRO_FRAMES)
+    let s = run ? arcadeMatch(run) : initMatch(seed, [FIGHTERS[pair[0]], FIGHTERS[pair[1]]], INTRO_FRAMES)
     let accum = 0
     let last: number | null = null
     let raf = 0
@@ -557,7 +561,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
             reported = true
             const w = matchWinner(s)
             update(afterMatch(settingsRef.current))
-            setResult(w === 'draw' ? 'Draw' : w === 'p1' ? FIGHTERS[IDS[0]].label + ' wins' : FIGHTERS[IDS[1]].label + ' wins')
+            setResult(w === 'draw' ? 'Draw' : w === 'p1' ? FIGHTERS[pair[0]].label + ' wins' : FIGHTERS[pair[1]].label + ' wins')
           }
         }
       }
@@ -676,6 +680,11 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
     setRound((n) => n + 1)
   }
 
+  const startQuick = (hero: FighterId) => {
+    quickIdsRef.current = quickPair(hero)
+    setQuickPick(false)
+    start()
+  }
   const start = () => {
     if (showTouch) void tryLandscape(document.documentElement, window.screen as Parameters<typeof tryLandscape>[1])
     setResult(null)
@@ -718,6 +727,7 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
               onExit={arcadeExit}
             />
           )}
+          {quickPick && mode === 'title' && <FighterQuickPick onPick={startQuick} onBack={() => setQuickPick(false)} />}
           {onlineView && (
             <FighterOnlinePanel
               view={onlineView}
@@ -729,10 +739,10 @@ export default function Fighter({ onClose }: { onClose: () => void }) {
               }}
             />
           )}
-          {mode === 'title' && !howTo && !onlineView && !arcadeView && (
+          {mode === 'title' && !howTo && !onlineView && !arcadeView && !quickPick && (
             <div style={overlay}>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8 }}>fiction and satire</p>
-              <button onClick={start} autoFocus style={btn}>FIGHT CPU</button>
+              <button onClick={() => setQuickPick(true)} autoFocus style={btn}>FIGHT CPU</button>
               <button onClick={openArcade} style={btn}>ARCADE</button>
               <button onClick={() => setOnlineView({ kind: 'menu' })} style={btn}>ONLINE</button>
               <button onClick={() => setHowTo(true)} style={smallBtn}>HOW TO PLAY</button>
