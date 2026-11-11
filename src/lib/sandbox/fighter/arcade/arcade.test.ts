@@ -501,3 +501,44 @@ describe('stage 6 Panitia Tetap boss', () => {
     for (const s of STAGES) if (s.slug !== 'gerbang-kubah') expect(s.opponent.boss).toBeUndefined()
   })
 })
+
+describe('stage 5 Penugasan armor', () => {
+  const hero = FIGHTERS['si-penyadap']
+  const seconded = STAGES[4].opponent
+
+  it('every Penempatan attack is armored, and that armor is the kind low attacks break', () => {
+    for (const k of ['punch', 'kick', 'special'] as const) {
+      expect(seconded.moves[k].armor).toBe(true)
+      expect(seconded.moves[k].lowBreak).toBe(true)
+    }
+  })
+
+  it('nobody else has low-break armor', () => {
+    for (const st of STAGES) {
+      if (st.slug === 'ruang-kurs') continue
+      for (const k of MOVE_KINDS) expect(st.opponent.moves[k].lowBreak).toBeUndefined()
+    }
+    for (const id of FIGHTER_IDS) for (const k of MOVE_KINDS) expect(FIGHTERS[id].moves[k].lowBreak).toBeUndefined()
+  })
+
+  // opponent starts a kick (armed for its first 12 frames); the hero answers; returns the opponent the frame the hit lands
+  function answer(input: number): { hp: number; action: string } {
+    const m = initMatch(3, [hero, seconded])
+    let s: MatchState = { ...m, fighters: [m.fighters[0], { ...m.fighters[1], x: m.fighters[0].x + 30 * UNIT }] }
+    s = stepMatch(s, [input, BTN.KICK])
+    for (let i = 0; i < 12 && s.fighters[1].hp === seconded.hp; i++) s = stepMatch(s, [0, 0])
+    return { hp: s.fighters[1].hp, action: s.fighters[1].action }
+  }
+
+  it('a standing punch is absorbed at half damage and does not interrupt him', () => {
+    const r = answer(BTN.PUNCH)
+    expect(r.hp).toBe(seconded.hp - Math.floor(hero.moves.punch.damage / 2))
+    expect(r.action).toBe('attack')
+  })
+
+  it('a crouch punch breaks the armor: full damage and he is interrupted', () => {
+    const r = answer(BTN.PUNCH | BTN.DOWN)
+    expect(r.hp).toBe(seconded.hp - hero.moves.crouchPunch.damage)
+    expect(r.action).toBe('hitstun')
+  })
+})

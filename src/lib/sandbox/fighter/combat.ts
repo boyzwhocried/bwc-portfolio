@@ -57,7 +57,8 @@ export function resolveHits(s: MatchState): MatchState {
     const raw = Math.floor((move.damage * seat) / 100)
     const base = dstate.bugged && !blocked ? Math.floor((raw * (100 + BUG_BONUS_PCT)) / 100) : raw
     const bugged = blocked ? dstate.bugged : !!move.mark
-    if (isArmed(dstate, s.defs[j])) {
+    const lowBreaks = move.kind === 'crouchPunch' && !!dstate.move && !!s.defs[j].moves[dstate.move].lowBreak
+    if (isArmed(dstate, s.defs[j]) && !lowBreaks) {
       const hpA = Math.max(0, fs[j].hp - Math.floor(base / 2))
       fs[j] = { ...fs[j], hp: hpA, bugged, action: hpA === 0 ? 'ko' : fs[j].action }
       continue

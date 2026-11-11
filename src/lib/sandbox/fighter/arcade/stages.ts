@@ -116,10 +116,10 @@ export const STAGES: readonly ArcadeStage[] = [
     slug: 'ruang-kurs',
     name: { id: 'Ruang Kurs', en: 'The Exchange Room' },
     overlay: 'exchange',
-    opponent: { ...variant(AJUDAN, 'sang-penempatan', 'Sang Penempatan', 1000, 672, { punch: { damage: 40 }, kick: { damage: 75 }, special: { damage: 70 } }), reshuffle: RING_FRAMES },
+    opponent: { ...variant(AJUDAN, 'sang-penempatan', 'Sang Penempatan', 1000, 672, { punch: { damage: 40, armor: true, lowBreak: true }, kick: { damage: 75, armor: true, lowBreak: true }, special: { damage: 70, armor: true, lowBreak: true } }), reshuffle: RING_FRAMES },
     cpu: 'normal',
     gimmick: 'The desk phone rings every 20 seconds: he is swapped for an identical replacement, or the chairs rotate. Penugasan armor breaks only to low attacks.',
-    gimmickReal: true, // phone swap built (def.reshuffle); Penugasan low-attack armor still planned
+    gimmickReal: true, // phone swap built (def.reshuffle); Penugasan armor built (lowBreak: only a crouch punch breaks it)
     pre: [
       { speaker: 'opponent', text: { id: 'Aku ditugaskan di sini. Aku tidak tahu kantor ini ngapain.', en: 'I was assigned here. I do not know what this office does.' } },
       { speaker: 'hero', text: { id: 'Kantornya juga tidak tahu.', en: 'Neither does the office.' } },

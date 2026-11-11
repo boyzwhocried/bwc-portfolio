@@ -28,6 +28,7 @@ export type MoveDef = {
   hitstop: number // frames both fighters freeze on contact
   hitbox: { x: number; y: number; w: number; h: number }
   advance?: number // world units per frame the attacker moves forward during active frames
+  lowBreak?: boolean // with armor: a low attack (crouch punch) breaks through and interrupts instead of being absorbed (arcade Penugasan)
   armor?: boolean // from its first frame until its active frames end, absorbs every hit at half damage without being interrupted
   mark?: boolean // a hit that is not blocked puts the BUGGED mark on the defender; the next unblocked hit on a marked fighter does extra damage
 }
