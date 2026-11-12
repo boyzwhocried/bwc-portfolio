@@ -87,11 +87,11 @@ export type Session = ReturnType<typeof createSession>
 export function statusLine(s: Status): string {
   switch (s) {
     case 'left':
-      return 'Lawan keluar. Kamu menang / Opponent left. You win'
+      return 'Opponent left. You win'
     case 'timeout':
-      return 'Koneksi putus / Connection lost'
+      return 'Connection lost'
     case 'desync':
-      return 'Tidak sinkron, ulangi / Out of sync, try again'
+      return 'Out of sync, try again'
     default:
       return ''
   }

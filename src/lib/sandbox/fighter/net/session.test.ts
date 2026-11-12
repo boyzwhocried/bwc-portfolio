@@ -136,16 +136,16 @@ describe('session', () => {
 })
 
 describe('statusLine', () => {
-  it('gives each ending an Indonesian line with an English subtitle and no em-dash', () => {
+  it('gives each ending a plain English line with no translation and no em-dash', () => {
     for (const st of ['left', 'timeout', 'desync'] as const) {
       const l = statusLine(st)
       expect(l.length).toBeGreaterThan(10)
-      expect(l).toContain(' / ')
+      expect(l).not.toContain(' / ')
+      expect(l).not.toMatch(/lawan|koneksi|kamu|sinkron|menang/i)
       expect(l).not.toContain(String.fromCharCode(0x2014))
     }
   })
   it('tells the staying player they win when the opponent leaves', () => {
-    expect(statusLine('left')).toMatch(/menang/i)
     expect(statusLine('left')).toMatch(/win/i)
   })
   it('is empty while playing', () => {

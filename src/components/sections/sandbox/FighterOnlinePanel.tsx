@@ -53,14 +53,14 @@ export default function FighterOnlinePanel({
               {copied ? 'COPIED' : 'COPY'}
             </button>
             <p style={{ ...mono, fontSize: 11 }} role="status">
-              {view.connected ? 'Menunggu teman... / Waiting for a friend...' : 'Menyambung... / Connecting...'}
+              {view.connected ? 'Waiting for a friend...' : 'Connecting...'}
             </p>
-            <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>Kamu Si Penyadap (kiri) / You are Si Penyadap (left)</p>
+            <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>You are Si Penyadap (left)</p>
           </>
         ) : (
           <>
-            <p style={{ ...mono, fontSize: 14 }} role="status">Masuk ruang {view.code}... / Joining {view.code}...</p>
-            <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>Kamu Sang Ajudan (kanan) / You are Sang Ajudan (right)</p>
+            <p style={{ ...mono, fontSize: 14 }} role="status">Joining {view.code}...</p>
+            <p style={{ ...mono, fontSize: 11, opacity: 0.8 }}>You are Sang Ajudan (right)</p>
           </>
         )}
         <button style={btn} onClick={onCancel}>CANCEL</button>
@@ -82,7 +82,7 @@ export default function FighterOnlinePanel({
         <input
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, 8))}
-          placeholder="KODE"
+          placeholder="CODE"
           aria-label="Room code"
           autoCapitalize="characters"
           autoComplete="off"
