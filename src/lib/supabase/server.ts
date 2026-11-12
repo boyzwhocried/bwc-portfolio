@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import { cleanEnv } from './env'
 
 export function createServerClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
   )
 }
